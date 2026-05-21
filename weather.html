@@ -717,16 +717,7 @@
           { label: 'hPa', data: data.map(d => d.mean), borderColor: '#a87ab8', backgroundColor: 'rgba(168,122,184,0.1)', borderWidth: 1.5, fill: true }
         ]
       },
-      {
-        id: 'chartLightning',
-        title: '⚡ Lightning',
-        subtitle: 'Strikes in last 30 days · click for full history',
-        modalTitle: '⚡ Lightning Strike History',
-        key: 'lightning_strikes',
-        type: 'table',
-        isTable: true,
-        datasets: (data) => []
-      }
+
     ];
 
     function makeChart(canvasId, type, labels, datasets, options = {}, destroy = true) {
