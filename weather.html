@@ -168,6 +168,7 @@
 
     .last-update { font-size: 11px; color: var(--cream-dim); }
 
+    /* Current conditions */
     .conditions-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -207,7 +208,6 @@
     .condition-value { font-size: 14px; color: var(--cream); font-weight: 500; }
     .condition-value.highlight { color: var(--sage); }
     .condition-value.warning { color: var(--gold); }
-    .condition-value.alert { color: var(--red); }
 
     .temp-display {
       text-align: center;
@@ -224,53 +224,6 @@
 
     .temp-unit { font-size: 24px; color: var(--cream-dim); }
     .temp-feels { font-size: 13px; color: var(--cream-dim); margin-top: 4px; }
-
-    .charts-section { margin-bottom: 40px; }
-
-    .section-header {
-      display: flex;
-      align-items: baseline;
-      gap: 10px;
-      margin-bottom: 16px;
-    }
-
-    .section-title {
-      font-family: 'Playfair Display', serif;
-      font-size: 20px;
-      font-weight: 400;
-      color: var(--cream);
-    }
-
-    .section-sub { font-size: 11px; color: var(--sage); }
-
-    .charts-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 20px;
-    }
-
-    @media (max-width: 900px) {
-      .charts-grid { grid-template-columns: 1fr; }
-      .conditions-grid { grid-template-columns: 1fr; }
-    }
-
-    .chart-panel {
-      background: var(--forest-dark);
-      border: 1px solid var(--divider);
-      border-radius: 8px;
-      padding: 16px;
-    }
-
-    .chart-title {
-      font-size: 11px;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: var(--sage);
-      margin-bottom: 12px;
-    }
-
-    .chart-wrapper { position: relative; height: 200px; }
-    .chart-wrapper.tall { height: 260px; }
 
     .wind-compass {
       display: flex;
@@ -317,6 +270,220 @@
 
     .wind-label { font-size: 11px; color: var(--cream-dim); }
 
+    /* Charts section */
+    .charts-section { margin-bottom: 40px; }
+
+    .section-header {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .section-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 20px;
+      font-weight: 400;
+      color: var(--cream);
+    }
+
+    .section-sub { font-size: 11px; color: var(--sage); }
+
+    .charts-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    @media (max-width: 900px) {
+      .charts-grid { grid-template-columns: 1fr; }
+      .conditions-grid { grid-template-columns: 1fr; }
+    }
+
+    .chart-panel {
+      background: var(--forest-dark);
+      border: 1px solid var(--divider);
+      border-radius: 8px;
+      padding: 16px;
+      cursor: pointer;
+      transition: border-color 0.2s, transform 0.15s;
+      position: relative;
+    }
+
+    .chart-panel:hover {
+      border-color: rgba(122, 184, 122, 0.35);
+      transform: translateY(-1px);
+    }
+
+    .chart-panel:hover .expand-hint { opacity: 1; }
+
+    .chart-title {
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--sage);
+      margin-bottom: 4px;
+    }
+
+    .chart-subtitle {
+      font-size: 10px;
+      color: var(--cream-dim);
+      margin-bottom: 10px;
+    }
+
+    .expand-hint {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      font-size: 10px;
+      color: var(--sage);
+      opacity: 0;
+      transition: opacity 0.2s;
+      letter-spacing: 0.05em;
+    }
+
+    .chart-wrapper { position: relative; height: 160px; }
+    .chart-wrapper.tall { height: 200px; }
+
+    /* Modal */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(5, 10, 5, 0.92);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      backdrop-filter: blur(4px);
+    }
+
+    .modal-overlay.open { display: flex; }
+
+    .modal {
+      background: var(--forest-dark);
+      border: 1px solid var(--divider);
+      border-radius: 12px;
+      width: 100%;
+      max-width: 1100px;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: 28px;
+      position: relative;
+      animation: modalIn 0.2s ease;
+    }
+
+    @keyframes modalIn {
+      from { opacity: 0; transform: scale(0.97); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 24px;
+      gap: 16px;
+    }
+
+    .modal-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 22px;
+      font-weight: 400;
+      color: var(--cream);
+    }
+
+    .modal-close {
+      background: var(--forest-mid);
+      border: 1px solid var(--divider);
+      border-radius: 6px;
+      color: var(--cream-dim);
+      font-size: 18px;
+      cursor: pointer;
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .modal-close:hover { background: var(--forest-light); color: var(--cream); }
+
+    /* Range selector */
+    .range-selector {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .range-label {
+      font-size: 10px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--sage);
+      margin-right: 4px;
+    }
+
+    .range-btn {
+      background: var(--forest-mid);
+      border: 1px solid var(--divider);
+      border-radius: 20px;
+      color: var(--cream-dim);
+      font-size: 12px;
+      padding: 5px 14px;
+      cursor: pointer;
+      transition: all 0.15s;
+      font-family: 'Source Sans 3', sans-serif;
+    }
+
+    .range-btn:hover { border-color: var(--sage); color: var(--cream); }
+    .range-btn.active { background: var(--forest-light); border-color: var(--sage); color: var(--cream); }
+
+    .custom-range {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-left: auto;
+      flex-wrap: wrap;
+    }
+
+    .date-input {
+      background: var(--forest-mid);
+      border: 1px solid var(--divider);
+      border-radius: 6px;
+      color: var(--cream);
+      font-size: 12px;
+      padding: 5px 10px;
+      font-family: 'Source Sans 3', sans-serif;
+      outline: none;
+      cursor: pointer;
+    }
+
+    .date-input:focus { border-color: rgba(122, 184, 122, 0.4); }
+
+    .date-sep { font-size: 11px; color: var(--cream-dim); }
+
+    .apply-btn {
+      background: var(--forest-light);
+      border: none;
+      border-radius: 6px;
+      color: var(--cream);
+      font-size: 12px;
+      padding: 5px 14px;
+      cursor: pointer;
+      font-family: 'Source Sans 3', sans-serif;
+      transition: background 0.15s;
+    }
+
+    .apply-btn:hover { background: var(--sage); color: var(--forest-deep); }
+
+    .modal-chart-wrapper { position: relative; height: 400px; }
+
+    /* Footer */
     footer {
       border-top: 1px solid var(--divider);
       padding: 20px 0 32px;
@@ -348,6 +515,11 @@
     }
 
     @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--forest-deep); }
+    ::-webkit-scrollbar-thumb { background: var(--forest-light); border-radius: 3px; }
   </style>
 </head>
 <body>
@@ -389,6 +561,33 @@
     </footer>
   </div>
 
+  <!-- Modal -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title" id="modalTitle"></div>
+        <button class="modal-close" id="modalClose">✕</button>
+      </div>
+      <div class="range-selector">
+        <span class="range-label">Show</span>
+        <button class="range-btn active" data-days="30">30 days</button>
+        <button class="range-btn" data-days="90">3 months</button>
+        <button class="range-btn" data-days="180">6 months</button>
+        <button class="range-btn" data-days="365">1 year</button>
+        <button class="range-btn" data-days="0">All time</button>
+        <div class="custom-range">
+          <input type="date" class="date-input" id="dateFrom">
+          <span class="date-sep">to</span>
+          <input type="date" class="date-input" id="dateTo">
+          <button class="apply-btn" id="applyRange">Apply</button>
+        </div>
+      </div>
+      <div class="modal-chart-wrapper">
+        <canvas id="modalChart"></canvas>
+      </div>
+    </div>
+  </div>
+
   <script>
     const MQTT_HOST = 'broker.hivemq.com';
     const MQTT_PORT = 8884;
@@ -399,7 +598,10 @@
 
     let currentData = null;
     let historyData = null;
-    let charts = {};
+    let miniCharts = {};
+    let modalChart = null;
+    let activeChartConfig = null;
+    let activeDays = 30;
 
     function windDirection(degrees) {
       if (degrees === null || degrees === undefined) return 'N/A';
@@ -421,6 +623,305 @@
       } catch(e) { return 'N/A'; }
     }
 
+    function filterByDays(arr, days) {
+      if (!arr || arr.length === 0) return [];
+      if (days === 0) return arr;
+      const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
+      return arr.filter(d => d.t > cutoff);
+    }
+
+    function filterByDateRange(arr, from, to) {
+      if (!arr) return [];
+      const fromTs = new Date(from).getTime();
+      const toTs = new Date(to).getTime() + 86400000;
+      return arr.filter(d => d.t >= fromTs && d.t <= toTs);
+    }
+
+    function getLabels(data) {
+      return data.map(d => new Date(d.t).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: '2-digit' }));
+    }
+
+    Chart.defaults.color = '#b8c8b4';
+    Chart.defaults.borderColor = 'rgba(122, 184, 122, 0.08)';
+    Chart.defaults.font.family = "'Source Sans 3', sans-serif";
+    Chart.defaults.font.size = 10;
+
+    const chartConfigs = [
+      {
+        id: 'chartTemp',
+        title: '🌡️ Temperature',
+        subtitle: 'Daily Min / Mean / Max · °C',
+        modalTitle: '🌡️ Temperature — Daily Min / Mean / Max (°C)',
+        key: 'outdoor_temperature',
+        type: 'line',
+        tall: true,
+        datasets: (data) => [
+          { label: 'Max', data: data.map(d => d.max), borderColor: '#c85a4a', backgroundColor: 'transparent', borderWidth: 1.5 },
+          { label: 'Mean', data: data.map(d => d.mean), borderColor: '#7ab87a', backgroundColor: 'rgba(122,184,122,0.1)', borderWidth: 2, fill: true },
+          { label: 'Min', data: data.map(d => d.min), borderColor: '#4a90a4', backgroundColor: 'transparent', borderWidth: 1.5 },
+        ]
+      },
+      {
+        id: 'chartRain',
+        title: '🌧️ Rainfall',
+        subtitle: 'Daily Total · mm',
+        modalTitle: '🌧️ Rainfall — Daily Total (mm)',
+        key: 'daily_rain_rate_piezo',
+        type: 'bar',
+        datasets: (data) => [
+          { label: 'Rain', data: data.map(d => d.sum || d.max || 0), backgroundColor: 'rgba(74,144,164,0.6)', borderColor: '#4a90a4', borderWidth: 1 }
+        ]
+      },
+      {
+        id: 'chartWind',
+        title: '💨 Wind Speed',
+        subtitle: 'Daily Mean · km/h',
+        modalTitle: '💨 Wind Speed — Daily Mean (km/h)',
+        key: 'wind_speed',
+        type: 'line',
+        datasets: (data) => [
+          { label: 'Mean', data: data.map(d => d.mean), borderColor: '#7ab87a', backgroundColor: 'rgba(122,184,122,0.1)', borderWidth: 1.5, fill: true }
+        ]
+      },
+      {
+        id: 'chartSolar',
+        title: '☀️ Solar Radiation',
+        subtitle: 'Daily Mean · W/m²',
+        modalTitle: '☀️ Solar Radiation — Daily Mean (W/m²)',
+        key: 'solar_radiation',
+        type: 'line',
+        datasets: (data) => [
+          { label: 'W/m²', data: data.map(d => d.mean), borderColor: '#c8a84b', backgroundColor: 'rgba(200,168,75,0.1)', borderWidth: 1.5, fill: true }
+        ]
+      },
+      {
+        id: 'chartHumidity',
+        title: '💧 Humidity',
+        subtitle: 'Daily Mean · %',
+        modalTitle: '💧 Humidity — Daily Mean (%)',
+        key: 'humidity',
+        type: 'line',
+        yScale: { min: 0, max: 100 },
+        datasets: (data) => [
+          { label: '%', data: data.map(d => d.mean), borderColor: '#4a90a4', backgroundColor: 'rgba(74,144,164,0.1)', borderWidth: 1.5, fill: true }
+        ]
+      },
+      {
+        id: 'chartPressure',
+        title: '🔵 Pressure',
+        subtitle: 'Daily Mean · hPa',
+        modalTitle: '🔵 Pressure — Daily Mean (hPa)',
+        key: 'relative_pressure',
+        type: 'line',
+        datasets: (data) => [
+          { label: 'hPa', data: data.map(d => d.mean), borderColor: '#a87ab8', backgroundColor: 'rgba(168,122,184,0.1)', borderWidth: 1.5, fill: true }
+        ]
+      },
+      {
+        id: 'chartLightning',
+        title: '⚡ Lightning',
+        subtitle: 'Strikes in last 30 days · click for full history',
+        modalTitle: '⚡ Lightning Strike History',
+        key: 'lightning_strikes',
+        type: 'table',
+        isTable: true,
+        datasets: (data) => []
+      }
+    ];
+
+    function makeChart(canvasId, type, labels, datasets, options = {}, destroy = true) {
+      if (destroy && miniCharts[canvasId]) { miniCharts[canvasId].destroy(); delete miniCharts[canvasId]; }
+      const ctx = document.getElementById(canvasId);
+      if (!ctx) return null;
+      const chart = new Chart(ctx, {
+        type,
+        data: { labels, datasets },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: datasets.length > 1, labels: { boxWidth: 8, padding: 6, font: { size: 9 } } } },
+          scales: {
+            x: { ticks: { maxTicksLimit: 8, maxRotation: 0 }, grid: { color: 'rgba(122,184,122,0.04)' } },
+            y: { grid: { color: 'rgba(122,184,122,0.04)' }, ...(options.yScale || {}) }
+          },
+          elements: { point: { radius: 0 }, line: { tension: 0.3 } },
+        }
+      });
+      if (!destroy) return chart;
+      miniCharts[canvasId] = chart;
+      return chart;
+    }
+
+    function renderMiniCharts() {
+      chartConfigs.forEach(cfg => {
+        const raw = historyData[cfg.key];
+        if (!raw) return;
+
+        if (cfg.isTable) {
+          // Lightning: show summary stats in the panel
+          const data30 = filterByDays(raw, 30);
+          const totalStrikes = data30.reduce((sum, d) => sum + (d.max || 0), 0);
+          const strikeDays = data30.filter(d => (d.max || 0) > 0);
+          const el = document.getElementById(cfg.id);
+          if (el) {
+            const wrapper = el.closest('.chart-wrapper');
+            if (wrapper) {
+              wrapper.innerHTML = `
+                <div style="display:flex;flex-direction:column;justify-content:center;height:100%;gap:12px;padding:8px 0">
+                  <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--divider)">
+                    <span style="font-size:12px;color:var(--cream-dim)">Strikes in last 30 days</span>
+                    <span style="font-size:20px;font-family:'Playfair Display',serif;color:${totalStrikes > 0 ? 'var(--gold)' : 'var(--cream)'}">${totalStrikes}</span>
+                  </div>
+                  <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--divider)">
+                    <span style="font-size:12px;color:var(--cream-dim)">Days with strikes</span>
+                    <span style="font-size:20px;font-family:'Playfair Display',serif;color:var(--cream)">${strikeDays.length}</span>
+                  </div>
+                  <div style="font-size:11px;color:var(--cream-dim);text-align:center;margin-top:4px">Click for full strike history table</div>
+                </div>`;
+            }
+          }
+          return;
+        }
+
+        const data = filterByDays(raw, 30);
+        if (data.length === 0) return;
+        makeChart(cfg.id, cfg.type, getLabels(data), cfg.datasets(data), { yScale: cfg.yScale });
+      });
+    }
+
+    // Modal
+    function openModal(cfg) {
+      activeChartConfig = cfg;
+      document.getElementById('modalTitle').textContent = cfg.modalTitle;
+      document.getElementById('modalOverlay').classList.add('open');
+      document.body.style.overflow = 'hidden';
+
+      // Set default date inputs
+      const today = new Date();
+      const yearAgo = new Date();
+      yearAgo.setFullYear(yearAgo.getFullYear() - 1);
+      document.getElementById('dateTo').value = today.toISOString().split('T')[0];
+      document.getElementById('dateFrom').value = yearAgo.toISOString().split('T')[0];
+
+      // Reset range buttons
+      document.querySelectorAll('.range-btn').forEach(b => b.classList.remove('active'));
+      document.querySelector('.range-btn[data-days="30"]').classList.add('active');
+      activeDays = 30;
+
+      renderModalChart(30);
+    }
+
+    function closeModal() {
+      document.getElementById('modalOverlay').classList.remove('open');
+      document.body.style.overflow = '';
+      if (modalChart) { modalChart.destroy(); modalChart = null; }
+    }
+
+    function renderModalChart(days, fromDate, toDate) {
+      if (!activeChartConfig) return;
+      const raw = historyData[activeChartConfig.key];
+      if (!raw) return;
+
+      let data;
+      if (fromDate && toDate) {
+        data = filterByDateRange(raw, fromDate, toDate);
+      } else {
+        data = filterByDays(raw, days);
+      }
+
+      if (modalChart) { modalChart.destroy(); modalChart = null; }
+
+      const wrapper = document.querySelector('.modal-chart-wrapper');
+
+      if (activeChartConfig.isTable) {
+        // Render lightning as a table
+        const strikeDays = data
+          .filter(d => (d.max || 0) > 0)
+          .sort((a, b) => b.t - a.t);
+
+        const totalStrikes = strikeDays.reduce((sum, d) => sum + (d.max || 0), 0);
+
+        wrapper.innerHTML = `
+          <div style="overflow-y:auto;max-height:380px">
+            <div style="margin-bottom:16px;font-size:13px;color:var(--cream-dim)">
+              ${strikeDays.length} days with lightning strikes · ${totalStrikes} total strikes
+            </div>
+            ${strikeDays.length === 0 ? 
+              '<div style="text-align:center;padding:40px;color:var(--cream-dim);font-style:italic">No lightning strikes in this period</div>' :
+              `<table style="width:100%;border-collapse:collapse">
+                <thead>
+                  <tr style="border-bottom:1px solid var(--divider)">
+                    <th style="text-align:left;padding:8px 12px;font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--sage);font-weight:400">Date</th>
+                    <th style="text-align:right;padding:8px 12px;font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--sage);font-weight:400">Strikes</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${strikeDays.map((d, i) => `
+                    <tr style="border-bottom:1px solid var(--divider);background:${i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)'}">
+                      <td style="padding:10px 12px;font-size:13px;color:var(--cream)">
+                        ${new Date(d.t).toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'long', year:'numeric' })}
+                      </td>
+                      <td style="padding:10px 12px;font-size:14px;color:var(--gold);text-align:right;font-family:'Playfair Display',serif">
+                        ${d.max || 0} ⚡
+                      </td>
+                    </tr>`).join('')}
+                </tbody>
+              </table>`
+            }
+          </div>`;
+        return;
+      }
+
+      // Restore canvas for regular charts
+      wrapper.innerHTML = '<canvas id="modalChart"></canvas>';
+      const ctx = document.getElementById('modalChart');
+      modalChart = new Chart(ctx, {
+        type: activeChartConfig.type,
+        data: { labels: getLabels(data), datasets: activeChartConfig.datasets(data) },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: activeChartConfig.datasets(data).length > 1, labels: { boxWidth: 10, padding: 10 } },
+            tooltip: { mode: 'index', intersect: false }
+          },
+          scales: {
+            x: { ticks: { maxTicksLimit: 16, maxRotation: 0 }, grid: { color: 'rgba(122,184,122,0.06)' } },
+            y: { grid: { color: 'rgba(122,184,122,0.06)' }, ...(activeChartConfig.yScale || {}) }
+          },
+          elements: { point: { radius: 0, hoverRadius: 4 }, line: { tension: 0.3 } },
+        }
+      });
+    }
+
+    // Range button clicks
+    document.querySelectorAll('.range-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.range-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        activeDays = parseInt(btn.dataset.days);
+        renderModalChart(activeDays);
+      });
+    });
+
+    document.getElementById('applyRange').addEventListener('click', () => {
+      const from = document.getElementById('dateFrom').value;
+      const to = document.getElementById('dateTo').value;
+      if (from && to) {
+        document.querySelectorAll('.range-btn').forEach(b => b.classList.remove('active'));
+        renderModalChart(null, from, to);
+      }
+    });
+
+    document.getElementById('modalClose').addEventListener('click', closeModal);
+    document.getElementById('modalOverlay').addEventListener('click', (e) => {
+      if (e.target === document.getElementById('modalOverlay')) closeModal();
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeModal();
+    });
+
     function renderCurrent(d) {
       const html = `
         <div class="conditions-grid">
@@ -431,18 +932,9 @@
                 <div class="temp-main">${fmt(d.temperature, 1)}<span class="temp-unit">°C</span></div>
                 <div class="temp-feels">Feels like ${fmt(d.feels_like, 1)}°C</div>
               </div>
-              <div class="condition-row">
-                <span class="condition-label">Dewpoint</span>
-                <span class="condition-value">${fmt(d.dewpoint, 1)}°C</span>
-              </div>
-              <div class="condition-row">
-                <span class="condition-label">Windchill</span>
-                <span class="condition-value">${fmt(d.windchill, 1)}°C</span>
-              </div>
-              <div class="condition-row">
-                <span class="condition-label">Humidity</span>
-                <span class="condition-value highlight">${fmt(d.humidity, 0)}%</span>
-              </div>
+              <div class="condition-row"><span class="condition-label">Dewpoint</span><span class="condition-value">${fmt(d.dewpoint, 1)}°C</span></div>
+              <div class="condition-row"><span class="condition-label">Windchill</span><span class="condition-value">${fmt(d.windchill, 1)}°C</span></div>
+              <div class="condition-row"><span class="condition-label">Humidity</span><span class="condition-value highlight">${fmt(d.humidity, 0)}%</span></div>
             </div>
           </div>
 
@@ -452,112 +944,56 @@
               <div class="wind-compass">
                 <div class="compass-circle">
                   <div class="compass-arrow" id="compassArrow"></div>
-                  <span class="compass-n">N</span>
-                  <span class="compass-s">S</span>
-                  <span class="compass-e">E</span>
-                  <span class="compass-w">W</span>
+                  <span class="compass-n">N</span><span class="compass-s">S</span>
+                  <span class="compass-e">E</span><span class="compass-w">W</span>
                 </div>
                 <div class="wind-info">
                   <div class="wind-speed-big">${fmt(d.wind_speed, 1)}</div>
                   <div class="wind-label">km/h ${windDirection(d.wind_dir)}</div>
                 </div>
               </div>
-              <div class="condition-row">
-                <span class="condition-label">Gust</span>
-                <span class="condition-value">${fmt(d.wind_gust, 1)} km/h</span>
-              </div>
-              <div class="condition-row">
-                <span class="condition-label">Max Daily Gust</span>
-                <span class="condition-value">${fmt(d.wind_max_daily_gust, 1)} km/h</span>
-              </div>
-              <div class="condition-row">
-                <span class="condition-label">Direction</span>
-                <span class="condition-value">${fmt(d.wind_dir, 0)}°</span>
-              </div>
+              <div class="condition-row"><span class="condition-label">Gust</span><span class="condition-value">${fmt(d.wind_gust, 1)} km/h</span></div>
+              <div class="condition-row"><span class="condition-label">Max Daily Gust</span><span class="condition-value">${fmt(d.wind_max_daily_gust, 1)} km/h</span></div>
+              <div class="condition-row"><span class="condition-label">Direction</span><span class="condition-value">${fmt(d.wind_dir, 0)}°</span></div>
             </div>
           </div>
 
           <div class="condition-panel">
             <div class="panel-header">🌧️ Rainfall</div>
             <div class="panel-body">
-              <div class="condition-row">
-                <span class="condition-label">Rate</span>
-                <span class="condition-value ${parseFloat(d.rain_rate) > 0 ? 'highlight' : ''}">${fmt(d.rain_rate, 1)} mm/h</span>
-              </div>
-              <div class="condition-row">
-                <span class="condition-label">Hourly</span>
-                <span class="condition-value">${fmt(d.rain_hourly, 1)} mm</span>
-              </div>
-              <div class="condition-row">
-                <span class="condition-label">Daily</span>
-                <span class="condition-value">${fmt(d.rain_daily, 1)} mm</span>
-              </div>
-              <div class="condition-row">
-                <span class="condition-label">Weekly</span>
-                <span class="condition-value">${fmt(d.rain_weekly, 1)} mm</span>
-              </div>
-              <div class="condition-row">
-                <span class="condition-label">Monthly</span>
-                <span class="condition-value">${fmt(d.rain_monthly, 1)} mm</span>
-              </div>
-              <div class="condition-row">
-                <span class="condition-label">Yearly</span>
-                <span class="condition-value highlight">${fmt(d.rain_yearly, 1)} mm</span>
-              </div>
-              <div class="condition-row">
-                <span class="condition-label">Event</span>
-                <span class="condition-value">${fmt(d.rain_event, 1)} mm</span>
-              </div>
+              <div class="condition-row"><span class="condition-label">Rate</span><span class="condition-value ${parseFloat(d.rain_rate) > 0 ? 'highlight' : ''}">${fmt(d.rain_rate, 1)} mm/h</span></div>
+              <div class="condition-row"><span class="condition-label">Hourly</span><span class="condition-value">${fmt(d.rain_hourly, 1)} mm</span></div>
+              <div class="condition-row"><span class="condition-label">Daily</span><span class="condition-value">${fmt(d.rain_daily, 1)} mm</span></div>
+              <div class="condition-row"><span class="condition-label">Weekly</span><span class="condition-value">${fmt(d.rain_weekly, 1)} mm</span></div>
+              <div class="condition-row"><span class="condition-label">Monthly</span><span class="condition-value">${fmt(d.rain_monthly, 1)} mm</span></div>
+              <div class="condition-row"><span class="condition-label">Yearly</span><span class="condition-value highlight">${fmt(d.rain_yearly, 1)} mm</span></div>
+              <div class="condition-row"><span class="condition-label">Event</span><span class="condition-value">${fmt(d.rain_event, 1)} mm</span></div>
             </div>
           </div>
 
           <div class="condition-panel">
             <div class="panel-header">☀️ Solar & UV</div>
             <div class="panel-body">
-              <div class="condition-row">
-                <span class="condition-label">Solar Radiation</span>
-                <span class="condition-value highlight">${fmt(d.solar, 0)} W/m²</span>
-              </div>
-              <div class="condition-row">
-                <span class="condition-label">Solar Lux</span>
-                <span class="condition-value">${fmt(d.solar_lux, 0)} lx</span>
-              </div>
-              <div class="condition-row">
-                <span class="condition-label">UV Index</span>
-                <span class="condition-value ${parseFloat(d.uv) >= 6 ? 'warning' : ''}">${fmt(d.uv, 0)}</span>
-              </div>
+              <div class="condition-row"><span class="condition-label">Solar Radiation</span><span class="condition-value highlight">${fmt(d.solar, 0)} W/m²</span></div>
+              <div class="condition-row"><span class="condition-label">Solar Lux</span><span class="condition-value">${fmt(d.solar_lux, 0)} lx</span></div>
+              <div class="condition-row"><span class="condition-label">UV Index</span><span class="condition-value ${parseFloat(d.uv) >= 6 ? 'warning' : ''}">${fmt(d.uv, 0)}</span></div>
             </div>
           </div>
 
           <div class="condition-panel">
             <div class="panel-header">🔵 Pressure</div>
             <div class="panel-body">
-              <div class="condition-row">
-                <span class="condition-label">Relative</span>
-                <span class="condition-value highlight">${fmt(d.pressure, 1)} hPa</span>
-              </div>
-              <div class="condition-row">
-                <span class="condition-label">Absolute</span>
-                <span class="condition-value">${fmt(d.pressure_abs, 1)} hPa</span>
-              </div>
+              <div class="condition-row"><span class="condition-label">Relative</span><span class="condition-value highlight">${fmt(d.pressure, 1)} hPa</span></div>
+              <div class="condition-row"><span class="condition-label">Absolute</span><span class="condition-value">${fmt(d.pressure_abs, 1)} hPa</span></div>
             </div>
           </div>
 
           <div class="condition-panel">
             <div class="panel-header">⚡ Lightning</div>
             <div class="panel-body">
-              <div class="condition-row">
-                <span class="condition-label">Strikes Today</span>
-                <span class="condition-value ${parseInt(d.lightning_strikes) > 0 ? 'warning' : ''}">${fmt(d.lightning_strikes, 0)}</span>
-              </div>
-              <div class="condition-row">
-                <span class="condition-label">Last Strike Distance</span>
-                <span class="condition-value">${fmt(d.lightning_distance, 0)} km</span>
-              </div>
-              <div class="condition-row">
-                <span class="condition-label">Last Strike</span>
-                <span class="condition-value">${fmtDate(d.lightning_last)}</span>
-              </div>
+              <div class="condition-row"><span class="condition-label">Strikes Today</span><span class="condition-value ${parseInt(d.lightning_strikes) > 0 ? 'warning' : ''}">${fmt(d.lightning_strikes, 0)}</span></div>
+              <div class="condition-row"><span class="condition-label">Last Strike Distance</span><span class="condition-value">${fmt(d.lightning_distance, 0)} km</span></div>
+              <div class="condition-row"><span class="condition-label">Last Strike</span><span class="condition-value">${fmtDate(d.lightning_last)}</span></div>
             </div>
           </div>
         </div>
@@ -565,37 +1001,18 @@
         <div class="charts-section">
           <div class="section-header">
             <div class="section-title">Historical Data</div>
-            <div class="section-sub">Daily statistics · up to 3 years</div>
+            <div class="section-sub">Last 30 days · click any chart to explore full history</div>
           </div>
           <div class="charts-grid">
-            <div class="chart-panel">
-              <div class="chart-title">🌡️ Temperature (°C) — Daily Min / Mean / Max</div>
-              <div class="chart-wrapper tall"><canvas id="chartTemp"></canvas></div>
-            </div>
-            <div class="chart-panel">
-              <div class="chart-title">🌧️ Rainfall (mm) — Daily Total</div>
-              <div class="chart-wrapper tall"><canvas id="chartRain"></canvas></div>
-            </div>
-            <div class="chart-panel">
-              <div class="chart-title">💨 Wind Speed (km/h) — Daily Mean</div>
-              <div class="chart-wrapper"><canvas id="chartWind"></canvas></div>
-            </div>
-            <div class="chart-panel">
-              <div class="chart-title">☀️ Solar Radiation (W/m²) — Daily Mean</div>
-              <div class="chart-wrapper"><canvas id="chartSolar"></canvas></div>
-            </div>
-            <div class="chart-panel">
-              <div class="chart-title">💧 Humidity (%) — Daily Mean</div>
-              <div class="chart-wrapper"><canvas id="chartHumidity"></canvas></div>
-            </div>
-            <div class="chart-panel">
-              <div class="chart-title">🔵 Pressure (hPa) — Daily Mean</div>
-              <div class="chart-wrapper"><canvas id="chartPressure"></canvas></div>
-            </div>
-            <div class="chart-panel">
-              <div class="chart-title">⚡ Lightning Strikes — Daily Count</div>
-              <div class="chart-wrapper"><canvas id="chartLightning"></canvas></div>
-            </div>
+            ${chartConfigs.map(cfg => `
+              <div class="chart-panel" data-chart="${cfg.id}">
+                <div class="expand-hint">Click to explore ↗</div>
+                <div class="chart-title">${cfg.title}</div>
+                <div class="chart-subtitle">${cfg.subtitle}</div>
+                <div class="chart-wrapper ${cfg.tall ? 'tall' : ''}">
+                  <canvas id="${cfg.id}"></canvas>
+                </div>
+              </div>`).join('')}
           </div>
         </div>`;
 
@@ -606,101 +1023,19 @@
           `translateX(-50%) translateY(-100%) rotate(${d.wind_dir}deg)`;
       }
 
-      if (historyData) renderCharts();
-    }
-
-    function getChartDates(data) {
-      return data.map(d => {
-        const date = new Date(d.t);
-        return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: '2-digit' });
+      // Attach click handlers
+      document.querySelectorAll('.chart-panel').forEach(panel => {
+        panel.addEventListener('click', () => {
+          const chartId = panel.dataset.chart;
+          const cfg = chartConfigs.find(c => c.id === chartId);
+          if (cfg && historyData) openModal(cfg);
+        });
       });
+
+      if (historyData) renderMiniCharts();
     }
 
-    Chart.defaults.color = '#b8c8b4';
-    Chart.defaults.borderColor = 'rgba(122, 184, 122, 0.1)';
-    Chart.defaults.font.family = "'Source Sans 3', sans-serif";
-    Chart.defaults.font.size = 10;
-
-    function makeChart(id, type, labels, datasets, options = {}) {
-      if (charts[id]) charts[id].destroy();
-      const ctx = document.getElementById(id);
-      if (!ctx) return;
-      charts[id] = new Chart(ctx, {
-        type,
-        data: { labels, datasets },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { display: datasets.length > 1, labels: { boxWidth: 10, padding: 8 } } },
-          scales: {
-            x: { ticks: { maxTicksLimit: 12, maxRotation: 0 }, grid: { color: 'rgba(122, 184, 122, 0.05)' } },
-            y: { grid: { color: 'rgba(122, 184, 122, 0.05)' }, ...(options.yScale || {}) }
-          },
-          elements: { point: { radius: 0 }, line: { tension: 0.3 } },
-        }
-      });
-    }
-
-    function last365(arr) {
-      if (!arr) return [];
-      return arr.slice(-365);
-    }
-
-    function renderCharts() {
-      const h = historyData;
-
-      if (h.outdoor_temperature) {
-        const data = last365(h.outdoor_temperature);
-        makeChart('chartTemp', 'line', getChartDates(data), [
-          { label: 'Max', data: data.map(d => d.max), borderColor: '#c85a4a', backgroundColor: 'transparent', borderWidth: 1 },
-          { label: 'Mean', data: data.map(d => d.mean), borderColor: '#7ab87a', backgroundColor: 'rgba(122,184,122,0.1)', borderWidth: 2, fill: true },
-          { label: 'Min', data: data.map(d => d.min), borderColor: '#4a90a4', backgroundColor: 'transparent', borderWidth: 1 },
-        ]);
-      }
-
-      if (h.daily_rain_rate_piezo) {
-        const data = last365(h.daily_rain_rate_piezo);
-        makeChart('chartRain', 'bar', getChartDates(data), [
-          { label: 'Rain', data: data.map(d => d.sum || d.max || 0), backgroundColor: 'rgba(74,144,164,0.6)', borderColor: '#4a90a4', borderWidth: 1 }
-        ]);
-      }
-
-      if (h.wind_speed) {
-        const data = last365(h.wind_speed);
-        makeChart('chartWind', 'line', getChartDates(data), [
-          { label: 'Mean', data: data.map(d => d.mean), borderColor: '#7ab87a', backgroundColor: 'rgba(122,184,122,0.1)', borderWidth: 1.5, fill: true }
-        ]);
-      }
-
-      if (h.solar_radiation) {
-        const data = last365(h.solar_radiation);
-        makeChart('chartSolar', 'line', getChartDates(data), [
-          { label: 'W/m²', data: data.map(d => d.mean), borderColor: '#c8a84b', backgroundColor: 'rgba(200,168,75,0.1)', borderWidth: 1.5, fill: true }
-        ]);
-      }
-
-      if (h.humidity) {
-        const data = last365(h.humidity);
-        makeChart('chartHumidity', 'line', getChartDates(data), [
-          { label: '%', data: data.map(d => d.mean), borderColor: '#4a90a4', backgroundColor: 'rgba(74,144,164,0.1)', borderWidth: 1.5, fill: true }
-        ], { yScale: { min: 0, max: 100 } });
-      }
-
-      if (h.relative_pressure) {
-        const data = last365(h.relative_pressure);
-        makeChart('chartPressure', 'line', getChartDates(data), [
-          { label: 'hPa', data: data.map(d => d.mean), borderColor: '#a87ab8', backgroundColor: 'rgba(168,122,184,0.1)', borderWidth: 1.5, fill: true }
-        ]);
-      }
-
-      if (h.lightning_strikes) {
-        const data = last365(h.lightning_strikes);
-        makeChart('chartLightning', 'bar', getChartDates(data), [
-          { label: 'Strikes', data: data.map(d => d.sum || d.max || 0), backgroundColor: 'rgba(200,168,75,0.6)', borderColor: '#c8a84b', borderWidth: 1 }
-        ]);
-      }
-    }
-
+    // MQTT
     const client = mqtt.connect(`wss://${MQTT_HOST}:${MQTT_PORT}/mqtt`);
 
     client.on('connect', () => {
@@ -729,7 +1064,7 @@
           renderCurrent(data);
         } else if (topic === HISTORY_TOPIC) {
           historyData = data;
-          if (currentData) renderCharts();
+          if (currentData) renderMiniCharts();
         }
       } catch(e) { console.error('Parse error:', e); }
     });
