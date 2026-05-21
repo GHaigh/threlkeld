@@ -52,7 +52,6 @@
       flex-direction: column;
     }
 
-    /* Header */
     header {
       padding: 80px 0 60px;
       border-bottom: 1px solid var(--divider);
@@ -113,7 +112,6 @@
       font-weight: 500;
     }
 
-    /* Projects grid */
     .projects-label {
       font-size: 10px;
       letter-spacing: 0.2em;
@@ -165,21 +163,15 @@
       transform: translateY(-2px);
     }
 
-    .project-card:hover::after {
-      transform: scaleX(1);
-    }
+    .project-card:hover::after { transform: scaleX(1); }
 
-    .project-icon {
-      font-size: 36px;
-      line-height: 1;
-    }
+    .project-icon { font-size: 36px; line-height: 1; }
 
     .project-tag {
       font-size: 9px;
       letter-spacing: 0.2em;
       text-transform: uppercase;
       color: var(--sage);
-      font-family: 'Source Sans 3', sans-serif;
     }
 
     .project-name {
@@ -212,11 +204,9 @@
       transition: transform 0.2s;
     }
 
-    .project-card:hover .project-link::after {
-      transform: translateX(4px);
-    }
+    .project-card:hover .project-link::after { transform: translateX(4px); }
 
-    /* Suggestions box */
+    /* Suggestions form */
     .suggestions-box {
       background: var(--forest-dark);
       border: 1px solid var(--divider);
@@ -227,38 +217,111 @@
 
     .suggestions-title {
       font-family: 'Playfair Display', serif;
-      font-size: 20px;
+      font-size: 24px;
       font-weight: 400;
       color: var(--cream);
-      margin-bottom: 12px;
+      margin-bottom: 8px;
     }
 
     .suggestions-text {
       font-size: 14px;
       color: var(--cream-dim);
       line-height: 1.7;
+      margin-bottom: 24px;
+      max-width: 560px;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
       margin-bottom: 16px;
     }
 
-    .suggestions-email {
+    @media (max-width: 600px) {
+      .form-grid { grid-template-columns: 1fr; }
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .form-group.full { grid-column: 1 / -1; }
+
+    label {
+      font-size: 10px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--sage);
+    }
+
+    input, textarea {
+      background: var(--forest-mid);
+      border: 1px solid var(--divider);
+      border-radius: 6px;
+      padding: 10px 14px;
+      color: var(--cream);
+      font-family: 'Source Sans 3', sans-serif;
+      font-size: 14px;
+      font-weight: 300;
+      outline: none;
+      transition: border-color 0.2s;
+      width: 100%;
+    }
+
+    input::placeholder, textarea::placeholder { color: var(--cream-dim); opacity: 0.5; }
+
+    input:focus, textarea:focus {
+      border-color: rgba(122, 184, 122, 0.4);
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 120px;
+    }
+
+    .submit-btn {
       display: inline-flex;
       align-items: center;
       gap: 8px;
+      background: var(--forest-light);
+      color: var(--cream);
+      border: none;
+      border-radius: 6px;
+      padding: 12px 24px;
+      font-family: 'Source Sans 3', sans-serif;
       font-size: 13px;
-      color: var(--sage);
-      text-decoration: none;
-      border: 1px solid var(--divider);
-      padding: 8px 16px;
-      border-radius: 20px;
-      transition: background 0.2s, border-color 0.2s;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+      margin-top: 8px;
     }
 
-    .suggestions-email:hover {
+    .submit-btn:hover {
+      background: var(--sage);
+      color: var(--forest-deep);
+      transform: translateY(-1px);
+    }
+
+    .submit-btn:active { transform: translateY(0); }
+
+    .form-success {
+      display: none;
       background: var(--forest-mid);
-      border-color: rgba(122, 184, 122, 0.3);
+      border: 1px solid rgba(122, 184, 122, 0.3);
+      border-radius: 8px;
+      padding: 20px 24px;
+      margin-top: 16px;
+      color: var(--sage-light);
+      font-size: 14px;
+      line-height: 1.6;
     }
 
-    /* Footer */
+    .form-success.visible { display: block; }
+
     footer {
       border-top: 1px solid var(--divider);
       padding: 24px 0 40px;
@@ -316,9 +379,28 @@
         If you have a suggestion for a new eco or tech project — whether it's air quality monitoring, 
         wildlife cameras, bat detection, or something else entirely — we'd love to hear from you.
       </p>
-      <a href="mailto:suggestions@threlkeld.local" class="suggestions-email">
-        💬 Share your idea
-      </a>
+
+      <form id="suggestionForm" action="https://formspree.io/f/mzdwrgol" method="POST">
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="name">Your Name</label>
+            <input type="text" id="name" name="name" placeholder="Jane Smith" required>
+          </div>
+          <div class="form-group">
+            <label for="email">Your Email</label>
+            <input type="email" id="email" name="email" placeholder="jane@example.com" required>
+          </div>
+          <div class="form-group full">
+            <label for="message">Your Idea or Suggestion</label>
+            <textarea id="message" name="message" placeholder="Tell us about your idea..."></textarea>
+          </div>
+        </div>
+        <button type="submit" class="submit-btn">Send your idea →</button>
+      </form>
+
+      <div class="form-success" id="formSuccess">
+        ✅ Thanks for your suggestion! We'll take a look and get back to you if we have any questions.
+      </div>
     </div>
 
     <footer>
@@ -326,5 +408,24 @@
       <div class="footer-location">54.6°N 3.0°W</div>
     </footer>
   </div>
+
+  <script>
+    const form = document.getElementById('suggestionForm');
+    const success = document.getElementById('formSuccess');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const data = new FormData(form);
+      const response = await fetch(form.action, {
+        method: 'POST',
+        body: data,
+        headers: { 'Accept': 'application/json' }
+      });
+      if (response.ok) {
+        form.style.display = 'none';
+        success.classList.add('visible');
+      }
+    });
+  </script>
 </body>
 </html>
