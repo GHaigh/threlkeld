@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Weather Station · Threlkeld</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Source+Sans+3:wght@300;400;500&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/5.3.4/mqtt.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --forest-deep: #0d1a0d;
+      --forest-dark: #1a2e1a;
+      --forest-mid: #243022;
+      --forest-light: #3b6d11;
+      --sage: #7ab87a;
+      --sage-light: #a8d4a8;
+      --cream: #e8f0e4;
+      --cream-dim: #b8c8b4;
+      --divider: rgba(122, 184, 122, 0.15);
+      --blue: #4a90a4;
+      --gold: #c8a84b;
+      --red: #c85a4a;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--forest-deep);
+      color: var(--cream);
+      font-family: 'Source Sans 3', sans-serif;
+      font-weight: 300;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: 
+        radial-gradient(ellipse at 20% 50%, rgba(59, 109, 17, 0.08) 0%, transparent 60%),
+        radial-gradient(ellipse at 80% 20%, rgba(122, 184, 122, 0.05) 0%, transparent 50%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .page {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0 24px;
+      position: relative;
+      z-index: 1;
+    }
+
+    nav {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      padding: 16px 0;
+      border-bottom: 1px solid var(--divider);
+      margin-bottom: 28px;
+    }
+
+    .nav-home {
+      font-size: 11px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--sage);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .nav-home:hover { color: var(--cream); }
+    .nav-divider { color: var(--divider); font-size: 12px; }
+
+    .nav-links {
+      display: flex;
+      gap: 20px;
+      margin-left: auto;
+    }
+
+    .nav-link {
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--cream-dim);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .nav-link:hover { color: var(--cream); }
+    .nav-link.active { color: var(--sage); }
+
+    header {
+      padding: 20px 0 28px;
+      border-bottom: 1px solid var(--divider);
+      margin-bottom: 28px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .header-eyebrow {
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--sage);
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .header-eyebrow::before {
+      content: '';
+      display: inline-block;
+      width: 20px;
+      height: 1px;
+      background: var(--sage);
+    }
+
+    h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(24px, 4vw, 40px);
+      font-weight: 400;
+      color: var(--cream);
+    }
+
+    h1 em { font-style: italic; color: var(--sage-light); }
+
+    .header-right {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 6px;
+    }
+
+    .status-dot {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--cream-dim);
+    }
+
+    .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #666;
+    }
+
+    .dot.connected {
+      background: var(--sage);
+      box-shadow: 0 0 6px var(--sage);
+      animation: pulse 2s infinite;
+    }
+
+    .dot.error { background: #e05555; }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .last-update { font-size: 11px; color: var(--cream-dim); }
+
+    .conditions-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+      margin-bottom: 40px;
+    }
+
+    .condition-panel {
+      background: var(--forest-dark);
+      border: 1px solid var(--divider);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .panel-header {
+      background: var(--forest-mid);
+      padding: 10px 16px;
+      font-size: 10px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--sage);
+    }
+
+    .panel-body { padding: 12px 16px; }
+
+    .condition-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 0;
+      border-bottom: 1px solid var(--divider);
+    }
+
+    .condition-row:last-child { border-bottom: none; }
+
+    .condition-label { font-size: 12px; color: var(--cream-dim); }
+    .condition-value { font-size: 14px; color: var(--cream); font-weight: 500; }
+    .condition-value.highlight { color: var(--sage); }
+    .condition-value.warning { color: var(--gold); }
+    .condition-value.alert { color: var(--red); }
+
+    .temp-display {
+      text-align: center;
+      padding: 16px 0 8px;
+    }
+
+    .temp-main {
+      font-family: 'Playfair Display', serif;
+      font-size: 56px;
+      font-weight: 400;
+      color: var(--cream);
+      line-height: 1;
+    }
+
+    .temp-unit { font-size: 24px; color: var(--cream-dim); }
+    .temp-feels { font-size: 13px; color: var(--cream-dim); margin-top: 4px; }
+
+    .charts-section { margin-bottom: 40px; }
+
+    .section-header {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .section-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 20px;
+      font-weight: 400;
+      color: var(--cream);
+    }
+
+    .section-sub { font-size: 11px; color: var(--sage); }
+
+    .charts-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    @media (max-width: 900px) {
+      .charts-grid { grid-template-columns: 1fr; }
+      .conditions-grid { grid-template-columns: 1fr; }
+    }
+
+    .chart-panel {
+      background: var(--forest-dark);
+      border: 1px solid var(--divider);
+      border-radius: 8px;
+      padding: 16px;
+    }
+
+    .chart-title {
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--sage);
+      margin-bottom: 12px;
+    }
+
+    .chart-wrapper { position: relative; height: 200px; }
+    .chart-wrapper.tall { height: 260px; }
+
+    .wind-compass {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      padding: 8px 0;
+    }
+
+    .compass-circle {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      border: 1px solid var(--divider);
+      position: relative;
+      background: var(--forest-mid);
+    }
+
+    .compass-arrow {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 2px;
+      height: 32px;
+      background: var(--sage);
+      transform-origin: bottom center;
+      transform: translateX(-50%) translateY(-100%);
+      border-radius: 2px 2px 0 0;
+    }
+
+    .compass-n { position: absolute; top: 4px; left: 50%; transform: translateX(-50%); font-size: 9px; color: var(--cream-dim); }
+    .compass-s { position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%); font-size: 9px; color: var(--cream-dim); }
+    .compass-e { position: absolute; right: 4px; top: 50%; transform: translateY(-50%); font-size: 9px; color: var(--cream-dim); }
+    .compass-w { position: absolute; left: 4px; top: 50%; transform: translateY(-50%); font-size: 9px; color: var(--cream-dim); }
+
+    .wind-info { text-align: center; }
+
+    .wind-speed-big {
+      font-family: 'Playfair Display', serif;
+      font-size: 32px;
+      color: var(--cream);
+      line-height: 1;
+    }
+
+    .wind-label { font-size: 11px; color: var(--cream-dim); }
+
+    footer {
+      border-top: 1px solid var(--divider);
+      padding: 20px 0 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .footer-text { font-size: 11px; color: var(--cream-dim); }
+    .footer-brand { font-size: 11px; color: var(--sage); letter-spacing: 0.1em; }
+
+    .loading-overlay {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--cream-dim);
+      font-style: italic;
+    }
+
+    .loading-spinner {
+      width: 24px;
+      height: 24px;
+      border: 2px solid var(--divider);
+      border-top-color: var(--sage);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 16px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <nav>
+      <a href="index.html" class="nav-home">← Threlkeld Projects</a>
+      <span class="nav-divider">|</span>
+      <div class="nav-links">
+        <a href="birds.html" class="nav-link">🐦 Birds</a>
+        <a href="weather.html" class="nav-link active">🌤️ Weather</a>
+      </div>
+    </nav>
+
+    <header>
+      <div>
+        <div class="header-eyebrow">Ecowitt GW2000A · Threlkeld, Cumbria</div>
+        <h1>Threlkeld <em>Weather Station</em></h1>
+      </div>
+      <div class="header-right">
+        <div class="status-dot">
+          <div class="dot" id="statusDot"></div>
+          <span id="statusText">Connecting...</span>
+        </div>
+        <div class="last-update" id="lastUpdate"></div>
+        <div class="last-update" id="currentDate"></div>
+      </div>
+    </header>
+
+    <div id="mainContent">
+      <div class="loading-overlay">
+        <div class="loading-spinner"></div>
+        Loading weather data...
+      </div>
+    </div>
+
+    <footer>
+      <div class="footer-text">Threlkeld, Cumbria · Ecowitt GW2000A Weather Station</div>
+      <div class="footer-brand">Part of Threlkeld Local Projects</div>
+    </footer>
+  </div>
+
+  <script>
+    const MQTT_HOST = 'broker.hivemq.com';
+    const MQTT_PORT = 8884;
+    const CURRENT_TOPIC = 'birdnetpi/greg2026/weather/current';
+    const HISTORY_TOPIC = 'birdnetpi/greg2026/weather/history';
+
+    document.getElementById('currentDate').textContent = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+
+    let currentData = null;
+    let historyData = null;
+    let charts = {};
+
+    function windDirection(degrees) {
+      if (degrees === null || degrees === undefined) return 'N/A';
+      const dirs = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+      return dirs[Math.round(degrees / 22.5) % 16];
+    }
+
+    function fmt(val, decimals=1) {
+      if (val === null || val === undefined || val === 'unavailable') return 'N/A';
+      const n = parseFloat(val);
+      if (isNaN(n)) return val;
+      return n.toFixed(decimals);
+    }
+
+    function fmtDate(val) {
+      if (!val) return 'N/A';
+      try {
+        return new Date(val).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+      } catch(e) { return 'N/A'; }
+    }
+
+    function renderCurrent(d) {
+      const html = `
+        <div class="conditions-grid">
+          <div class="condition-panel">
+            <div class="panel-header">🌡️ Temperature</div>
+            <div class="panel-body">
+              <div class="temp-display">
+                <div class="temp-main">${fmt(d.temperature, 1)}<span class="temp-unit">°C</span></div>
+                <div class="temp-feels">Feels like ${fmt(d.feels_like, 1)}°C</div>
+              </div>
+              <div class="condition-row">
+                <span class="condition-label">Dewpoint</span>
+                <span class="condition-value">${fmt(d.dewpoint, 1)}°C</span>
+              </div>
+              <div class="condition-row">
+                <span class="condition-label">Windchill</span>
+                <span class="condition-value">${fmt(d.windchill, 1)}°C</span>
+              </div>
+              <div class="condition-row">
+                <span class="condition-label">Humidity</span>
+                <span class="condition-value highlight">${fmt(d.humidity, 0)}%</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="condition-panel">
+            <div class="panel-header">💨 Wind</div>
+            <div class="panel-body">
+              <div class="wind-compass">
+                <div class="compass-circle">
+                  <div class="compass-arrow" id="compassArrow"></div>
+                  <span class="compass-n">N</span>
+                  <span class="compass-s">S</span>
+                  <span class="compass-e">E</span>
+                  <span class="compass-w">W</span>
+                </div>
+                <div class="wind-info">
+                  <div class="wind-speed-big">${fmt(d.wind_speed, 1)}</div>
+                  <div class="wind-label">km/h ${windDirection(d.wind_dir)}</div>
+                </div>
+              </div>
+              <div class="condition-row">
+                <span class="condition-label">Gust</span>
+                <span class="condition-value">${fmt(d.wind_gust, 1)} km/h</span>
+              </div>
+              <div class="condition-row">
+                <span class="condition-label">Max Daily Gust</span>
+                <span class="condition-value">${fmt(d.wind_max_daily_gust, 1)} km/h</span>
+              </div>
+              <div class="condition-row">
+                <span class="condition-label">Direction</span>
+                <span class="condition-value">${fmt(d.wind_dir, 0)}°</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="condition-panel">
+            <div class="panel-header">🌧️ Rainfall</div>
+            <div class="panel-body">
+              <div class="condition-row">
+                <span class="condition-label">Rate</span>
+                <span class="condition-value ${parseFloat(d.rain_rate) > 0 ? 'highlight' : ''}">${fmt(d.rain_rate, 1)} mm/h</span>
+              </div>
+              <div class="condition-row">
+                <span class="condition-label">Hourly</span>
+                <span class="condition-value">${fmt(d.rain_hourly, 1)} mm</span>
+              </div>
+              <div class="condition-row">
+                <span class="condition-label">Daily</span>
+                <span class="condition-value">${fmt(d.rain_daily, 1)} mm</span>
+              </div>
+              <div class="condition-row">
+                <span class="condition-label">Weekly</span>
+                <span class="condition-value">${fmt(d.rain_weekly, 1)} mm</span>
+              </div>
+              <div class="condition-row">
+                <span class="condition-label">Monthly</span>
+                <span class="condition-value">${fmt(d.rain_monthly, 1)} mm</span>
+              </div>
+              <div class="condition-row">
+                <span class="condition-label">Yearly</span>
+                <span class="condition-value highlight">${fmt(d.rain_yearly, 1)} mm</span>
+              </div>
+              <div class="condition-row">
+                <span class="condition-label">Event</span>
+                <span class="condition-value">${fmt(d.rain_event, 1)} mm</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="condition-panel">
+            <div class="panel-header">☀️ Solar & UV</div>
+            <div class="panel-body">
+              <div class="condition-row">
+                <span class="condition-label">Solar Radiation</span>
+                <span class="condition-value highlight">${fmt(d.solar, 0)} W/m²</span>
+              </div>
+              <div class="condition-row">
+                <span class="condition-label">Solar Lux</span>
+                <span class="condition-value">${fmt(d.solar_lux, 0)} lx</span>
+              </div>
+              <div class="condition-row">
+                <span class="condition-label">UV Index</span>
+                <span class="condition-value ${parseFloat(d.uv) >= 6 ? 'warning' : ''}">${fmt(d.uv, 0)}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="condition-panel">
+            <div class="panel-header">🔵 Pressure</div>
+            <div class="panel-body">
+              <div class="condition-row">
+                <span class="condition-label">Relative</span>
+                <span class="condition-value highlight">${fmt(d.pressure, 1)} hPa</span>
+              </div>
+              <div class="condition-row">
+                <span class="condition-label">Absolute</span>
+                <span class="condition-value">${fmt(d.pressure_abs, 1)} hPa</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="condition-panel">
+            <div class="panel-header">⚡ Lightning</div>
+            <div class="panel-body">
+              <div class="condition-row">
+                <span class="condition-label">Strikes Today</span>
+                <span class="condition-value ${parseInt(d.lightning_strikes) > 0 ? 'warning' : ''}">${fmt(d.lightning_strikes, 0)}</span>
+              </div>
+              <div class="condition-row">
+                <span class="condition-label">Last Strike Distance</span>
+                <span class="condition-value">${fmt(d.lightning_distance, 0)} km</span>
+              </div>
+              <div class="condition-row">
+                <span class="condition-label">Last Strike</span>
+                <span class="condition-value">${fmtDate(d.lightning_last)}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="charts-section">
+          <div class="section-header">
+            <div class="section-title">Historical Data</div>
+            <div class="section-sub">Daily statistics · up to 3 years</div>
+          </div>
+          <div class="charts-grid">
+            <div class="chart-panel">
+              <div class="chart-title">🌡️ Temperature (°C) — Daily Min / Mean / Max</div>
+              <div class="chart-wrapper tall"><canvas id="chartTemp"></canvas></div>
+            </div>
+            <div class="chart-panel">
+              <div class="chart-title">🌧️ Rainfall (mm) — Daily Total</div>
+              <div class="chart-wrapper tall"><canvas id="chartRain"></canvas></div>
+            </div>
+            <div class="chart-panel">
+              <div class="chart-title">💨 Wind Speed (km/h) — Daily Mean</div>
+              <div class="chart-wrapper"><canvas id="chartWind"></canvas></div>
+            </div>
+            <div class="chart-panel">
+              <div class="chart-title">☀️ Solar Radiation (W/m²) — Daily Mean</div>
+              <div class="chart-wrapper"><canvas id="chartSolar"></canvas></div>
+            </div>
+            <div class="chart-panel">
+              <div class="chart-title">💧 Humidity (%) — Daily Mean</div>
+              <div class="chart-wrapper"><canvas id="chartHumidity"></canvas></div>
+            </div>
+            <div class="chart-panel">
+              <div class="chart-title">🔵 Pressure (hPa) — Daily Mean</div>
+              <div class="chart-wrapper"><canvas id="chartPressure"></canvas></div>
+            </div>
+            <div class="chart-panel">
+              <div class="chart-title">⚡ Lightning Strikes — Daily Count</div>
+              <div class="chart-wrapper"><canvas id="chartLightning"></canvas></div>
+            </div>
+          </div>
+        </div>`;
+
+      document.getElementById('mainContent').innerHTML = html;
+
+      if (d.wind_dir !== null) {
+        document.getElementById('compassArrow').style.transform =
+          `translateX(-50%) translateY(-100%) rotate(${d.wind_dir}deg)`;
+      }
+
+      if (historyData) renderCharts();
+    }
+
+    function getChartDates(data) {
+      return data.map(d => {
+        const date = new Date(d.t);
+        return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: '2-digit' });
+      });
+    }
+
+    Chart.defaults.color = '#b8c8b4';
+    Chart.defaults.borderColor = 'rgba(122, 184, 122, 0.1)';
+    Chart.defaults.font.family = "'Source Sans 3', sans-serif";
+    Chart.defaults.font.size = 10;
+
+    function makeChart(id, type, labels, datasets, options = {}) {
+      if (charts[id]) charts[id].destroy();
+      const ctx = document.getElementById(id);
+      if (!ctx) return;
+      charts[id] = new Chart(ctx, {
+        type,
+        data: { labels, datasets },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: datasets.length > 1, labels: { boxWidth: 10, padding: 8 } } },
+          scales: {
+            x: { ticks: { maxTicksLimit: 12, maxRotation: 0 }, grid: { color: 'rgba(122, 184, 122, 0.05)' } },
+            y: { grid: { color: 'rgba(122, 184, 122, 0.05)' }, ...(options.yScale || {}) }
+          },
+          elements: { point: { radius: 0 }, line: { tension: 0.3 } },
+        }
+      });
+    }
+
+    function last365(arr) {
+      if (!arr) return [];
+      return arr.slice(-365);
+    }
+
+    function renderCharts() {
+      const h = historyData;
+
+      if (h.outdoor_temperature) {
+        const data = last365(h.outdoor_temperature);
+        makeChart('chartTemp', 'line', getChartDates(data), [
+          { label: 'Max', data: data.map(d => d.max), borderColor: '#c85a4a', backgroundColor: 'transparent', borderWidth: 1 },
+          { label: 'Mean', data: data.map(d => d.mean), borderColor: '#7ab87a', backgroundColor: 'rgba(122,184,122,0.1)', borderWidth: 2, fill: true },
+          { label: 'Min', data: data.map(d => d.min), borderColor: '#4a90a4', backgroundColor: 'transparent', borderWidth: 1 },
+        ]);
+      }
+
+      if (h.daily_rain_rate_piezo) {
+        const data = last365(h.daily_rain_rate_piezo);
+        makeChart('chartRain', 'bar', getChartDates(data), [
+          { label: 'Rain', data: data.map(d => d.sum || d.max || 0), backgroundColor: 'rgba(74,144,164,0.6)', borderColor: '#4a90a4', borderWidth: 1 }
+        ]);
+      }
+
+      if (h.wind_speed) {
+        const data = last365(h.wind_speed);
+        makeChart('chartWind', 'line', getChartDates(data), [
+          { label: 'Mean', data: data.map(d => d.mean), borderColor: '#7ab87a', backgroundColor: 'rgba(122,184,122,0.1)', borderWidth: 1.5, fill: true }
+        ]);
+      }
+
+      if (h.solar_radiation) {
+        const data = last365(h.solar_radiation);
+        makeChart('chartSolar', 'line', getChartDates(data), [
+          { label: 'W/m²', data: data.map(d => d.mean), borderColor: '#c8a84b', backgroundColor: 'rgba(200,168,75,0.1)', borderWidth: 1.5, fill: true }
+        ]);
+      }
+
+      if (h.humidity) {
+        const data = last365(h.humidity);
+        makeChart('chartHumidity', 'line', getChartDates(data), [
+          { label: '%', data: data.map(d => d.mean), borderColor: '#4a90a4', backgroundColor: 'rgba(74,144,164,0.1)', borderWidth: 1.5, fill: true }
+        ], { yScale: { min: 0, max: 100 } });
+      }
+
+      if (h.relative_pressure) {
+        const data = last365(h.relative_pressure);
+        makeChart('chartPressure', 'line', getChartDates(data), [
+          { label: 'hPa', data: data.map(d => d.mean), borderColor: '#a87ab8', backgroundColor: 'rgba(168,122,184,0.1)', borderWidth: 1.5, fill: true }
+        ]);
+      }
+
+      if (h.lightning_strikes) {
+        const data = last365(h.lightning_strikes);
+        makeChart('chartLightning', 'bar', getChartDates(data), [
+          { label: 'Strikes', data: data.map(d => d.sum || d.max || 0), backgroundColor: 'rgba(200,168,75,0.6)', borderColor: '#c8a84b', borderWidth: 1 }
+        ]);
+      }
+    }
+
+    const client = mqtt.connect(`wss://${MQTT_HOST}:${MQTT_PORT}/mqtt`);
+
+    client.on('connect', () => {
+      document.getElementById('statusDot').className = 'dot connected';
+      document.getElementById('statusText').textContent = 'Live';
+      client.subscribe(CURRENT_TOPIC);
+      client.subscribe(HISTORY_TOPIC);
+    });
+
+    client.on('error', () => {
+      document.getElementById('statusDot').className = 'dot error';
+      document.getElementById('statusText').textContent = 'Connection error';
+    });
+
+    client.on('offline', () => {
+      document.getElementById('statusDot').className = 'dot';
+      document.getElementById('statusText').textContent = 'Offline';
+    });
+
+    client.on('message', (topic, message) => {
+      try {
+        const data = JSON.parse(message.toString());
+        document.getElementById('lastUpdate').textContent = `Updated ${new Date().toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'})}`;
+        if (topic === CURRENT_TOPIC) {
+          currentData = data;
+          renderCurrent(data);
+        } else if (topic === HISTORY_TOPIC) {
+          historyData = data;
+          if (currentData) renderCharts();
+        }
+      } catch(e) { console.error('Parse error:', e); }
+    });
+  </script>
+</body>
+</html>

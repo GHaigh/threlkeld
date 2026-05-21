@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Threlkeld Village · Local Tech & Eco Projects</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Source+Sans+3:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --forest-deep: #0d1a0d;
+      --forest-dark: #1a2e1a;
+      --forest-mid: #243022;
+      --forest-light: #3b6d11;
+      --sage: #7ab87a;
+      --sage-light: #a8d4a8;
+      --cream: #e8f0e4;
+      --cream-dim: #b8c8b4;
+      --divider: rgba(122, 184, 122, 0.15);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--forest-deep);
+      color: var(--cream);
+      font-family: 'Source Sans 3', sans-serif;
+      font-weight: 300;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: 
+        radial-gradient(ellipse at 20% 50%, rgba(59, 109, 17, 0.08) 0%, transparent 60%),
+        radial-gradient(ellipse at 80% 20%, rgba(122, 184, 122, 0.05) 0%, transparent 50%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .page {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 0 24px;
+      position: relative;
+      z-index: 1;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Header */
+    header {
+      padding: 80px 0 60px;
+      border-bottom: 1px solid var(--divider);
+      margin-bottom: 60px;
+    }
+
+    .header-eyebrow {
+      font-size: 10px;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--sage);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .header-eyebrow::before {
+      content: '';
+      display: inline-block;
+      width: 24px;
+      height: 1px;
+      background: var(--sage);
+    }
+
+    h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(36px, 6vw, 64px);
+      font-weight: 400;
+      line-height: 1.1;
+      color: var(--cream);
+      margin-bottom: 8px;
+    }
+
+    h1 em {
+      font-style: italic;
+      color: var(--sage-light);
+    }
+
+    .header-subtitle {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(18px, 3vw, 28px);
+      font-weight: 400;
+      color: var(--cream-dim);
+      margin-bottom: 32px;
+      font-style: italic;
+    }
+
+    .header-description {
+      font-size: 16px;
+      color: var(--cream-dim);
+      max-width: 600px;
+      line-height: 1.8;
+    }
+
+    .header-description strong {
+      color: var(--cream);
+      font-weight: 500;
+    }
+
+    /* Projects grid */
+    .projects-label {
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--sage);
+      margin-bottom: 20px;
+    }
+
+    .projects-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 60px;
+    }
+
+    @media (max-width: 600px) {
+      .projects-grid { grid-template-columns: 1fr; }
+    }
+
+    .project-card {
+      background: var(--forest-dark);
+      border: 1px solid var(--divider);
+      border-radius: 12px;
+      padding: 32px;
+      text-decoration: none;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      transition: background 0.2s, border-color 0.2s, transform 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .project-card::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: var(--sage);
+      transform: scaleX(0);
+      transition: transform 0.3s ease;
+    }
+
+    .project-card:hover {
+      background: var(--forest-mid);
+      border-color: rgba(122, 184, 122, 0.3);
+      transform: translateY(-2px);
+    }
+
+    .project-card:hover::after {
+      transform: scaleX(1);
+    }
+
+    .project-icon {
+      font-size: 36px;
+      line-height: 1;
+    }
+
+    .project-tag {
+      font-size: 9px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--sage);
+      font-family: 'Source Sans 3', sans-serif;
+    }
+
+    .project-name {
+      font-family: 'Playfair Display', serif;
+      font-size: 24px;
+      font-weight: 400;
+      color: var(--cream);
+      line-height: 1.2;
+    }
+
+    .project-desc {
+      font-size: 14px;
+      color: var(--cream-dim);
+      line-height: 1.6;
+      flex: 1;
+    }
+
+    .project-link {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--sage);
+      letter-spacing: 0.08em;
+      margin-top: 8px;
+    }
+
+    .project-link::after {
+      content: '→';
+      transition: transform 0.2s;
+    }
+
+    .project-card:hover .project-link::after {
+      transform: translateX(4px);
+    }
+
+    /* Suggestions box */
+    .suggestions-box {
+      background: var(--forest-dark);
+      border: 1px solid var(--divider);
+      border-radius: 12px;
+      padding: 32px;
+      margin-bottom: 60px;
+    }
+
+    .suggestions-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 20px;
+      font-weight: 400;
+      color: var(--cream);
+      margin-bottom: 12px;
+    }
+
+    .suggestions-text {
+      font-size: 14px;
+      color: var(--cream-dim);
+      line-height: 1.7;
+      margin-bottom: 16px;
+    }
+
+    .suggestions-email {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--sage);
+      text-decoration: none;
+      border: 1px solid var(--divider);
+      padding: 8px 16px;
+      border-radius: 20px;
+      transition: background 0.2s, border-color 0.2s;
+    }
+
+    .suggestions-email:hover {
+      background: var(--forest-mid);
+      border-color: rgba(122, 184, 122, 0.3);
+    }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--divider);
+      padding: 24px 0 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .footer-text { font-size: 11px; color: var(--cream-dim); }
+    .footer-location { font-size: 11px; color: var(--sage); letter-spacing: 0.1em; }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header>
+      <div class="header-eyebrow">Threlkeld, Cumbria · Lake District</div>
+      <h1>Threlkeld</h1>
+      <div class="header-subtitle">Local Tech & Eco Projects</div>
+      <p class="header-description">
+        A small collection of <strong>community-minded projects</strong> from a garden in Threlkeld, 
+        nestled beneath Blencathra in the northern Lake District. Each project uses locally-run 
+        technology to monitor, record and share what's happening in our little corner of Cumbria — 
+        from the birds singing at dawn to the weather rolling in off the fells.
+        <br><br>
+        All data is collected and processed locally with no reliance on commercial cloud services. 
+        <strong>Suggestions for new projects are always welcome.</strong>
+      </p>
+    </header>
+
+    <div class="projects-label">Current Projects</div>
+    <div class="projects-grid">
+      <a href="birds.html" class="project-card">
+        <div class="project-icon">🐦</div>
+        <div class="project-tag">Live · Acoustic Monitoring</div>
+        <div class="project-name">Garden Bird Watch</div>
+        <p class="project-desc">Real-time bird detection using BirdNET-Pi acoustic AI. See which birds are visiting the garden, with photos, confidence scores and activity charts updated as detections happen.</p>
+        <div class="project-link">View detections</div>
+      </a>
+
+      <a href="weather.html" class="project-card">
+        <div class="project-icon">🌤️</div>
+        <div class="project-tag">Live · Weather Station</div>
+        <div class="project-name">Weather Station</div>
+        <p class="project-desc">Live conditions from our Ecowitt GW2000A weather station — temperature, rainfall, wind, solar radiation and more, with historical charts going back nearly three years.</p>
+        <div class="project-link">View conditions</div>
+      </a>
+    </div>
+
+    <div class="suggestions-box">
+      <div class="suggestions-title">Got an idea for a project?</div>
+      <p class="suggestions-text">
+        We're always looking for interesting ways to monitor and share what's happening locally. 
+        If you have a suggestion for a new eco or tech project — whether it's air quality monitoring, 
+        wildlife cameras, bat detection, or something else entirely — we'd love to hear from you.
+      </p>
+      <a href="mailto:suggestions@threlkeld.local" class="suggestions-email">
+        💬 Share your idea
+      </a>
+    </div>
+
+    <footer>
+      <div class="footer-text">Threlkeld, Cumbria · All data collected and processed locally</div>
+      <div class="footer-location">54.6°N 3.0°W</div>
+    </footer>
+  </div>
+</body>
+</html>
