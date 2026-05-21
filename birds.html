@@ -403,6 +403,16 @@
     .chart-label { flex: 1; text-align: center; font-size: 8px; color: var(--sage); opacity: 0; }
     .chart-label.show { opacity: 1; }
 
+    /* Bird of the Day */
+    .botd-panel { background:var(--forest-dark); border:1px solid var(--divider); border-radius:12px; overflow:hidden; margin-bottom:28px; }
+    .botd-inner { display:flex; align-items:center; gap:24px; padding:20px 24px; }
+    .botd-img { width:100px; height:100px; border-radius:50%; object-fit:cover; flex-shrink:0; border:2px solid rgba(122,184,122,0.3); background:var(--forest-mid); }
+    .botd-info { flex:1; min-width:0; }
+    .botd-label { font-size:10px; letter-spacing:0.15em; text-transform:uppercase; color:var(--sage); margin-bottom:6px; }
+    .botd-name { font-family:"Playfair Display",serif; font-size:28px; font-weight:400; color:var(--cream); margin-bottom:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .botd-count { font-size:13px; color:var(--sage); margin-bottom:4px; }
+    .botd-runner { font-size:12px; color:var(--cream-dim); }
+
     footer {
       border-top: 1px solid var(--divider);
       padding: 20px 0 32px;
@@ -462,6 +472,21 @@
         <div class="last-update" id="footerDate"></div>
       </div>
     </header>
+
+    <!-- Bird of the Day -->
+    <div class="botd-panel" id="botdPanel" style="display:none">
+      <div class="botd-inner">
+        <img class="botd-img" id="botdImg" src="" alt=""
+             onerror="this.src=document.getElementById('botdFallback').value"/>
+        <input type="hidden" id="botdFallback">
+        <div class="botd-info">
+          <div class="botd-label" id="botdLabel">Bird of the Day</div>
+          <div class="botd-name" id="botdName"></div>
+          <div class="botd-count" id="botdCount"></div>
+          <div class="botd-runner" id="botdRunner"></div>
+        </div>
+      </div>
+    </div>
 
     <div class="stats-row">
       <div class="stat-cell">
@@ -600,7 +625,34 @@
       document.getElementById('detectionsList').innerHTML = html;
     }
 
+    function renderBirdOfDay(stats) {
+      const today = Array.isArray(stats.today) ? stats.today : [];
+      const panel = document.getElementById('botdPanel');
+      if (!panel) return;
+
+      if (today.length === 0) {
+        panel.style.display = 'none';
+        return;
+      }
+
+      const top = today[0];
+      const runnerUp = today[1] || null;
+      const label = today.length === 1 ? "Today's Visitor" : "Bird of the Day";
+      const wikiName = top.bird.replace(/ /g, '_');
+      const nameParts = top.bird.split(' ');
+      const fallback = `https://en.wikipedia.org/w/index.php?title=Special:Redirect/file/${nameParts[nameParts.length-1]}.jpg&width=200`;
+
+      document.getElementById('botdLabel').textContent = label;
+      document.getElementById('botdName').textContent = top.bird;
+      document.getElementById('botdCount').textContent = `${top.count} detection${top.count !== 1 ? 's' : ''} today`;
+      document.getElementById('botdRunner').textContent = runnerUp ? `Runner up: ${runnerUp.bird} (${runnerUp.count})` : '';
+      document.getElementById('botdImg').src = `https://en.wikipedia.org/w/index.php?title=Special:Redirect/file/${wikiName}.jpg&width=200`;
+      document.getElementById('botdFallback').value = fallback;
+      panel.style.display = 'block';
+    }
+
     function renderSummary(stats) {
+      renderBirdOfDay(stats);
       function buildList(species) {
         if (!species || species.length === 0) return '<div class="empty-state">No detections yet</div>';
         return species.map(s => `
