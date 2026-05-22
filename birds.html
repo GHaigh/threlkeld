@@ -311,6 +311,14 @@
       flex-shrink: 0;
     }
 
+    .conf-label {
+      font-size: 9px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--sage);
+      opacity: 0.7;
+    }
+
     .conf-bar {
       width: 48px;
       height: 3px;
@@ -675,6 +683,28 @@
       color: var(--sage);
       font-family: 'Playfair Display', serif;
     }
+
+    .species-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(122, 184, 122, 0.12);
+      border: 1px solid rgba(122, 184, 122, 0.3);
+      border-radius: 20px;
+      padding: 4px 12px;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--sage);
+      margin-bottom: 16px;
+    }
+
+    .species-badge-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--sage);
+    }
   </style>
   <script src="https://cdn.counter.dev/script.js" data-id="0f7db49f-3699-43bc-b09e-d45b58c39067" data-utcoffset="1"></script>
 
@@ -755,8 +785,13 @@
       <div class="stat-cell">
         <div class="stat-label">This Year</div>
         <div class="stat-value" id="statYear">—</div>
-        <div class="stat-sub">species</div>
+        <div class="stat-sub">species detected</div>
       </div>
+    </div>
+
+    <div id="speciesBadge" style="display:none" class="species-badge">
+      <div class="species-badge-dot"></div>
+      <span id="speciesBadgeText"></span>
     </div>
 
     <div class="main-grid">
@@ -885,6 +920,7 @@
               <div class="bird-meta">${formatDate(d.date)} · ${d.time}</div>
             </div>
             <div class="confidence-block">
+              <div class="conf-label">Confidence</div>
               <div class="conf-bar"><div class="conf-fill" style="width:${score}%"></div></div>
               <div class="conf-pct">${score}%</div>
             </div>
@@ -936,7 +972,12 @@
       document.getElementById('summaryYear').innerHTML = buildList(stats.year);
       document.getElementById('statWeek').textContent = (stats.week || []).length;
       document.getElementById('statMonth').textContent = (stats.month || []).length;
-      document.getElementById('statYear').textContent = (stats.year || []).length;
+      const yearCount = (stats.year || []).length;
+      document.getElementById('statYear').textContent = yearCount;
+      if (yearCount > 0) {
+        document.getElementById('speciesBadgeText').textContent = yearCount + ' species detected in ' + new Date().getFullYear();
+        document.getElementById('speciesBadge').style.display = 'inline-flex';
+      }
 
       if (stats.hourly) {
         const hourly = stats.hourly;
