@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>River Levels · Threlkeld</title>
+  <title>Rivers & Lakes · Threlkeld</title>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Source+Sans+3:wght@300;400;500&display=swap" rel="stylesheet">
   <style>
     :root {
@@ -259,6 +259,26 @@
     .history-item-label { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--sage); }
     .history-item-sub { font-size: 11px; color: var(--cream-dim); margin-top: 4px; }
 
+
+    .lake-card {
+      background: var(--forest-dark);
+      border: 1px solid var(--divider);
+      border-left: 3px solid var(--water);
+      border-radius: 8px;
+      padding: 16px;
+      transition: border-color 0.2s;
+    }
+
+    .lake-card:hover { border-color: var(--water); }
+    .lake-card.flood-state { border-color: var(--flood); border-left-color: var(--flood); }
+    .lake-card.high-state { border-color: var(--high); border-left-color: var(--high); }
+
+    .lake-name { font-size: 14px; color: var(--cream); margin-bottom: 2px; font-weight: 400; }
+    .lake-sub { font-size: 11px; color: var(--sage); margin-bottom: 10px; }
+    .lake-level-row { display: flex; align-items: baseline; gap: 6px; margin-bottom: 8px; }
+    .lake-level { font-family: 'Playfair Display', serif; font-size: 28px; color: var(--cream); }
+    .lake-unit { font-size: 12px; color: var(--cream-dim); }
+
     .loading { text-align: center; padding: 40px; color: var(--cream-dim); font-style: italic; }
     .spinner { width: 20px; height: 20px; border: 2px solid var(--divider); border-top-color: var(--sage); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 12px; }
     @keyframes spin { to { transform: rotate(360deg); } }
@@ -278,14 +298,14 @@
         <a href="weather.html" class="nav-link">🌤️ Weather</a>
         <a href="planes.html" class="nav-link">✈️ Planes</a>
         <a href="wildlife.html" class="nav-link">🦔 Wildlife</a>
-        <a href="river.html" class="nav-link active">🌊 River</a>
+        <a href="river.html" class="nav-link active">🌊 Rivers</a>
       </div>
     </nav>
 
     <header>
       <div>
-        <div class="header-eyebrow">Environment Agency · Real-time data</div>
-        <h1>River <em>Levels</em></h1>
+        <div class="header-eyebrow">Environment Agency · Real-time data · Northern Lake District</div>
+        <h1>Rivers <em>&amp; Lakes</em></h1>
       </div>
       <div class="header-updated" id="headerUpdated">Loading...</div>
     </header>
@@ -344,12 +364,21 @@
       <div class="loading"><div class="spinner"></div></div>
     </div>
 
+    <!-- Lakes section -->
+    <div class="section-header">
+      <div class="section-title">Lakes &amp; Reservoirs</div>
+      <div class="section-subtitle">Northern Lake District</div>
+    </div>
+    <div class="stations-grid" id="lakesGrid" style="margin-bottom:28px">
+      <div class="loading"><div class="spinner"></div></div>
+    </div>
+
     <div style="font-size:11px;color:var(--cream-dim);margin-bottom:28px">
       Data from the <a href="https://environment.data.gov.uk/flood-monitoring/doc/reference" target="_blank" style="color:var(--sage)">Environment Agency Real Time flood-monitoring API</a> · Updated every 15 minutes · Open Government Licence
     </div>
 
     <footer>
-      <div class="footer-text">Threlkeld, Cumbria · River Glenderamackin · EA Flood Monitoring</div>
+      <div class="footer-text">Threlkeld, Cumbria · Rivers &amp; Lakes · EA Flood Monitoring</div>
       <div class="footer-brand">threlkeld.info</div>
     </footer>
   </div>
@@ -444,8 +473,12 @@
         renderChart(chart, main);
       }
 
-      // Nearby stations
-      document.getElementById('stationsGrid').innerHTML = nearby.map(s => {
+      // Split into rivers and lakes
+      const rivers = nearby.filter(s => !s.lake);
+      const lakes = nearby.filter(s => s.lake);
+
+      // Nearby river stations
+      document.getElementById('stationsGrid').innerHTML = rivers.map(s => {
         if (!s.level) return `
           <div class="station-card">
             <div class="station-name">${s.name}</div>
@@ -463,6 +496,37 @@
             <div class="station-level-row">
               <div class="station-level">${s.level.toFixed(2)}</div>
               <div class="station-unit">m</div>
+              <span class="state-badge ${st}" style="font-size:9px;padding:3px 8px">${stateLabel(st)}</span>
+            </div>
+            <div class="station-bar-track">
+              <div class="station-bar-fill ${st}" style="width:${p}%"></div>
+            </div>
+            <div class="station-meta">
+              <span>Normal: ${s.normal[0]}–${s.normal[1]}m</span>
+              <span>${formatTime(s.dateTime)}</span>
+            </div>
+          </div>`;
+      }).join('');
+
+      // Lakes
+      document.getElementById('lakesGrid').innerHTML = lakes.map(s => {
+        if (!s.level) return `
+          <div class="lake-card">
+            <div class="lake-name">${s.name}</div>
+            <div class="lake-sub">${s.river}</div>
+            <div style="color:var(--cream-dim);font-size:12px;font-style:italic">Data unavailable</div>
+          </div>`;
+
+        const st = getState(s.level, s.normal[0], s.normal[1]);
+        const p = Math.min(100, Math.round((s.level / s.record) * 100));
+
+        return `
+          <div class="lake-card ${st !== 'normal' ? st + '-state' : ''}">
+            <div class="lake-name">${s.name}</div>
+            <div class="lake-sub">${s.river}</div>
+            <div class="lake-level-row">
+              <div class="lake-level">${s.level.toFixed(2)}</div>
+              <div class="lake-unit">m</div>
               <span class="state-badge ${st}" style="font-size:9px;padding:3px 8px">${stateLabel(st)}</span>
             </div>
             <div class="station-bar-track">
