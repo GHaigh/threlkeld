@@ -445,6 +445,236 @@
     }
 
     @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Calendar ── */
+    .calendar-section {
+      margin-top: 28px;
+    }
+
+    .year-nav {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .year-btn {
+      background: var(--forest-dark);
+      border: 1px solid var(--divider);
+      border-radius: 6px;
+      color: var(--cream-dim);
+      font-size: 13px;
+      padding: 6px 14px;
+      cursor: pointer;
+      font-family: 'Source Sans 3', sans-serif;
+      transition: all 0.15s;
+    }
+
+    .year-btn:hover { border-color: var(--sage); color: var(--cream); }
+    .year-btn:disabled { opacity: 0.3; cursor: default; }
+
+    .year-label {
+      font-family: 'Playfair Display', serif;
+      font-size: 20px;
+      font-weight: 400;
+      color: var(--cream);
+      min-width: 60px;
+      text-align: center;
+    }
+
+    .cal-stats-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    @media (max-width: 600px) { .cal-stats-row { grid-template-columns: repeat(2, 1fr); } }
+
+    .cal-stat-box {
+      background: var(--forest-dark);
+      border: 1px solid var(--divider);
+      border-radius: 8px;
+      padding: 12px 14px;
+      text-align: center;
+    }
+
+    .cal-stat-value {
+      font-family: 'Playfair Display', serif;
+      font-size: 24px;
+      color: var(--cream);
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+
+    .cal-stat-label {
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--sage);
+    }
+
+    .calendar-container {
+      background: var(--forest-dark);
+      border: 1px solid var(--divider);
+      border-radius: 8px;
+      padding: 20px;
+      overflow-x: auto;
+    }
+
+    .month-labels {
+      display: grid;
+      grid-template-columns: 28px repeat(53, 1fr);
+      gap: 3px;
+      margin-bottom: 4px;
+      min-width: 680px;
+    }
+
+    .month-label { font-size: 10px; color: var(--cream-dim); }
+
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: 28px repeat(53, 1fr);
+      gap: 3px;
+      min-width: 680px;
+    }
+
+    .day-label {
+      font-size: 9px;
+      color: var(--cream-dim);
+      text-align: right;
+      padding-right: 4px;
+      line-height: 13px;
+      height: 13px;
+    }
+
+    .day-cell {
+      width: 100%;
+      aspect-ratio: 1;
+      border-radius: 2px;
+      background: var(--forest-mid);
+      cursor: default;
+      transition: transform 0.1s;
+    }
+
+    .day-cell.has-data { cursor: pointer; }
+    .day-cell.has-data:hover { transform: scale(1.3); z-index: 10; position: relative; }
+    .day-cell.today { outline: 1px solid var(--sage); outline-offset: 1px; }
+
+    .day-cell.s1 { background: #1a3a1a; }
+    .day-cell.s2 { background: #1e4a1e; }
+    .day-cell.s3 { background: #226022; }
+    .day-cell.s4 { background: #2e7a2e; }
+    .day-cell.s5 { background: #3b9a3b; }
+    .day-cell.s6 { background: #4db84d; }
+    .day-cell.s7 { background: #7ab87a; }
+    .day-cell.s8 { background: #a8d4a8; }
+
+    .cal-legend {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 12px;
+      font-size: 10px;
+      color: var(--cream-dim);
+    }
+
+    .legend-cells { display: flex; gap: 3px; }
+
+    .legend-cell {
+      width: 12px;
+      height: 12px;
+      border-radius: 2px;
+    }
+
+    /* Modal */
+    .cal-modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(5,10,5,0.85);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      backdrop-filter: blur(4px);
+    }
+
+    .cal-modal-overlay.open { display: flex; }
+
+    .cal-modal {
+      background: var(--forest-dark);
+      border: 1px solid var(--divider);
+      border-radius: 12px;
+      width: 100%;
+      max-width: 460px;
+      max-height: 80vh;
+      overflow-y: auto;
+      padding: 24px;
+      animation: modalIn 0.2s ease;
+    }
+
+    .cal-modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 16px;
+    }
+
+    .cal-modal-date {
+      font-family: 'Playfair Display', serif;
+      font-size: 20px;
+      color: var(--cream);
+    }
+
+    .cal-modal-count { font-size: 12px; color: var(--sage); margin-top: 2px; }
+
+    .cal-modal-close {
+      background: var(--forest-mid);
+      border: 1px solid var(--divider);
+      border-radius: 6px;
+      color: var(--cream-dim);
+      font-size: 16px;
+      cursor: pointer;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: background 0.15s;
+    }
+
+    .cal-modal-close:hover { background: var(--forest-light); color: var(--cream); }
+
+    .cal-species-list { display: flex; flex-direction: column; gap: 0; }
+
+    .cal-species-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--divider);
+    }
+
+    .cal-species-item:last-child { border-bottom: none; }
+
+    .cal-species-img {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      object-fit: cover;
+      background: var(--forest-mid);
+      flex-shrink: 0;
+    }
+
+    .cal-species-name { font-size: 14px; color: var(--cream); flex: 1; }
+
+    .cal-species-count {
+      font-size: 14px;
+      color: var(--sage);
+      font-family: 'Playfair Display', serif;
+    }
   </style>
 </head>
 <body>
@@ -563,6 +793,17 @@
       </div>
     </div>
 
+    <!-- Calendar -->
+    <div class="calendar-section">
+      <div class="section-header">
+        <div class="section-title">Activity Calendar</div>
+        <div class="section-subtitle">Species detected per day</div>
+      </div>
+      <div id="calendarContent">
+        <div style="padding:40px;text-align:center;color:var(--cream-dim);font-style:italic">Loading calendar...</div>
+      </div>
+    </div>
+
     <footer>
       <div class="footer-text">Threlkeld, Cumbria · Powered by BirdNET-Pi acoustic monitoring</div>
       <div class="footer-brand">Part of Threlkeld Local Projects</div>
@@ -594,8 +835,17 @@
     }
 
     function renderDetections(data) {
-      const count = data.count || 0;
-      document.getElementById('statToday').textContent = count;
+      const total = data.count || 0;
+      // Filter to last 24 hours only
+      const cutoff = Date.now() - 24 * 60 * 60 * 1000;
+      const allDets = [];
+      for (let i = 0; i < total; i++) {
+        if (data[i] && data[i].bird && new Date(data[i].timestamp).getTime() > cutoff) {
+          allDets.push(data[i]);
+        }
+      }
+      const count = allDets.length;
+      // statToday is set from stats topic which has accurate today count
       if (count === 0) {
         document.getElementById('detectionsList').innerHTML = '<div class="loading">No detections in the last 24 hours</div>';
         document.getElementById('detectionCount').textContent = '';
@@ -604,7 +854,7 @@
       document.getElementById('detectionCount').textContent = `${count} in last 24 hours`;
       let html = '';
       for (let i = 0; i < Math.min(count, 50); i++) {
-        const d = data[i];
+        const d = allDets[i];
         if (!d || !d.bird || !d.date) continue;
         const score = Math.round(parseFloat(d.score) * 100);
         const imgs = getBirdImageUrl(d.bird);
@@ -661,6 +911,7 @@
             <div class="summary-count">${s.count}</div>
           </div>`).join('');
       }
+      document.getElementById('statToday').textContent = (stats.today || []).reduce((sum, s) => sum + s.count, 0);
       document.getElementById('summaryToday').innerHTML = buildList(stats.today);
       document.getElementById('summaryWeek').innerHTML = buildList(stats.week);
       document.getElementById('summaryMonth').innerHTML = buildList(stats.month);
@@ -684,6 +935,159 @@
       }
     }
 
+    // ── Calendar ──────────────────────────────────────────
+    let calDetections = [];
+    let calYear = new Date().getFullYear();
+    const CAL_START_YEAR = 2024;
+
+    function buildDailyMap(detections) {
+      const map = {};
+      detections.forEach(d => {
+        if (!d.timestamp || !d.bird) return;
+        const dt = new Date(d.timestamp);
+        const key = `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
+        if (!map[key]) map[key] = {};
+        map[key][d.bird] = (map[key][d.bird] || 0) + 1;
+      });
+      return map;
+    }
+
+    function calColour(count) {
+      if (!count) return '';
+      if (count === 1) return 's1';
+      if (count === 2) return 's2';
+      if (count === 3) return 's3';
+      if (count <= 5) return 's4';
+      if (count <= 8) return 's5';
+      if (count <= 12) return 's6';
+      if (count <= 18) return 's7';
+      return 's8';
+    }
+
+    function renderCalendar(year) {
+      const dailyMap = buildDailyMap(calDetections);
+      const today = new Date();
+      const todayKey = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+
+      let totalDets = 0, speciesSet = new Set(), activeDays = 0, bestCount = 0;
+      Object.entries(dailyMap).forEach(([key, sp]) => {
+        if (!key.startsWith(year)) return;
+        const c = Object.keys(sp).length;
+        const d = Object.values(sp).reduce((a,b)=>a+b,0);
+        totalDets += d;
+        Object.keys(sp).forEach(s => speciesSet.add(s));
+        if (c > 0) activeDays++;
+        if (c > bestCount) bestCount = c;
+      });
+
+      // Build week grid
+      const jan1 = new Date(year, 0, 1);
+      const weeks = [];
+      let week = new Array(jan1.getDay()).fill(null);
+      const days = (year%4===0&&(year%100!==0||year%400===0)) ? 366 : 365;
+      for (let d = 0; d < days; d++) {
+        const date = new Date(year, 0, d+1);
+        week.push(date);
+        if (week.length === 7) { weeks.push(week); week = []; }
+      }
+      if (week.length) { while(week.length<7) week.push(null); weeks.push(week); }
+
+      const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      const monthPos = {};
+      weeks.forEach((w,wi) => w.forEach(d => {
+        if (d && d.getDate()===1) monthPos[d.getMonth()] = wi;
+      }));
+
+      const html = `
+        <div class="year-nav">
+          <button class="year-btn" id="calPrevYear" ${year<=CAL_START_YEAR?'disabled':''}>← ${year-1}</button>
+          <div class="year-label">${year}</div>
+          <button class="year-btn" id="calNextYear" ${year>=new Date().getFullYear()?'disabled':''}>${year+1} →</button>
+        </div>
+        <div class="cal-stats-row">
+          <div class="cal-stat-box"><div class="cal-stat-value">${speciesSet.size}</div><div class="cal-stat-label">Species</div></div>
+          <div class="cal-stat-box"><div class="cal-stat-value">${totalDets}</div><div class="cal-stat-label">Detections</div></div>
+          <div class="cal-stat-box"><div class="cal-stat-value">${activeDays}</div><div class="cal-stat-label">Active Days</div></div>
+          <div class="cal-stat-box"><div class="cal-stat-value">${bestCount}</div><div class="cal-stat-label">Best Day</div></div>
+        </div>
+        <div class="calendar-container">
+          <div class="month-labels">
+            <div></div>
+            ${weeks.map((_,wi) => {
+              const m = Object.entries(monthPos).find(([,pos]) => pos===wi);
+              return `<div class="month-label">${m ? months[m[0]] : ''}</div>`;
+            }).join('')}
+          </div>
+          <div class="calendar-grid">
+            ${[['','Sun'],['M','Mon'],['','Tue'],['W','Wed'],['','Thu'],['F','Fri'],['','Sat']].map(([label],dow) =>
+              `<div class="day-label">${label}</div>` +
+              weeks.map(week => {
+                const date = week[dow];
+                if (!date || date.getFullYear()!==year) return '<div class="day-cell"></div>';
+                const key = `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+                const sp = dailyMap[key]||{};
+                const c = Object.keys(sp).length;
+                const cls = ['day-cell', c>0?'has-data':'', calColour(c), key===todayKey?'today':''].filter(Boolean).join(' ');
+                const ds = date.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+                return `<div class="${cls}" data-key="${key}" data-date="${ds}" title="${ds}${c>0?': '+c+' species':''}"></div>`;
+              }).join('')
+            ).join('')}
+          </div>
+          <div class="cal-legend">
+            <span>Fewer</span>
+            <div class="legend-cells">
+              <div class="legend-cell" style="background:var(--forest-mid)"></div>
+              <div class="legend-cell s1"></div><div class="legend-cell s2"></div><div class="legend-cell s3"></div>
+              <div class="legend-cell s4"></div><div class="legend-cell s5"></div><div class="legend-cell s6"></div>
+              <div class="legend-cell s7"></div><div class="legend-cell s8"></div>
+            </div>
+            <span>More species</span>
+          </div>
+        </div>`;
+
+      document.getElementById('calendarContent').innerHTML = html;
+
+      document.getElementById('calPrevYear').addEventListener('click', () => { calYear--; renderCalendar(calYear); });
+      document.getElementById('calNextYear').addEventListener('click', () => { calYear++; renderCalendar(calYear); });
+
+      document.querySelectorAll('.day-cell.has-data').forEach(cell => {
+        cell.addEventListener('click', () => {
+          const sp = dailyMap[cell.dataset.key]||{};
+          openCalModal(cell.dataset.date, sp);
+        });
+      });
+    }
+
+    function openCalModal(dateStr, species) {
+      const sorted = Object.entries(species).sort((a,b)=>b[1]-a[1]);
+      document.getElementById('calModalDate').textContent = dateStr;
+      document.getElementById('calModalCount').textContent = `${sorted.length} species detected`;
+      document.getElementById('calSpeciesList').innerHTML = sorted.map(([bird, count]) => {
+        const wn = bird.replace(/ /g,'_');
+        const fb = `https://en.wikipedia.org/w/index.php?title=Special:Redirect/file/${bird.split(' ').pop()}.jpg&width=80`;
+        return `<div class="cal-species-item">
+          <img class="cal-species-img" src="https://en.wikipedia.org/w/index.php?title=Special:Redirect/file/${wn}.jpg&width=80" onerror="this.src='${fb}'" alt="${bird}">
+          <div class="cal-species-name">${bird}</div>
+          <div class="cal-species-count">${count}</div>
+        </div>`;
+      }).join('');
+      document.getElementById('calModalOverlay').classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeCalModal() {
+      document.getElementById('calModalOverlay').classList.remove('open');
+      document.body.style.overflow = '';
+    }
+
+    const calModalCloseBtn = document.getElementById('calModalClose');
+    const calModalOverlayEl = document.getElementById('calModalOverlay');
+    if (calModalCloseBtn) calModalCloseBtn.addEventListener('click', closeCalModal);
+    if (calModalOverlayEl) calModalOverlayEl.addEventListener('click', e => {
+      if (e.target === calModalOverlayEl) closeCalModal();
+    });
+    document.addEventListener('keydown', e => { if (e.key==='Escape') closeCalModal(); });
+
     const client = mqtt.connect(`wss://${MQTT_HOST}:${MQTT_PORT}/mqtt`);
 
     client.on('connect', () => {
@@ -692,6 +1096,9 @@
       client.subscribe(DETECTIONS_TOPIC);
       client.subscribe(STATS_TOPIC);
     });
+
+    // Render empty calendar immediately — will populate when retained MQTT message arrives
+    renderCalendar(calYear);
 
     client.on('error', () => {
       document.getElementById('statusDot').className = 'dot error';
@@ -703,14 +1110,37 @@
       document.getElementById('statusText').textContent = 'Offline';
     });
 
-    client.on('message', (topic, message) => {
+
+      client.on('message', (topic, message) => {
       try {
         const data = JSON.parse(message.toString());
         document.getElementById('lastUpdate').textContent = `Updated ${new Date().toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'})}`;
-        if (topic === DETECTIONS_TOPIC) renderDetections(data);
+        if (topic === DETECTIONS_TOPIC) {
+          renderDetections(data);
+          // Update calendar
+          const dets = [];
+          const cnt = data.count || 0;
+          for (let i = 0; i < cnt; i++) { if (data[i]&&data[i].bird) dets.push(data[i]); }
+          calDetections = dets;
+          renderCalendar(calYear);
+        }
         else if (topic === STATS_TOPIC) renderSummary(data);
       } catch(e) { console.error('Parse error:', e); }
     });
-  </script>
+</script>
+  <!-- Calendar Modal -->
+  <div class="cal-modal-overlay" id="calModalOverlay">
+    <div class="cal-modal">
+      <div class="cal-modal-header">
+        <div>
+          <div class="cal-modal-date" id="calModalDate"></div>
+          <div class="cal-modal-count" id="calModalCount"></div>
+        </div>
+        <button class="cal-modal-close" id="calModalClose">✕</button>
+      </div>
+      <div class="cal-species-list" id="calSpeciesList"></div>
+    </div>
+  </div>
+
 </body>
 </html>
