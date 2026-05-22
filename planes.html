@@ -6,8 +6,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Overhead Planes · Threlkeld</title>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Source+Sans+3:wght@300;400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/5.3.4/mqtt.min.js"></script>
   <style>
     :root {
@@ -365,13 +363,14 @@
 
     #radarMap {
       position: absolute;
-      inset: 0;
-      width: 280px;
-      height: 280px;
-      border-radius: 50%;
-      overflow: hidden;
-      opacity: 0.5;
-      filter: hue-rotate(100deg) brightness(0.6) saturate(0.4);
+      top: -15px;
+      left: -15px;
+      width: calc(100% + 30px);
+      height: calc(100% + 30px);
+      opacity: 0.45;
+      filter: grayscale(80%) hue-rotate(100deg) brightness(0.5);
+      border: none;
+      display: block;
     }
 
     canvas#radarCanvas {
@@ -416,15 +415,24 @@
       gap: 6px;
       max-height: 200px;
       overflow-y: auto;
+      padding-right: 4px;
     }
+
+    .radar-flight-list::-webkit-scrollbar { width: 4px; }
+    .radar-flight-list::-webkit-scrollbar-track { background: transparent; }
+    .radar-flight-list::-webkit-scrollbar-thumb { background: var(--forest-light); border-radius: 2px; }
 
     .radar-flight-item {
       font-size: 12px;
       color: var(--cream-dim);
       display: flex;
-      gap: 8px;
-      align-items: center;
+      flex-direction: column;
+      gap: 2px;
+      padding: 6px 0;
+      border-bottom: 1px solid var(--divider);
     }
+
+    .radar-flight-item:last-child { border-bottom: none; }
 
     .radar-flight-callsign {
       color: var(--sky);
@@ -504,25 +512,22 @@
       </div>
       <div class="radar-wrap">
         <div class="radar-canvas-wrap">
-          <div id="radarMap"></div>
+          <iframe id="radarMap" src="https://www.openstreetmap.org/export/embed.html?bbox=-3.2,54.52,-2.9,54.71&layer=mapnik" scrolling="no" frameborder="0"></iframe>
           <canvas id="radarCanvas" width="280" height="280"></canvas>
         </div>
         <div class="radar-legend">
-          <div class="radar-legend-title">Recent Contacts</div>
-          <div class="radar-legend-item">
-            <div class="radar-legend-dot" style="background:var(--sky)"></div>
-            <span>Commercial flight</span>
-          </div>
-          <div class="radar-legend-item">
-            <div class="radar-legend-dot" style="background:var(--military)"></div>
-            <span>Military aircraft</span>
-          </div>
-          <div class="radar-legend-item">
-            <div class="radar-legend-dot" style="background:var(--sage)"></div>
-            <span>Threlkeld</span>
-          </div>
+          <div class="radar-legend-title">Recent Contacts <span style="font-size:11px;color:var(--cream-dim);font-family:'Source Sans 3',sans-serif">· last 2 hours</span></div>
           <div class="radar-flight-list" id="radarFlightList">
             <div style="color:var(--cream-dim);font-style:italic;font-size:12px">No recent contacts</div>
+          </div>
+
+          <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--divider)">
+            <div style="font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--sage);margin-bottom:10px">Coverage</div>
+            <div style="font-size:12px;color:var(--cream-dim);line-height:1.6">
+              15km radius · approx. 706km²<br>
+              Blencathra to Keswick<br>
+              Penrith to Cockermouth
+            </div>
           </div>
         </div>
       </div>
@@ -799,11 +804,7 @@
 
       ctx.clearRect(0, 0, W, H);
 
-      // Background
-      ctx.fillStyle = '#0a1a0a';
-      ctx.beginPath();
-      ctx.arc(cx, cy, r, 0, Math.PI * 2);
-      ctx.fill();
+      // No background fill - let map show through
 
       // Grid rings
       ctx.strokeStyle = 'rgba(122, 184, 122, 0.15)';
@@ -961,8 +962,11 @@
 
       el.innerHTML = recent.map(f => `
         <div class="radar-flight-item ${f.military ? 'radar-flight-military' : ''}">
-          <span class="radar-flight-callsign">${f.callsign}</span>
-          <span>${f.origin} → ${f.destination}</span>
+          <div style="display:flex;justify-content:space-between;width:100%;align-items:baseline">
+            <span class="radar-flight-callsign">${f.callsign}</span>
+            <span style="font-size:10px;color:var(--cream-dim)">${minutesAgo(f.timestamp)}</span>
+          </div>
+          <div style="font-size:11px;color:var(--cream-dim);margin-top:1px">${f.origin} → ${f.destination} · ${Math.round(f.altitude).toLocaleString()}ft</div>
         </div>`).join('');
     }
 
@@ -991,36 +995,7 @@
 
     animateRadar();
 
-    // Initialise map under radar
-    window.addEventListener('load', function() {
-    const leafletMap = L.map('radarMap', {
-      center: [THRELKELD_LAT, THRELKELD_LON],
-      zoom: 11,
-      zoomControl: false,
-      attributionControl: false,
-      dragging: false,
-      touchZoom: false,
-      scrollWheelZoom: false,
-      doubleClickZoom: false,
-      boxZoom: false,
-      keyboard: false
-    });
 
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-      maxZoom: 13,
-      attribution: '&copy; OpenStreetMap &copy; CARTO'
-    }).addTo(leafletMap);
-
-    L.marker([THRELKELD_LAT, THRELKELD_LON], {
-      icon: L.divIcon({
-        className: '',
-        html: '<div style="font-size:9px;color:#7ab87a;font-family:monospace;white-space:nowrap;margin-top:6px">Threlkeld</div>',
-        iconAnchor: [24, 0]
-      })
-    }).addTo(leafletMap);
-
-    setTimeout(() => { leafletMap.invalidateSize(); }, 200);
-    }); // end window.addEventListener load
 
     // Filter buttons
     document.querySelectorAll('.filter-btn').forEach(btn => {
