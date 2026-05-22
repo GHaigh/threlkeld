@@ -623,18 +623,31 @@
       } catch(e) { return 'N/A'; }
     }
 
-    function filterByDays(arr, days) {
-      if (!arr || arr.length === 0) return [];
-      if (days === 0) return arr;
-      const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
-      return arr.filter(d => d.t > cutoff);
+    function calcDailyDiff(arr) {
+      // For cumulative sensors like rain, calculate daily difference from sum
+      return arr.map((d, i) => {
+        if (i === 0) return { ...d, _daily: 0 };
+        const prev = arr[i - 1];
+        const diff = (d.sum || 0) - (prev.sum || 0);
+        // If diff is negative (yearly reset on Jan 1) use today's sum value
+        return { ...d, _daily: Math.max(0, diff < 0 ? (d.sum || 0) : diff) };
+      });
     }
 
-    function filterByDateRange(arr, from, to) {
+    function filterByDays(arr, days, diff = false) {
+      if (!arr || arr.length === 0) return [];
+      const data = diff ? calcDailyDiff(arr) : arr;
+      if (days === 0) return data;
+      const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
+      return data.filter(d => d.t > cutoff);
+    }
+
+    function filterByDateRange(arr, from, to, diff = false) {
       if (!arr) return [];
+      const data = diff ? calcDailyDiff(arr) : arr;
       const fromTs = new Date(from).getTime();
       const toTs = new Date(to).getTime() + 86400000;
-      return arr.filter(d => d.t >= fromTs && d.t <= toTs);
+      return data.filter(d => d.t >= fromTs && d.t <= toTs);
     }
 
     function getLabels(data) {
@@ -668,8 +681,9 @@
         modalTitle: '🌧️ Rainfall — Daily Total (mm)',
         key: 'daily_rain_rate_piezo',
         type: 'bar',
+        calcDiff: true,
         datasets: (data) => [
-          { label: 'Rain', data: data.map(d => d.sum || d.max || 0), backgroundColor: 'rgba(74,144,164,0.6)', borderColor: '#4a90a4', borderWidth: 1 }
+          { label: 'Rain', data: data.map(d => d._daily || 0), backgroundColor: 'rgba(74,144,164,0.6)', borderColor: '#4a90a4', borderWidth: 1 }
         ]
       },
       {
@@ -774,7 +788,7 @@
           return;
         }
 
-        const data = filterByDays(raw, 30);
+        const data = filterByDays(raw, 30, cfg.calcDiff || false);
         if (data.length === 0) return;
         makeChart(cfg.id, cfg.type, getLabels(data), cfg.datasets(data), { yScale: cfg.yScale });
       });
@@ -815,9 +829,9 @@
 
       let data;
       if (fromDate && toDate) {
-        data = filterByDateRange(raw, fromDate, toDate);
+        data = filterByDateRange(raw, fromDate, toDate, activeChartConfig.calcDiff || false);
       } else {
-        data = filterByDays(raw, days);
+        data = filterByDays(raw, days, activeChartConfig.calcDiff || false);
       }
 
       if (modalChart) { modalChart.destroy(); modalChart = null; }
