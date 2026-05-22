@@ -374,6 +374,98 @@
 
     .footer-text { font-size: 11px; color: var(--cream-dim); }
     .footer-location { font-size: 11px; color: var(--sage); letter-spacing: 0.1em; }
+
+    /* ── Hero ── */
+    .hero {
+      position: relative;
+      width: 100vw;
+      left: 50%;
+      right: 50%;
+      margin-left: -50vw;
+      margin-right: -50vw;
+      height: 480px;
+      overflow: hidden;
+      margin-bottom: 40px;
+    }
+
+    .hero-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center 40%;
+      display: block;
+      filter: brightness(0.7);
+    }
+
+    .hero-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        to bottom,
+        rgba(13, 26, 13, 0.2) 0%,
+        rgba(13, 26, 13, 0.3) 40%,
+        rgba(13, 26, 13, 0.85) 100%
+      );
+    }
+
+    .hero-content {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 40px 40px 48px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .hero-eyebrow {
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--sage);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .hero-eyebrow::before {
+      content: '';
+      display: inline-block;
+      width: 20px;
+      height: 1px;
+      background: var(--sage);
+    }
+
+    .hero h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(36px, 6vw, 64px);
+      font-weight: 400;
+      color: var(--cream);
+      line-height: 1.1;
+      margin-bottom: 12px;
+    }
+
+    .hero h1 em {
+      font-style: italic;
+      color: var(--sage-light);
+    }
+
+    .hero-subtitle {
+      font-size: 15px;
+      color: var(--cream-dim);
+      max-width: 560px;
+      line-height: 1.6;
+    }
+
+    .hero-credit {
+      position: absolute;
+      bottom: 8px;
+      right: 12px;
+      font-size: 9px;
+      color: rgba(255,255,255,0.3);
+      letter-spacing: 0.05em;
+    }
   </style>
   <script src="https://cdn.counter.dev/script.js" data-id="0f7db49f-3699-43bc-b09e-d45b58c39067" data-utcoffset="1"></script>
 
@@ -395,20 +487,21 @@
 </head>
 <body>
   <div class="page">
-    <header>
-      <div class="header-eyebrow">Threlkeld, Cumbria · Lake District</div>
-      <h1>Threlkeld</h1>
-      <div class="header-subtitle">Local Tech & Eco Projects</div>
-      <p class="header-description">
-        A small collection of <strong>community-minded projects</strong> from a garden in Threlkeld, 
-        nestled beneath Blencathra in the northern Lake District. Each project uses locally-run 
-        technology to monitor, record and share what's happening in our little corner of Cumbria — 
-        from the birds singing at dawn to the weather rolling in off the fells.
-        <br><br>
-        No paywalls, no subscriptions, no ads — just local data shared openly with anyone curious about what's happening in this corner of Cumbria.
-        <strong>Suggestions for new projects are always welcome.</strong>
-      </p>
-    </header>
+    <!-- Hero -->
+    <div class="hero">
+      <img class="hero-img" src="blencathra.jpg" alt="Blencathra, Threlkeld, Cumbria">
+      <div class="hero-overlay"></div>
+      <div class="hero-content">
+        <div class="hero-eyebrow">Threlkeld, Cumbria · Lake District</div>
+        <h1>Threlkeld <em>Projects</em></h1>
+        <div class="hero-subtitle">
+          A small collection of community-minded projects from a garden in Threlkeld, 
+          nestled beneath Blencathra in the northern Lake District — from the birds 
+          singing at dawn to the weather rolling in off the fells.
+        </div>
+      </div>
+      <div class="hero-credit">Photo · Threlkeld Village Hall</div>
+    </div>
 
     <div class="projects-label">Live Projects · Updated in Real Time</div>
     <div class="projects-grid">
