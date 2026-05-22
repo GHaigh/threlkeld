@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>River Levels · Threlkeld</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Source+Sans+3:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --forest-deep: #0d1a0d;
+      --forest-dark: #1a2e1a;
+      --forest-mid: #243022;
+      --forest-light: #3b6d11;
+      --sage: #7ab87a;
+      --sage-light: #a8d4a8;
+      --cream: #e8f0e4;
+      --cream-dim: #b8c8b4;
+      --divider: rgba(122, 184, 122, 0.15);
+      --water: #4a90a4;
+      --water-dim: rgba(74, 144, 164, 0.15);
+      --flood: #c84a4a;
+      --flood-dim: rgba(200, 74, 74, 0.15);
+      --high: #c8a84a;
+      --high-dim: rgba(200, 168, 74, 0.15);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--forest-deep);
+      color: var(--cream);
+      font-family: 'Source Sans 3', sans-serif;
+      font-weight: 300;
+      min-height: 100vh;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        radial-gradient(ellipse at 20% 50%, rgba(74,144,164,0.06) 0%, transparent 60%),
+        radial-gradient(ellipse at 80% 20%, rgba(122,184,122,0.04) 0%, transparent 50%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .page { max-width: 1200px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
+
+    nav {
+      display: flex; align-items: center; gap: 24px;
+      padding: 16px 0; border-bottom: 1px solid var(--divider); margin-bottom: 28px;
+    }
+    .nav-home { font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--sage); text-decoration: none; }
+    .nav-home:hover { color: var(--cream); }
+    .nav-divider { color: var(--divider); }
+    .nav-links { display: flex; gap: 20px; margin-left: auto; flex-wrap: wrap; }
+    .nav-link { font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--cream-dim); text-decoration: none; transition: color 0.2s; }
+    .nav-link:hover { color: var(--cream); }
+    .nav-link.active { color: var(--sage); }
+
+    header {
+      padding: 20px 0 28px; border-bottom: 1px solid var(--divider); margin-bottom: 28px;
+      display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 16px;
+    }
+    .header-eyebrow { font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--sage); margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+    .header-eyebrow::before { content: ''; display: inline-block; width: 20px; height: 1px; background: var(--sage); }
+    h1 { font-family: 'Playfair Display', serif; font-size: clamp(24px, 4vw, 40px); font-weight: 400; color: var(--cream); }
+    h1 em { font-style: italic; color: var(--sage-light); }
+    .header-updated { font-size: 11px; color: var(--cream-dim); }
+
+    .section-header { display: flex; align-items: baseline; gap: 10px; margin-bottom: 16px; margin-top: 28px; }
+    .section-title { font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 400; color: var(--cream); }
+    .section-subtitle { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--sage); }
+
+    /* Flood alert banner */
+    .flood-banner {
+      display: none;
+      background: var(--flood-dim);
+      border: 1px solid var(--flood);
+      border-radius: 8px;
+      padding: 16px 20px;
+      margin-bottom: 24px;
+      font-size: 14px;
+      color: var(--cream);
+    }
+    .flood-banner.show { display: flex; align-items: center; gap: 12px; }
+    .flood-banner-icon { font-size: 24px; }
+
+    /* Hero station card */
+    .hero-station {
+      background: var(--forest-dark);
+      border: 1px solid var(--divider);
+      border-radius: 12px;
+      padding: 28px;
+      margin-bottom: 28px;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 24px;
+      align-items: center;
+    }
+
+    @media (max-width: 600px) { .hero-station { grid-template-columns: 1fr; } }
+
+    .hero-level {
+      font-family: 'Playfair Display', serif;
+      font-size: 72px;
+      color: var(--cream);
+      line-height: 1;
+    }
+
+    .hero-unit { font-size: 20px; color: var(--cream-dim); }
+
+    .hero-info { }
+    .hero-name { font-family: 'Playfair Display', serif; font-size: 22px; color: var(--cream); margin-bottom: 4px; }
+    .hero-river { font-size: 13px; color: var(--sage); margin-bottom: 12px; }
+
+    .state-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-weight: 500;
+    }
+    .state-badge.normal { background: rgba(122,184,122,0.15); color: var(--sage); border: 1px solid rgba(122,184,122,0.3); }
+    .state-badge.high { background: var(--high-dim); color: var(--high); border: 1px solid rgba(200,168,74,0.3); }
+    .state-badge.flood { background: var(--flood-dim); color: var(--flood); border: 1px solid rgba(200,74,74,0.3); }
+
+    .trend-arrow { font-size: 18px; margin-left: 8px; }
+
+    .hero-context { text-align: right; }
+    .hero-range-label { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--sage); margin-bottom: 8px; }
+
+    .level-gauge {
+      width: 24px;
+      height: 120px;
+      background: var(--forest-mid);
+      border-radius: 12px;
+      position: relative;
+      overflow: hidden;
+      margin: 0 auto 8px;
+    }
+
+    .level-fill {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      border-radius: 12px;
+      transition: height 0.5s ease;
+    }
+
+    .level-fill.normal { background: var(--water); }
+    .level-fill.high { background: var(--high); }
+    .level-fill.flood { background: var(--flood); }
+
+    .level-marker {
+      position: absolute;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: rgba(255,255,255,0.2);
+    }
+
+    .level-pct { font-size: 11px; color: var(--cream-dim); text-align: center; }
+
+    /* 5 day chart */
+    .chart-container {
+      background: var(--forest-dark);
+      border: 1px solid var(--divider);
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 28px;
+    }
+
+    .chart-area {
+      position: relative;
+      height: 160px;
+      margin-bottom: 8px;
+    }
+
+    .chart-svg { width: 100%; height: 100%; overflow: visible; }
+
+    /* Nearby stations */
+    .stations-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+
+    .station-card {
+      background: var(--forest-dark);
+      border: 1px solid var(--divider);
+      border-radius: 8px;
+      padding: 16px;
+      transition: border-color 0.2s;
+    }
+
+    .station-card:hover { border-color: var(--water); }
+    .station-card.flood-state { border-color: var(--flood); }
+    .station-card.high-state { border-color: var(--high); }
+
+    .station-name { font-size: 14px; color: var(--cream); margin-bottom: 2px; font-weight: 400; }
+    .station-river { font-size: 11px; color: var(--sage); margin-bottom: 10px; }
+
+    .station-level-row {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+
+    .station-level { font-family: 'Playfair Display', serif; font-size: 28px; color: var(--cream); }
+    .station-unit { font-size: 12px; color: var(--cream-dim); }
+    .station-trend { font-size: 14px; }
+
+    .station-bar-track {
+      height: 4px;
+      background: var(--forest-mid);
+      border-radius: 2px;
+      overflow: hidden;
+      margin-bottom: 6px;
+    }
+
+    .station-bar-fill {
+      height: 100%;
+      border-radius: 2px;
+      background: var(--water);
+      transition: width 0.5s;
+    }
+
+    .station-bar-fill.high { background: var(--high); }
+    .station-bar-fill.flood { background: var(--flood); }
+
+    .station-meta { font-size: 10px; color: var(--cream-dim); display: flex; justify-content: space-between; }
+
+    /* Historical */
+    .history-box {
+      background: var(--forest-dark);
+      border: 1px solid var(--divider);
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 28px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      text-align: center;
+    }
+
+    @media (max-width: 500px) { .history-box { grid-template-columns: 1fr; } }
+
+    .history-item-value { font-family: 'Playfair Display', serif; font-size: 24px; color: var(--cream); margin-bottom: 4px; }
+    .history-item-label { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--sage); }
+    .history-item-sub { font-size: 11px; color: var(--cream-dim); margin-top: 4px; }
+
+    .loading { text-align: center; padding: 40px; color: var(--cream-dim); font-style: italic; }
+    .spinner { width: 20px; height: 20px; border: 2px solid var(--divider); border-top-color: var(--sage); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 12px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    footer { border-top: 1px solid var(--divider); padding: 20px 0 32px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-top: 20px; }
+    .footer-text { font-size: 11px; color: var(--cream-dim); }
+    .footer-brand { font-size: 11px; color: var(--sage); }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <nav>
+      <a href="index.html" class="nav-home">← Threlkeld Projects</a>
+      <span class="nav-divider">|</span>
+      <div class="nav-links">
+        <a href="birds.html" class="nav-link">🐦 Birds</a>
+        <a href="weather.html" class="nav-link">🌤️ Weather</a>
+        <a href="planes.html" class="nav-link">✈️ Planes</a>
+        <a href="wildlife.html" class="nav-link">🦔 Wildlife</a>
+        <a href="river.html" class="nav-link active">🌊 River</a>
+      </div>
+    </nav>
+
+    <header>
+      <div>
+        <div class="header-eyebrow">Environment Agency · Real-time data</div>
+        <h1>River <em>Levels</em></h1>
+      </div>
+      <div class="header-updated" id="headerUpdated">Loading...</div>
+    </header>
+
+    <!-- Flood alert -->
+    <div class="flood-banner" id="floodBanner">
+      <div class="flood-banner-icon">⚠️</div>
+      <div id="floodBannerText"></div>
+    </div>
+
+    <!-- Hero station -->
+    <div id="heroStation" class="hero-station">
+      <div class="loading"><div class="spinner"></div></div>
+    </div>
+
+    <!-- 5 day chart -->
+    <div class="section-header">
+      <div class="section-title">Last 5 Days</div>
+      <div class="section-subtitle">River Glenderamackin at Threlkeld</div>
+    </div>
+    <div class="chart-container">
+      <div class="chart-area" id="chartArea">
+        <div class="loading"><div class="spinner"></div></div>
+      </div>
+    </div>
+
+    <!-- Historical context -->
+    <div class="section-header">
+      <div class="section-title">Historical Context</div>
+      <div class="section-subtitle">Glenderamackin at Threlkeld</div>
+    </div>
+    <div class="history-box">
+      <div>
+        <div class="history-item-value">2.57m</div>
+        <div class="history-item-label">All-time record</div>
+        <div class="history-item-sub">5 December 2015</div>
+      </div>
+      <div>
+        <div class="history-item-value">0.50–2.00m</div>
+        <div class="history-item-label">Normal range</div>
+        <div class="history-item-sub">90% of readings</div>
+      </div>
+      <div>
+        <div class="history-item-value" id="histCurrent">—</div>
+        <div class="history-item-label">Current level</div>
+        <div class="history-item-sub" id="histState">—</div>
+      </div>
+    </div>
+
+    <!-- Nearby stations -->
+    <div class="section-header">
+      <div class="section-title">Nearby Stations</div>
+      <div class="section-subtitle">Within 10 miles</div>
+    </div>
+    <div class="stations-grid" id="stationsGrid">
+      <div class="loading"><div class="spinner"></div></div>
+    </div>
+
+    <div style="font-size:11px;color:var(--cream-dim);margin-bottom:28px">
+      Data from the <a href="https://environment.data.gov.uk/flood-monitoring/doc/reference" target="_blank" style="color:var(--sage)">Environment Agency Real Time flood-monitoring API</a> · Updated every 15 minutes · Open Government Licence
+    </div>
+
+    <footer>
+      <div class="footer-text">Threlkeld, Cumbria · River Glenderamackin · EA Flood Monitoring</div>
+      <div class="footer-brand">threlkeld.info</div>
+    </footer>
+  </div>
+
+  <script>
+    const EA_BASE = 'https://environment.data.gov.uk/flood-monitoring';
+    const MAIN_STATION = '5140'; // Glenderamackin at Threlkeld
+
+    const NEARBY = [
+      { id: '5143', name: 'Greta at Keswick Campsite', river: 'River Greta', normal: [0.3, 1.5], record: 3.2 },
+      { id: '5146', name: 'Greta at Greta Bridge', river: 'River Greta', normal: [0.5, 2.0], record: 3.5 },
+      { id: '5155', name: 'St Johns Beck at Thirlmere', river: 'St Johns Beck', normal: [0.1, 0.8], record: 1.4 },
+      { id: '5160', name: 'Derwent at Portinscale', river: 'River Derwent', normal: [0.3, 1.5], record: 3.8 },
+    ];
+
+    function trendArrow(trend) {
+      if (!trend) return '';
+      if (trend === 'rising') return '<span class="trend-arrow" style="color:#c84a4a">↑</span>';
+      if (trend === 'falling') return '<span class="trend-arrow" style="color:var(--water)">↓</span>';
+      return '<span class="trend-arrow" style="color:var(--cream-dim)">→</span>';
+    }
+
+    function getState(level, normalMin = 0.5, normalMax = 2.0) {
+      if (level >= normalMax) return 'flood';
+      if (level >= normalMax * 0.8) return 'high';
+      return 'normal';
+    }
+
+    function stateLabel(state) {
+      if (state === 'flood') return '⚠️ Flood Risk';
+      if (state === 'high') return '⬆️ High';
+      return '✓ Normal';
+    }
+
+    function formatTime(dateStr) {
+      return new Date(dateStr).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function formatDateTime(dateStr) {
+      const d = new Date(dateStr);
+      return d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }) + ' ' + formatTime(dateStr);
+    }
+
+    async function loadMainStation() {
+      try {
+        const [stationRes, readingsRes] = await Promise.all([
+          fetch(`${EA_BASE}/id/stations/${MAIN_STATION}`),
+          fetch(`${EA_BASE}/id/stations/${MAIN_STATION}/readings?_sorted&_limit=1`)
+        ]);
+        const station = await stationRes.json();
+        const readings = await readingsRes.json();
+
+        const latest = readings.items?.[0];
+        const level = latest?.value;
+        const dateTime = latest?.dateTime;
+        const trend = station.items?.measures?.[0]?.latestReading?.trend || '';
+        const state = getState(level);
+        const pct = Math.min(100, Math.round((level / 2.57) * 100));
+        const normalPct = Math.round((2.0 / 2.57) * 100);
+        const normalMinPct = Math.round((0.5 / 2.57) * 100);
+
+        document.getElementById('headerUpdated').textContent = `Updated ${formatTime(dateTime)}`;
+        document.getElementById('histCurrent').textContent = level ? level.toFixed(2) + 'm' : '—';
+        document.getElementById('histState').textContent = stateLabel(state);
+
+        // Flood banner
+        if (state === 'flood' || state === 'high') {
+          const banner = document.getElementById('floodBanner');
+          banner.classList.add('show');
+          document.getElementById('floodBannerText').textContent =
+            state === 'flood'
+              ? `River Glenderamackin is above normal range at ${level.toFixed(2)}m — flooding of low-lying land possible.`
+              : `River Glenderamackin is elevated at ${level.toFixed(2)}m — approaching the top of its normal range.`;
+        }
+
+        document.getElementById('heroStation').innerHTML = `
+          <div>
+            <div class="hero-level">${level ? level.toFixed(2) : '—'}<span class="hero-unit">m</span></div>
+          </div>
+          <div class="hero-info">
+            <div class="hero-name">Glenderamackin at Threlkeld</div>
+            <div class="hero-river">River Glenderamackin · Station ${MAIN_STATION}</div>
+            <div>
+              <span class="state-badge ${state}">${stateLabel(state)}</span>
+              ${trendArrow(trend)}
+            </div>
+            <div style="margin-top:12px;font-size:12px;color:var(--cream-dim)">
+              Normal range: 0.50m – 2.00m &nbsp;·&nbsp; All-time record: 2.57m (Dec 2015)
+            </div>
+          </div>
+          <div class="hero-context">
+            <div class="hero-range-label">vs record</div>
+            <div class="level-gauge">
+              <div class="level-marker" style="bottom:${normalPct}%"></div>
+              <div class="level-marker" style="bottom:${normalMinPct}%"></div>
+              <div class="level-fill ${state}" style="height:${pct}%"></div>
+            </div>
+            <div class="level-pct">${pct}%</div>
+          </div>`;
+
+      } catch(e) {
+        document.getElementById('heroStation').innerHTML = '<div class="loading">Could not load river data</div>';
+      }
+    }
+
+    async function loadChart() {
+      try {
+        const since = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString();
+        const res = await fetch(`${EA_BASE}/id/stations/${MAIN_STATION}/readings?_sorted&_limit=500&since=${since}`);
+        const data = await res.json();
+        const readings = data.items || [];
+
+        if (readings.length === 0) {
+          document.getElementById('chartArea').innerHTML = '<div class="loading">No chart data available</div>';
+          return;
+        }
+
+        const values = readings.map(r => r.value);
+        const times = readings.map(r => new Date(r.dateTime));
+        const minVal = 0;
+        const maxVal = Math.max(2.6, ...values);
+        const minTime = times[times.length - 1];
+        const maxTime = times[0];
+        const timeRange = maxTime - minTime;
+        const valRange = maxVal - minVal;
+
+        const W = 1000;
+        const H = 160;
+        const PAD = { top: 10, right: 10, bottom: 30, left: 40 };
+        const chartW = W - PAD.left - PAD.right;
+        const chartH = H - PAD.top - PAD.bottom;
+
+        const xPos = t => PAD.left + ((t - minTime) / timeRange) * chartW;
+        const yPos = v => PAD.top + chartH - ((v - minVal) / valRange) * chartH;
+
+        // Normal range band
+        const y2m = yPos(2.0);
+        const y05m = yPos(0.5);
+        const y0 = yPos(0);
+
+        // Build path
+        const points = readings.map((r, i) => `${i === 0 ? 'M' : 'L'}${xPos(times[i])},${yPos(r.value)}`).join(' ');
+        const fillPath = points + ` L${xPos(times[0])},${y0} L${xPos(times[readings.length-1])},${y0} Z`;
+
+        // X-axis labels
+        const dayLabels = [];
+        let lastDay = '';
+        times.forEach((t, i) => {
+          const day = t.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric' });
+          if (day !== lastDay && i % 8 === 0) {
+            dayLabels.push({ x: xPos(t), label: day });
+            lastDay = day;
+          }
+        });
+
+        document.getElementById('chartArea').innerHTML = `
+          <svg viewBox="0 0 ${W} ${H}" class="chart-svg" preserveAspectRatio="none">
+            <!-- Normal range band -->
+            <rect x="${PAD.left}" y="${y2m}" width="${chartW}" height="${y05m - y2m}" fill="rgba(122,184,122,0.06)"/>
+            <!-- Flood line -->
+            <line x1="${PAD.left}" y1="${y2m}" x2="${PAD.left + chartW}" y2="${y2m}" stroke="rgba(200,74,74,0.3)" stroke-width="1" stroke-dasharray="4,4"/>
+            <!-- Fill -->
+            <path d="${fillPath}" fill="rgba(74,144,164,0.15)"/>
+            <!-- Line -->
+            <path d="${points}" fill="none" stroke="#4a90a4" stroke-width="1.5" stroke-linejoin="round"/>
+            <!-- Y axis labels -->
+            <text x="${PAD.left - 4}" y="${yPos(2.0) + 4}" text-anchor="end" fill="rgba(200,74,74,0.6)" font-size="10" font-family="Source Sans 3">2.0m</text>
+            <text x="${PAD.left - 4}" y="${yPos(1.0) + 4}" text-anchor="end" fill="rgba(184,200,180,0.4)" font-size="10" font-family="Source Sans 3">1.0m</text>
+            <text x="${PAD.left - 4}" y="${yPos(0.5) + 4}" text-anchor="end" fill="rgba(184,200,180,0.4)" font-size="10" font-family="Source Sans 3">0.5m</text>
+            <!-- X axis labels -->
+            ${dayLabels.map(d => `<text x="${d.x}" y="${H - 6}" text-anchor="middle" fill="rgba(184,200,180,0.5)" font-size="10" font-family="Source Sans 3">${d.label}</text>`).join('')}
+          </svg>`;
+
+      } catch(e) {
+        document.getElementById('chartArea').innerHTML = '<div class="loading">Could not load chart data</div>';
+      }
+    }
+
+    async function loadNearby() {
+      const grid = document.getElementById('stationsGrid');
+
+      const results = await Promise.all(NEARBY.map(async s => {
+        try {
+          const res = await fetch(`${EA_BASE}/id/stations/${s.id}/readings?_sorted&_limit=1`);
+          const data = await res.json();
+          const level = data.items?.[0]?.value;
+          const dateTime = data.items?.[0]?.dateTime;
+          return { ...s, level, dateTime };
+        } catch(e) {
+          return { ...s, level: null };
+        }
+      }));
+
+      grid.innerHTML = results.map(s => {
+        if (!s.level) return `
+          <div class="station-card">
+            <div class="station-name">${s.name}</div>
+            <div class="station-river">${s.river}</div>
+            <div style="color:var(--cream-dim);font-size:12px;font-style:italic">Data unavailable</div>
+          </div>`;
+
+        const state = getState(s.level, s.normal[0], s.normal[1]);
+        const pct = Math.min(100, Math.round((s.level / s.record) * 100));
+        const normalPct = Math.round((s.normal[1] / s.record) * 100);
+
+        return `
+          <div class="station-card ${state !== 'normal' ? state + '-state' : ''}">
+            <div class="station-name">${s.name}</div>
+            <div class="station-river">${s.river}</div>
+            <div class="station-level-row">
+              <div class="station-level">${s.level.toFixed(2)}</div>
+              <div class="station-unit">m</div>
+              <span class="state-badge ${state}" style="font-size:9px;padding:3px 8px">${stateLabel(state)}</span>
+            </div>
+            <div class="station-bar-track">
+              <div class="station-bar-fill ${state}" style="width:${pct}%"></div>
+            </div>
+            <div class="station-meta">
+              <span>Normal: ${s.normal[0]}–${s.normal[1]}m</span>
+              <span>${s.dateTime ? formatTime(s.dateTime) : '—'}</span>
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    // Auto refresh every 15 minutes
+    function loadAll() {
+      loadMainStation();
+      loadChart();
+      loadNearby();
+    }
+
+    loadAll();
+    setInterval(loadAll, 15 * 60 * 1000);
+  </script>
+</body>
+</html>
