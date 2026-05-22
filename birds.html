@@ -682,32 +682,16 @@
     // Threlkeld Analytics
     (function() {
       const page = window.location.pathname.split('/').pop() || 'index.html';
-      const data = {
-        page: page,
-        referrer: document.referrer || '',
-        screen: window.screen.width + 'x' + window.screen.height,
-        userAgent: navigator.userAgent,
-        location: ''
-      };
-      // Get rough location from IP
-      fetch('https://ipapi.co/json/')
-        .then(r => r.json())
-        .then(geo => {
-          data.location = (geo.city || '') + (geo.country_name ? ', ' + geo.country_name : '');
-          return fetch('https://rlpzmepeautd1v5pgoumz9aa2qhd92xd.ui.nabu.casa/api/webhook/-FGc31SjPhOeecG848YzrwkwP', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
-          });
+      fetch('https://rlpzmepeautd1v5pgoumz9aa2qhd92xd.ui.nabu.casa/api/webhook/-FGc31SjPhOeecG848YzrwkwP', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          page: page,
+          referrer: document.referrer || '',
+          screen: window.screen.width + 'x' + window.screen.height,
+          userAgent: navigator.userAgent
         })
-        .catch(() => {
-          // Send without location if geo fails
-          fetch('https://rlpzmepeautd1v5pgoumz9aa2qhd92xd.ui.nabu.casa/api/webhook/-FGc31SjPhOeecG848YzrwkwP', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
-          }).catch(() => {});
-        });
+      }).catch(() => {});
     })();
   </script>
 </head>
