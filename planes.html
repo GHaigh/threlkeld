@@ -992,6 +992,7 @@
     animateRadar();
 
     // Initialise map under radar
+    window.addEventListener('load', function() {
     const radarMap = L.map('radarMap', {
       center: [THRELKELD_LAT, THRELKELD_LON],
       zoom: 11,
@@ -1011,6 +1012,7 @@
     }).addTo(radarMap);
 
     setTimeout(() => { radarMap.invalidateSize(); }, 200);
+    }); // end window.addEventListener load
 
     // Add Threlkeld label
     L.marker([THRELKELD_LAT, THRELKELD_LON], {
