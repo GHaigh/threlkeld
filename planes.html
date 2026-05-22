@@ -402,8 +402,11 @@
         <div class="section-subtitle" id="historyCount"></div>
       </div>
       <div class="filter-row">
-        <button class="filter-btn active" data-filter="all">All Flights</button>
-        <button class="filter-btn" data-filter="today">Today</button>
+        <button class="filter-btn active" data-filter="today">Today</button>
+        <button class="filter-btn" data-filter="yesterday">Yesterday</button>
+        <button class="filter-btn" data-filter="week">This Week</button>
+        <button class="filter-btn" data-filter="month">This Month</button>
+        <button class="filter-btn" data-filter="year">This Year</button>
         <button class="filter-btn military-filter" data-filter="military">🎖️ Military</button>
       </div>
       <div style="overflow-x:auto">
@@ -439,7 +442,7 @@
     const FLIGHTS_TOPIC = 'birdnetpi/greg2026/flights';
 
     let allFlights = [];
-    let currentFilter = 'all';
+    let currentFilter = 'today';
 
     function headingArrow(deg) {
       const arrows = ['↑','↗','→','↘','↓','↙','←','↖'];
@@ -558,9 +561,37 @@
       document.getElementById('chartLabels').innerHTML = labels;
     }
 
+    function isYesterday(ts) {
+      const d = new Date(ts);
+      const y = new Date();
+      y.setDate(y.getDate() - 1);
+      return d.toDateString() === y.toDateString();
+    }
+
+    function isThisWeek(ts) {
+      const now = new Date();
+      const dayOfWeek = now.getDay() === 0 ? 6 : now.getDay() - 1;
+      const startOfWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() - dayOfWeek);
+      return new Date(ts) >= startOfWeek;
+    }
+
+    function isThisMonth(ts) {
+      const d = new Date(ts);
+      const now = new Date();
+      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+    }
+
+    function isThisYear(ts) {
+      return new Date(ts).getFullYear() === new Date().getFullYear();
+    }
+
     function renderHistory(flights) {
       let filtered = [...flights];
       if (currentFilter === 'today') filtered = filtered.filter(f => isToday(f.timestamp));
+      if (currentFilter === 'yesterday') filtered = filtered.filter(f => isYesterday(f.timestamp));
+      if (currentFilter === 'week') filtered = filtered.filter(f => isThisWeek(f.timestamp));
+      if (currentFilter === 'month') filtered = filtered.filter(f => isThisMonth(f.timestamp));
+      if (currentFilter === 'year') filtered = filtered.filter(f => isThisYear(f.timestamp));
       if (currentFilter === 'military') filtered = filtered.filter(f => f.military);
 
       document.getElementById('historyCount').textContent = `${filtered.length} flights`;
