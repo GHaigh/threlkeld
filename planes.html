@@ -993,7 +993,7 @@
 
     // Initialise map under radar
     window.addEventListener('load', function() {
-    const radarMap = L.map('radarMap', {
+    const leafletMap = L.map('radarMap', {
       center: [THRELKELD_LAT, THRELKELD_LON],
       zoom: 11,
       zoomControl: false,
@@ -1009,9 +1009,9 @@
     L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
       maxZoom: 13,
       attribution: '&copy; OpenStreetMap &copy; CARTO'
-    }).addTo(radarMap);
+    }).addTo(leafletMap);
 
-    setTimeout(() => { radarMap.invalidateSize(); }, 200);
+    setTimeout(() => { leafletMap.invalidateSize(); }, 200);
     }); // end window.addEventListener load
 
     // Add Threlkeld label
@@ -1021,7 +1021,7 @@
         html: '<div style="font-size:9px;color:#7ab87a;font-family:monospace;white-space:nowrap;margin-top:6px">Threlkeld</div>',
         iconAnchor: [24, 0]
       })
-    }).addTo(radarMap);
+    }).addTo(leafletMap);
 
     // Filter buttons
     document.querySelectorAll('.filter-btn').forEach(btn => {
