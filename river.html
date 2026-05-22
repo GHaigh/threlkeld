@@ -354,17 +354,11 @@
     </footer>
   </div>
 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/5.3.4/mqtt.min.js"></script>
   <script>
-    const EA_BASE = 'https://environment.data.gov.uk/flood-monitoring';
-    const MAIN_STATION = '5140'; // Glenderamackin at Threlkeld
-
-    const NEARBY = [
-      { id: '9419', name: 'Greta at Riddings Wood', river: 'River Greta', normal: [0.4, 1.8], record: 4.0 },
-      { id: '5060', name: 'Greta at Greta Bridge', river: 'River Greta', normal: [0.5, 2.0], record: 3.5 },
-      { id: '5175', name: 'Greta at Keswick Campsite', river: 'River Greta', normal: [0.3, 1.5], record: 3.2 },
-      { id: '5139', name: 'St Johns Beck at Thirlmere', river: 'St Johns Beck', normal: [0.1, 0.6], record: 1.4 },
-      { id: '5174', name: 'Derwent at Portinscale', river: 'River Derwent', normal: [0.31, 1.33], record: 4.27 },
-    ];
+    const MQTT_HOST = 'broker.hivemq.com';
+    const MQTT_PORT = 8884;
+    const RIVER_TOPIC = 'birdnetpi/greg2026/river';
 
     function trendArrow(trend) {
       if (!trend) return '';
@@ -373,7 +367,7 @@
       return '<span class="trend-arrow" style="color:var(--cream-dim)">→</span>';
     }
 
-    function getState(level, normalMin = 0.5, normalMax = 2.0) {
+    function getState(level, normalMin, normalMax) {
       if (level >= normalMax) return 'flood';
       if (level >= normalMax * 0.8) return 'high';
       return 'normal';
@@ -386,205 +380,168 @@
     }
 
     function formatTime(dateStr) {
+      if (!dateStr) return '—';
       return new Date(dateStr).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
     }
 
-    function formatDateTime(dateStr) {
-      const d = new Date(dateStr);
-      return d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }) + ' ' + formatTime(dateStr);
-    }
+    function render(data) {
+      const { stations, chart, updated } = data;
+      const main = stations.find(s => s.main);
+      const nearby = stations.filter(s => !s.main);
 
-    async function loadMainStation() {
-      try {
-        const [stationRes, readingsRes] = await Promise.all([
-          fetch(`${EA_BASE}/id/stations/${MAIN_STATION}`),
-          fetch(`${EA_BASE}/id/stations/${MAIN_STATION}/readings?_sorted&_limit=1`)
-        ]);
-        const station = await stationRes.json();
-        const readings = await readingsRes.json();
+      document.getElementById('headerUpdated').textContent = `Updated ${formatTime(updated)}`;
 
-        const latest = readings.items?.[0];
-        const level = latest?.value;
-        const dateTime = latest?.dateTime;
-        const trend = station.items?.measures?.[0]?.latestReading?.trend || '';
-        const state = getState(level);
-        const pct = Math.min(100, Math.round((level / 2.57) * 100));
-        const normalPct = Math.round((2.0 / 2.57) * 100);
-        const normalMinPct = Math.round((0.5 / 2.57) * 100);
+      if (!main || !main.level) {
+        document.getElementById('heroStation').innerHTML = '<div class="loading">No data available</div>';
+        return;
+      }
 
-        document.getElementById('headerUpdated').textContent = `Updated ${formatTime(dateTime)}`;
-        document.getElementById('histCurrent').textContent = level ? level.toFixed(2) + 'm' : '—';
-        document.getElementById('histState').textContent = stateLabel(state);
+      const state = getState(main.level, main.normal[0], main.normal[1]);
+      const pct = Math.min(100, Math.round((main.level / main.record) * 100));
+      const normalPct = Math.round((main.normal[1] / main.record) * 100);
+      const normalMinPct = Math.round((main.normal[0] / main.record) * 100);
 
-        // Flood banner
-        if (state === 'flood' || state === 'high') {
-          const banner = document.getElementById('floodBanner');
-          banner.classList.add('show');
-          document.getElementById('floodBannerText').textContent =
-            state === 'flood'
-              ? `River Glenderamackin is above normal range at ${level.toFixed(2)}m — flooding of low-lying land possible.`
-              : `River Glenderamackin is elevated at ${level.toFixed(2)}m — approaching the top of its normal range.`;
-        }
+      // Flood banner
+      if (state === 'flood' || state === 'high') {
+        const banner = document.getElementById('floodBanner');
+        banner.classList.add('show');
+        document.getElementById('floodBannerText').textContent =
+          state === 'flood'
+            ? `River Glenderamackin is above normal range at ${main.level.toFixed(2)}m — flooding of low-lying land possible.`
+            : `River Glenderamackin is elevated at ${main.level.toFixed(2)}m — approaching the top of its normal range.`;
+      }
 
-        document.getElementById('heroStation').innerHTML = `
+      document.getElementById('histCurrent').textContent = main.level.toFixed(2) + 'm';
+      document.getElementById('histState').textContent = stateLabel(state);
+
+      document.getElementById('heroStation').innerHTML = `
+        <div>
+          <div class="hero-level">${main.level.toFixed(2)}<span class="hero-unit">m</span></div>
+        </div>
+        <div class="hero-info">
+          <div class="hero-name">${main.name}</div>
+          <div class="hero-river">${main.river}</div>
           <div>
-            <div class="hero-level">${level ? level.toFixed(2) : '—'}<span class="hero-unit">m</span></div>
+            <span class="state-badge ${state}">${stateLabel(state)}</span>
           </div>
-          <div class="hero-info">
-            <div class="hero-name">Glenderamackin at Threlkeld</div>
-            <div class="hero-river">River Glenderamackin · Station ${MAIN_STATION}</div>
-            <div>
-              <span class="state-badge ${state}">${stateLabel(state)}</span>
-              ${trendArrow(trend)}
-            </div>
-            <div style="margin-top:12px;font-size:12px;color:var(--cream-dim)">
-              Normal range: 0.50m – 2.00m &nbsp;·&nbsp; All-time record: 2.57m (Dec 2015)
-            </div>
+          <div style="margin-top:12px;font-size:12px;color:var(--cream-dim)">
+            Normal range: ${main.normal[0]}m – ${main.normal[1]}m &nbsp;·&nbsp; All-time record: ${main.record}m (Dec 2015)
           </div>
-          <div class="hero-context">
-            <div class="hero-range-label">vs record</div>
-            <div class="level-gauge">
-              <div class="level-marker" style="bottom:${normalPct}%"></div>
-              <div class="level-marker" style="bottom:${normalMinPct}%"></div>
-              <div class="level-fill ${state}" style="height:${pct}%"></div>
-            </div>
-            <div class="level-pct">${pct}%</div>
-          </div>`;
+          <div style="margin-top:6px;font-size:11px;color:var(--cream-dim)">Updated ${formatTime(main.dateTime)}</div>
+        </div>
+        <div class="hero-context">
+          <div class="hero-range-label">vs record</div>
+          <div class="level-gauge">
+            <div class="level-marker" style="bottom:${normalPct}%"></div>
+            <div class="level-marker" style="bottom:${normalMinPct}%"></div>
+            <div class="level-fill ${state}" style="height:${pct}%"></div>
+          </div>
+          <div class="level-pct">${pct}%</div>
+        </div>`;
 
-      } catch(e) {
-        document.getElementById('heroStation').innerHTML = '<div class="loading">Could not load river data</div>';
+      // Chart
+      if (chart && chart.length > 0) {
+        renderChart(chart, main);
       }
-    }
 
-    async function loadChart() {
-      try {
-        const since = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString();
-        const res = await fetch(`${EA_BASE}/id/stations/${MAIN_STATION}/readings?_sorted&_limit=500&since=${since}`);
-        const data = await res.json();
-        const readings = data.items || [];
-
-        if (readings.length === 0) {
-          document.getElementById('chartArea').innerHTML = '<div class="loading">No chart data available</div>';
-          return;
-        }
-
-        const values = readings.map(r => r.value);
-        const times = readings.map(r => new Date(r.dateTime));
-        const minVal = 0;
-        const maxVal = Math.max(2.6, ...values);
-        const minTime = times[times.length - 1];
-        const maxTime = times[0];
-        const timeRange = maxTime - minTime;
-        const valRange = maxVal - minVal;
-
-        const W = 1000;
-        const H = 160;
-        const PAD = { top: 10, right: 10, bottom: 30, left: 40 };
-        const chartW = W - PAD.left - PAD.right;
-        const chartH = H - PAD.top - PAD.bottom;
-
-        const xPos = t => PAD.left + ((t - minTime) / timeRange) * chartW;
-        const yPos = v => PAD.top + chartH - ((v - minVal) / valRange) * chartH;
-
-        // Normal range band
-        const y2m = yPos(2.0);
-        const y05m = yPos(0.5);
-        const y0 = yPos(0);
-
-        // Build path
-        const points = readings.map((r, i) => `${i === 0 ? 'M' : 'L'}${xPos(times[i])},${yPos(r.value)}`).join(' ');
-        const fillPath = points + ` L${xPos(times[0])},${y0} L${xPos(times[readings.length-1])},${y0} Z`;
-
-        // X-axis labels
-        const dayLabels = [];
-        let lastDay = '';
-        times.forEach((t, i) => {
-          const day = t.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric' });
-          if (day !== lastDay && i % 8 === 0) {
-            dayLabels.push({ x: xPos(t), label: day });
-            lastDay = day;
-          }
-        });
-
-        document.getElementById('chartArea').innerHTML = `
-          <svg viewBox="0 0 ${W} ${H}" class="chart-svg" preserveAspectRatio="none">
-            <!-- Normal range band -->
-            <rect x="${PAD.left}" y="${y2m}" width="${chartW}" height="${y05m - y2m}" fill="rgba(122,184,122,0.06)"/>
-            <!-- Flood line -->
-            <line x1="${PAD.left}" y1="${y2m}" x2="${PAD.left + chartW}" y2="${y2m}" stroke="rgba(200,74,74,0.3)" stroke-width="1" stroke-dasharray="4,4"/>
-            <!-- Fill -->
-            <path d="${fillPath}" fill="rgba(74,144,164,0.15)"/>
-            <!-- Line -->
-            <path d="${points}" fill="none" stroke="#4a90a4" stroke-width="1.5" stroke-linejoin="round"/>
-            <!-- Y axis labels -->
-            <text x="${PAD.left - 4}" y="${yPos(2.0) + 4}" text-anchor="end" fill="rgba(200,74,74,0.6)" font-size="10" font-family="Source Sans 3">2.0m</text>
-            <text x="${PAD.left - 4}" y="${yPos(1.0) + 4}" text-anchor="end" fill="rgba(184,200,180,0.4)" font-size="10" font-family="Source Sans 3">1.0m</text>
-            <text x="${PAD.left - 4}" y="${yPos(0.5) + 4}" text-anchor="end" fill="rgba(184,200,180,0.4)" font-size="10" font-family="Source Sans 3">0.5m</text>
-            <!-- X axis labels -->
-            ${dayLabels.map(d => `<text x="${d.x}" y="${H - 6}" text-anchor="middle" fill="rgba(184,200,180,0.5)" font-size="10" font-family="Source Sans 3">${d.label}</text>`).join('')}
-          </svg>`;
-
-      } catch(e) {
-        document.getElementById('chartArea').innerHTML = '<div class="loading">Could not load chart data</div>';
-      }
-    }
-
-    async function loadNearby() {
-      const grid = document.getElementById('stationsGrid');
-
-      const results = await Promise.all(NEARBY.map(async s => {
-        try {
-          const res = await fetch(`${EA_BASE}/id/stations/${s.id}/readings?_sorted&_limit=1`);
-          const data = await res.json();
-          const level = data.items?.[0]?.value;
-          const dateTime = data.items?.[0]?.dateTime;
-          return { ...s, level, dateTime };
-        } catch(e) {
-          return { ...s, level: null };
-        }
-      }));
-
-      grid.innerHTML = results.map(s => {
+      // Nearby stations
+      document.getElementById('stationsGrid').innerHTML = nearby.map(s => {
         if (!s.level) return `
           <div class="station-card">
             <div class="station-name">${s.name}</div>
             <div class="station-river">${s.river}</div>
-            <div style="color:var(--cream-dim);font-size:12px;font-style:italic">Data unavailable</div>
+            <div style="color:var(--cream-dim);font-size:12px;font-style:italic;margin-top:8px">Data unavailable</div>
           </div>`;
 
-        const state = getState(s.level, s.normal[0], s.normal[1]);
-        const pct = Math.min(100, Math.round((s.level / s.record) * 100));
-        const normalPct = Math.round((s.normal[1] / s.record) * 100);
+        const st = getState(s.level, s.normal[0], s.normal[1]);
+        const p = Math.min(100, Math.round((s.level / s.record) * 100));
 
         return `
-          <div class="station-card ${state !== 'normal' ? state + '-state' : ''}">
+          <div class="station-card ${st !== 'normal' ? st + '-state' : ''}">
             <div class="station-name">${s.name}</div>
             <div class="station-river">${s.river}</div>
             <div class="station-level-row">
               <div class="station-level">${s.level.toFixed(2)}</div>
               <div class="station-unit">m</div>
-              <span class="state-badge ${state}" style="font-size:9px;padding:3px 8px">${stateLabel(state)}</span>
+              <span class="state-badge ${st}" style="font-size:9px;padding:3px 8px">${stateLabel(st)}</span>
             </div>
             <div class="station-bar-track">
-              <div class="station-bar-fill ${state}" style="width:${pct}%"></div>
+              <div class="station-bar-fill ${st}" style="width:${p}%"></div>
             </div>
             <div class="station-meta">
               <span>Normal: ${s.normal[0]}–${s.normal[1]}m</span>
-              <span>${s.dateTime ? formatTime(s.dateTime) : '—'}</span>
+              <span>${formatTime(s.dateTime)}</span>
             </div>
           </div>`;
       }).join('');
     }
 
-    // Auto refresh every 15 minutes
-    function loadAll() {
-      loadMainStation();
-      loadChart();
-      loadNearby();
+    function renderChart(readings, main) {
+      const values = readings.map(r => r.value).filter(v => v != null);
+      const times = readings.map(r => new Date(r.dateTime));
+      if (values.length === 0) return;
+
+      const minVal = 0;
+      const maxVal = Math.max(main.record, ...values);
+      const minTime = times[times.length - 1];
+      const maxTime = times[0];
+      const timeRange = maxTime - minTime;
+      const valRange = maxVal - minVal;
+
+      const W = 1000, H = 160;
+      const PAD = { top: 10, right: 10, bottom: 30, left: 40 };
+      const chartW = W - PAD.left - PAD.right;
+      const chartH = H - PAD.top - PAD.bottom;
+
+      const xPos = t => PAD.left + ((t - minTime) / timeRange) * chartW;
+      const yPos = v => PAD.top + chartH - ((v - minVal) / valRange) * chartH;
+
+      const y2m = yPos(main.normal[1]);
+      const y05m = yPos(main.normal[0]);
+      const y0 = yPos(0);
+
+      const points = readings
+        .filter(r => r.value != null)
+        .map((r, i) => `${i === 0 ? 'M' : 'L'}${xPos(new Date(r.dateTime))},${yPos(r.value)}`).join(' ');
+      const fillPath = points + ` L${xPos(times[0])},${y0} L${xPos(times[readings.length-1])},${y0} Z`;
+
+      const dayLabels = [];
+      let lastDay = '';
+      times.forEach((t, i) => {
+        const day = t.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric' });
+        if (day !== lastDay && i % 8 === 0) { dayLabels.push({ x: xPos(t), label: day }); lastDay = day; }
+      });
+
+      document.getElementById('chartArea').innerHTML = `
+        <svg viewBox="0 0 ${W} ${H}" class="chart-svg" preserveAspectRatio="none">
+          <rect x="${PAD.left}" y="${y2m}" width="${chartW}" height="${y05m - y2m}" fill="rgba(122,184,122,0.06)"/>
+          <line x1="${PAD.left}" y1="${y2m}" x2="${PAD.left + chartW}" y2="${y2m}" stroke="rgba(200,74,74,0.3)" stroke-width="1" stroke-dasharray="4,4"/>
+          <path d="${fillPath}" fill="rgba(74,144,164,0.15)"/>
+          <path d="${points}" fill="none" stroke="#4a90a4" stroke-width="1.5" stroke-linejoin="round"/>
+          <text x="${PAD.left - 4}" y="${yPos(main.normal[1]) + 4}" text-anchor="end" fill="rgba(200,74,74,0.6)" font-size="10" font-family="Source Sans 3">${main.normal[1]}m</text>
+          <text x="${PAD.left - 4}" y="${yPos(main.normal[0]) + 4}" text-anchor="end" fill="rgba(184,200,180,0.4)" font-size="10" font-family="Source Sans 3">${main.normal[0]}m</text>
+          ${dayLabels.map(d => `<text x="${d.x}" y="${H - 6}" text-anchor="middle" fill="rgba(184,200,180,0.5)" font-size="10" font-family="Source Sans 3">${d.label}</text>`).join('')}
+        </svg>`;
     }
 
-    loadAll();
-    setInterval(loadAll, 15 * 60 * 1000);
+    // MQTT
+    const client = mqtt.connect(`wss://${MQTT_HOST}:${MQTT_PORT}/mqtt`);
+
+    client.on('connect', () => {
+      document.getElementById('headerUpdated').textContent = 'Connected — waiting for data...';
+      client.subscribe(RIVER_TOPIC);
+    });
+
+    client.on('error', () => {
+      document.getElementById('headerUpdated').textContent = 'Connection error';
+    });
+
+    client.on('message', (topic, message) => {
+      try {
+        const data = JSON.parse(message.toString());
+        render(data);
+      } catch(e) { console.error('Parse error:', e); }
+    });
   </script>
 </body>
 </html>
