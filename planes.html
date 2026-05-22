@@ -1011,10 +1011,6 @@
       attribution: '&copy; OpenStreetMap &copy; CARTO'
     }).addTo(leafletMap);
 
-    setTimeout(() => { leafletMap.invalidateSize(); }, 200);
-    }); // end window.addEventListener load
-
-    // Add Threlkeld label
     L.marker([THRELKELD_LAT, THRELKELD_LON], {
       icon: L.divIcon({
         className: '',
@@ -1022,6 +1018,9 @@
         iconAnchor: [24, 0]
       })
     }).addTo(leafletMap);
+
+    setTimeout(() => { leafletMap.invalidateSize(); }, 200);
+    }); // end window.addEventListener load
 
     // Filter buttons
     document.querySelectorAll('.filter-btn').forEach(btn => {
