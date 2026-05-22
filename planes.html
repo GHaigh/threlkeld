@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Overhead Planes · Threlkeld</title>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Source+Sans+3:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/5.3.4/mqtt.min.js"></script>
   <style>
     :root {
@@ -70,9 +72,9 @@
     .nav-link.active { color: var(--sage); }
 
     header {
-      padding: 20px 0 28px;
+      padding: 16px 0 20px;
       border-bottom: 1px solid var(--divider);
-      margin-bottom: 28px;
+      margin-bottom: 20px;
       display: flex;
       justify-content: space-between;
       align-items: flex-end;
@@ -93,14 +95,36 @@
     @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
 
     /* Stats row */
-    .stats-row {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 12px;
-      margin-bottom: 28px;
+    .top-section {
+      display: flex;
+      flex-direction: row;
+      gap: 16px;
+      margin-bottom: 20px;
+      align-items: stretch;
     }
 
-    @media (max-width: 600px) { .stats-row { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 700px) { .top-section { flex-direction: column; } }
+
+    .top-left { width: 420px; flex-shrink: 0; display: flex; flex-direction: column; }
+    .top-left .section-header { margin-bottom: 8px; }
+    .top-left #currentOverhead { flex: 1; }
+    .top-left #currentOverhead .flight-card { height: 100%; box-sizing: border-box; }
+    .top-right { flex: 1; display: flex; flex-direction: column; }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      flex: 1;
+    }
+
+    .stats-grid .stat-box {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    @media (max-width: 700px) { .top-left { width: 100%; } .stats-grid { grid-template-columns: repeat(4, 1fr); } }
 
     .stat-box {
       background: var(--forest-dark);
@@ -114,7 +138,7 @@
     .stat-label { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--sage); }
 
     /* Current overhead */
-    .section-header { display: flex; align-items: baseline; gap: 10px; margin-bottom: 16px; }
+    .section-header { display: flex; align-items: baseline; gap: 10px; margin-bottom: 12px; }
     .section-title { font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 400; color: var(--cream); }
     .section-subtitle { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--sage); }
 
@@ -122,7 +146,7 @@
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
       gap: 16px;
-      margin-bottom: 32px;
+      margin-bottom: 20px;
     }
 
     .flight-card {
@@ -212,7 +236,7 @@
     }
 
     /* History table */
-    .history-section { margin-bottom: 32px; }
+    .history-section { margin-bottom: 20px; }
 
     .history-table {
       width: 100%;
@@ -260,7 +284,7 @@
     .fr24-link:hover { opacity: 1; }
 
     /* Activity chart */
-    .chart-section { margin-bottom: 32px; }
+    .chart-section { margin-bottom: 20px; }
     .chart-container { background: var(--forest-dark); border: 1px solid var(--divider); border-radius: 10px; padding: 20px; }
     .chart-bars { display: flex; align-items: flex-end; gap: 4px; height: 80px; margin-bottom: 6px; }
     .chart-bar-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%; justify-content: flex-end; }
@@ -312,6 +336,102 @@
     ::-webkit-scrollbar { width: 6px; }
     ::-webkit-scrollbar-track { background: var(--forest-deep); }
     ::-webkit-scrollbar-thumb { background: var(--forest-light); border-radius: 3px; }
+
+    /* ── Radar ── */
+    .radar-section { margin-bottom: 20px; }
+
+    .radar-wrap {
+      background: var(--forest-dark);
+      border: 1px solid var(--divider);
+      border-radius: 10px;
+      padding: 24px;
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: 32px;
+      align-items: center;
+    }
+
+    @media (max-width: 600px) { .radar-wrap { grid-template-columns: 1fr; } }
+
+    .radar-canvas-wrap {
+      position: relative;
+      flex-shrink: 0;
+      width: 280px;
+      height: 280px;
+      border-radius: 50%;
+      overflow: hidden;
+    }
+
+    #radarMap {
+      position: absolute;
+      inset: 0;
+      width: 280px;
+      height: 280px;
+      border-radius: 50%;
+      overflow: hidden;
+      opacity: 0.4;
+      filter: grayscale(100%) invert(1) hue-rotate(100deg) brightness(0.35) contrast(1.2);
+    }
+
+    canvas#radarCanvas {
+      position: absolute;
+      inset: 0;
+      display: block;
+      border-radius: 50%;
+    }
+
+    .radar-legend {
+      flex: 1;
+      min-width: 200px;
+    }
+
+    .radar-legend-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 16px;
+      color: var(--cream);
+      margin-bottom: 12px;
+    }
+
+    .radar-legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--cream-dim);
+      margin-bottom: 8px;
+    }
+
+    .radar-legend-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .radar-flight-list {
+      margin-top: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .radar-flight-item {
+      font-size: 12px;
+      color: var(--cream-dim);
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .radar-flight-callsign {
+      color: var(--sky);
+      font-weight: 500;
+      min-width: 80px;
+    }
+
+    .radar-flight-military .radar-flight-callsign { color: var(--military); }
   </style>
   <script src="https://cdn.counter.dev/script.js" data-id="0f7db49f-3699-43bc-b09e-d45b58c39067" data-utcoffset="1"></script>
 
@@ -354,33 +474,57 @@
       </div>
     </header>
 
-    <!-- Stats -->
-    <div class="stats-row">
-      <div class="stat-box">
-        <div class="stat-value" id="statToday">—</div>
-        <div class="stat-label">Today</div>
+    <!-- Top section -->
+    <div class="top-section">
+      <div class="top-left">
+        <div class="section-header">
+          <div class="section-title">Last Seen Overhead</div>
+          <div class="section-subtitle" id="currentCount"></div>
+        </div>
+        <div id="currentOverhead">
+          <div class="empty-state">Waiting for data...</div>
+        </div>
       </div>
-      <div class="stat-box">
-        <div class="stat-value" id="statTotal">—</div>
-        <div class="stat-label">Total Logged</div>
-      </div>
-      <div class="stat-box">
-        <div class="stat-value" id="statMilitary">—</div>
-        <div class="stat-label">Military</div>
-      </div>
-      <div class="stat-box">
-        <div class="stat-value" id="statHighest">—</div>
-        <div class="stat-label">Highest (ft)</div>
+      <div class="top-right">
+        <div class="stats-grid">
+          <div class="stat-box"><div class="stat-value" id="statToday">—</div><div class="stat-label">Today</div></div>
+          <div class="stat-box"><div class="stat-value" id="statTotal">—</div><div class="stat-label">Total Logged</div></div>
+          <div class="stat-box"><div class="stat-value" id="statMilitary">—</div><div class="stat-label">Military</div></div>
+          <div class="stat-box"><div class="stat-value" id="statHighest">—</div><div class="stat-label">Highest (ft)</div></div>
+        </div>
       </div>
     </div>
 
-    <!-- Last seen overhead -->
-    <div class="section-header">
-      <div class="section-title">Last Seen Overhead</div>
-      <div class="section-subtitle" id="currentCount"></div>
-    </div>
-    <div id="currentOverhead" class="current-grid">
-      <div class="empty-state">Waiting for data...</div>
+    <!-- Radar map -->
+    <div class="radar-section">
+      <div class="section-header">
+        <div class="section-title">Radar</div>
+        <div class="section-subtitle">15km radius · Threlkeld</div>
+      </div>
+      <div class="radar-wrap">
+        <div class="radar-canvas-wrap">
+          <div id="radarMap"></div>
+          <canvas id="radarCanvas" width="280" height="280"></canvas>
+        </div>
+        <div class="radar-legend">
+          <div class="radar-legend-title">Recent Contacts</div>
+          <div class="radar-legend-item">
+            <div class="radar-legend-dot" style="background:var(--sky)"></div>
+            <span>Commercial flight</span>
+          </div>
+          <div class="radar-legend-item">
+            <div class="radar-legend-dot" style="background:var(--military)"></div>
+            <span>Military aircraft</span>
+          </div>
+          <div class="radar-legend-item">
+            <div class="radar-legend-dot" style="background:var(--sage)"></div>
+            <span>Threlkeld</span>
+          </div>
+          <div class="radar-flight-list" id="radarFlightList">
+            <div style="color:var(--cream-dim);font-style:italic;font-size:12px">No recent contacts</div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Activity chart -->
@@ -621,7 +765,259 @@
       renderCurrent(flights);
       renderChart(flights);
       renderHistory(flights);
+      updateRadarFlightList(flights);
     }
+
+
+    // ── Radar ──────────────────────────────────────────────
+    const THRELKELD_LAT = 54.616;
+    const THRELKELD_LON = -3.056;
+    const RADAR_RADIUS_KM = 15;
+
+    function latLonToRadar(lat, lon, cx, cy, radius) {
+      const dlat = (lat - THRELKELD_LAT) * 111;
+      const dlon = (lon - THRELKELD_LON) * 111 * Math.cos(THRELKELD_LAT * Math.PI / 180);
+      const scale = radius / RADAR_RADIUS_KM;
+      const x = cx + dlon * scale;
+      const y = cy - dlat * scale;
+      return { x, y };
+    }
+
+    let radarAngle = 0;
+    let radarTrails = [];
+
+    function drawRadar(flights) {
+      const canvas = document.getElementById('radarCanvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const W = canvas.width;
+      const H = canvas.height;
+      const cx = W / 2;
+      const cy = H / 2;
+      const r = W / 2 - 8;
+
+      ctx.clearRect(0, 0, W, H);
+
+      // Background
+      ctx.fillStyle = '#0a1a0a';
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Grid rings
+      ctx.strokeStyle = 'rgba(122, 184, 122, 0.15)';
+      ctx.lineWidth = 0.5;
+      [0.25, 0.5, 0.75, 1].forEach(f => {
+        ctx.beginPath();
+        ctx.arc(cx, cy, r * f, 0, Math.PI * 2);
+        ctx.stroke();
+      });
+
+      // Crosshairs
+      ctx.strokeStyle = 'rgba(122, 184, 122, 0.12)';
+      ctx.lineWidth = 0.5;
+      [0, 45, 90, 135].forEach(deg => {
+        const rad = deg * Math.PI / 180;
+        ctx.beginPath();
+        ctx.moveTo(cx + Math.cos(rad) * r, cy + Math.sin(rad) * r);
+        ctx.lineTo(cx - Math.cos(rad) * r, cy - Math.sin(rad) * r);
+        ctx.stroke();
+      });
+
+      // Ring labels
+      ctx.fillStyle = 'rgba(122,184,122,0.4)';
+      ctx.font = '9px Source Sans 3, sans-serif';
+      ctx.textAlign = 'center';
+      ['5km', '10km', '15km'].forEach((label, i) => {
+        ctx.fillText(label, cx, cy - r * ((i + 1) / 3) * 0.97 + 3);
+      });
+
+      // Sweep gradient
+      const sweepGrad = ctx.createConicalGradient
+        ? null
+        : null;
+
+      // Draw sweep using arc fill
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(radarAngle);
+      const sweepWidth = Math.PI / 3;
+      const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, r);
+      grad.addColorStop(0, 'rgba(122, 184, 122, 0.25)');
+      grad.addColorStop(1, 'rgba(122, 184, 122, 0.03)');
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.arc(0, 0, r, -sweepWidth, 0);
+      ctx.closePath();
+      ctx.fillStyle = grad;
+      ctx.fill();
+
+      // Sweep line
+      ctx.strokeStyle = 'rgba(122, 184, 122, 0.8)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(r, 0);
+      ctx.stroke();
+      ctx.restore();
+
+      // Clip to circle
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.clip();
+
+      // Draw flight trails
+      radarTrails.forEach(trail => {
+        const pos = latLonToRadar(trail.lat, trail.lon, cx, cy, r);
+        const age = (Date.now() - trail.time) / 10000;
+        const alpha = Math.max(0, 1 - age);
+        ctx.fillStyle = trail.military
+          ? `rgba(200, 168, 74, ${alpha * 0.4})`
+          : `rgba(74, 144, 164, ${alpha * 0.4})`;
+        ctx.beginPath();
+        ctx.arc(pos.x, pos.y, 4, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      // Draw recent flights as blips
+      const recent = flights.filter(f =>
+        Date.now() - new Date(f.timestamp).getTime() < 2 * 60 * 60 * 1000
+      );
+
+      recent.forEach(f => {
+        if (!f.latitude || !f.longitude) return;
+        const pos = latLonToRadar(f.latitude, f.longitude, cx, cy, r);
+        const age = (Date.now() - new Date(f.timestamp).getTime()) / (2 * 60 * 60 * 1000);
+        const alpha = Math.max(0.3, 1 - age);
+
+        // Blip glow
+        ctx.fillStyle = f.military
+          ? `rgba(200, 168, 74, ${alpha * 0.3})`
+          : `rgba(74, 144, 164, ${alpha * 0.3})`;
+        ctx.beginPath();
+        ctx.arc(pos.x, pos.y, 7, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Blip core
+        ctx.fillStyle = f.military ? '#c8a84a' : '#4a90a4';
+        ctx.beginPath();
+        ctx.arc(pos.x, pos.y, 3, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Label
+        ctx.fillStyle = f.military
+          ? `rgba(200, 168, 74, ${alpha})`
+          : `rgba(74, 144, 164, ${alpha})`;
+        ctx.font = '8px monospace';
+        ctx.textAlign = 'left';
+        ctx.fillText(f.callsign, pos.x + 6, pos.y + 3);
+      });
+
+      ctx.restore();
+
+      // Threlkeld centre dot
+      ctx.fillStyle = '#7ab87a';
+      ctx.beginPath();
+      ctx.arc(cx, cy, 4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = 'rgba(122,184,122,0.3)';
+      ctx.beginPath();
+      ctx.arc(cx, cy, 8, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Border
+      ctx.strokeStyle = 'rgba(122, 184, 122, 0.3)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Compass labels
+      ctx.fillStyle = 'rgba(122,184,122,0.5)';
+      ctx.font = '10px Source Sans 3, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('N', cx, cy - r + 14);
+      ctx.fillText('S', cx, cy + r - 4);
+      ctx.textAlign = 'left';
+      ctx.fillText('E', cx + r - 12, cy + 4);
+      ctx.textAlign = 'right';
+      ctx.fillText('W', cx - r + 12, cy + 4);
+    }
+
+    function updateRadarFlightList(flights) {
+      const recent = flights
+        .filter(f => Date.now() - new Date(f.timestamp).getTime() < 2 * 60 * 60 * 1000)
+        .slice(0, 8);
+
+      const el = document.getElementById('radarFlightList');
+      if (!el) return;
+
+      if (recent.length === 0) {
+        el.innerHTML = '<div style="color:var(--cream-dim);font-style:italic;font-size:12px">No recent contacts</div>';
+        return;
+      }
+
+      el.innerHTML = recent.map(f => `
+        <div class="radar-flight-item ${f.military ? 'radar-flight-military' : ''}">
+          <span class="radar-flight-callsign">${f.callsign}</span>
+          <span>${f.origin} → ${f.destination}</span>
+        </div>`).join('');
+    }
+
+    // Animate radar sweep
+    function animateRadar() {
+      radarAngle += 0.02;
+      if (radarAngle > Math.PI * 2) radarAngle = 0;
+
+      // Add trails for current flights
+      allFlights.slice(0, 5).forEach(f => {
+        if (f.latitude && f.longitude &&
+            Date.now() - new Date(f.timestamp).getTime() < 2 * 60 * 60 * 1000) {
+          if (Math.random() < 0.05) {
+            radarTrails.push({
+              lat: f.latitude, lon: f.longitude,
+              military: f.military, time: Date.now()
+            });
+          }
+        }
+      });
+
+      radarTrails = radarTrails.filter(t => Date.now() - t.time < 8000);
+      drawRadar(allFlights);
+      requestAnimationFrame(animateRadar);
+    }
+
+    animateRadar();
+
+    // Initialise map under radar
+    const radarMap = L.map('radarMap', {
+      center: [THRELKELD_LAT, THRELKELD_LON],
+      zoom: 11,
+      zoomControl: false,
+      attributionControl: false,
+      dragging: false,
+      touchZoom: false,
+      scrollWheelZoom: false,
+      doubleClickZoom: false,
+      boxZoom: false,
+      keyboard: false
+    });
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 13
+    }).addTo(radarMap);
+
+    setTimeout(() => { radarMap.invalidateSize(); }, 200);
+
+    // Add Threlkeld label
+    L.marker([THRELKELD_LAT, THRELKELD_LON], {
+      icon: L.divIcon({
+        className: '',
+        html: '<div style="font-size:9px;color:#7ab87a;font-family:monospace;white-space:nowrap;margin-top:6px">Threlkeld</div>',
+        iconAnchor: [24, 0]
+      })
+    }).addTo(radarMap);
 
     // Filter buttons
     document.querySelectorAll('.filter-btn').forEach(btn => {
