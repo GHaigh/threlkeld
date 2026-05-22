@@ -526,12 +526,11 @@
   <script>
     // Threlkeld Analytics
     (function() {
-      const page = window.location.pathname.split('/').pop() || 'index.html';
       fetch('https://rlpzmepeautd1v5pgoumz9aa2qhd92xd.ui.nabu.casa/api/webhook/-FGc31SjPhOeecG848YzrwkwP', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          page: page,
+          page: 'weather.html',
           referrer: document.referrer || '',
           screen: window.screen.width + 'x' + window.screen.height,
           userAgent: navigator.userAgent
