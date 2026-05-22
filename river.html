@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Rivers & Lakes · Threlkeld</title>
+  <title>Rivers, Lakes & Wild Swimming · Threlkeld</title>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Source+Sans+3:wght@300;400;500&display=swap" rel="stylesheet">
   <style>
     :root {
@@ -279,6 +279,88 @@
     .lake-level { font-family: 'Playfair Display', serif; font-size: 28px; color: var(--cream); }
     .lake-unit { font-size: 12px; color: var(--cream-dim); }
 
+
+    /* Swimming conditions */
+    .swim-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+
+    .swim-card {
+      background: var(--forest-dark);
+      border: 1px solid var(--divider);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .swim-card-header {
+      padding: 16px;
+      border-bottom: 1px solid var(--divider);
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+
+    .swim-name { font-size: 15px; color: var(--cream); font-weight: 400; margin-bottom: 2px; }
+    .swim-location { font-size: 11px; color: var(--sage); }
+
+    .swim-badge {
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+
+    .swim-badge.good { background: rgba(122,184,122,0.15); color: var(--sage); border: 1px solid rgba(122,184,122,0.3); }
+    .swim-badge.fair { background: rgba(200,168,74,0.15); color: var(--high); border: 1px solid rgba(200,168,74,0.3); }
+    .swim-badge.poor { background: rgba(200,74,74,0.15); color: var(--flood); border: 1px solid rgba(200,74,74,0.3); }
+    .swim-badge.unknown { background: rgba(184,200,180,0.1); color: var(--cream-dim); border: 1px solid var(--divider); }
+
+    .swim-body { padding: 14px 16px; }
+
+    .swim-factors { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+
+    .swim-factor {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+    }
+
+    .swim-factor-label { color: var(--cream-dim); }
+    .swim-factor-value { color: var(--cream); }
+    .swim-factor-value.good { color: var(--sage); }
+    .swim-factor-value.fair { color: var(--high); }
+    .swim-factor-value.poor { color: var(--flood); }
+
+    .swim-disclaimer {
+      font-size: 10px;
+      color: var(--cream-dim);
+      border-top: 1px solid var(--divider);
+      padding-top: 10px;
+      margin-top: 4px;
+      line-height: 1.5;
+    }
+
+    .swim-info-banner {
+      background: var(--forest-dark);
+      border: 1px solid var(--divider);
+      border-left: 3px solid var(--water);
+      border-radius: 8px;
+      padding: 14px 18px;
+      font-size: 12px;
+      color: var(--cream-dim);
+      line-height: 1.6;
+      margin-bottom: 20px;
+    }
+
+    .swim-info-banner strong { color: var(--cream); font-weight: 400; }
+
     .loading { text-align: center; padding: 40px; color: var(--cream-dim); font-style: italic; }
     .spinner { width: 20px; height: 20px; border: 2px solid var(--divider); border-top-color: var(--sage); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 12px; }
     @keyframes spin { to { transform: rotate(360deg); } }
@@ -305,7 +387,7 @@
     <header>
       <div>
         <div class="header-eyebrow">Environment Agency · Real-time data · Northern Lake District</div>
-        <h1>Rivers <em>&amp; Lakes</em></h1>
+        <h1>Rivers, Lakes <em>&amp; Wild Swimming</em></h1>
       </div>
       <div class="header-updated" id="headerUpdated">Loading...</div>
     </header>
@@ -373,12 +455,25 @@
       <div class="loading"><div class="spinner"></div></div>
     </div>
 
+    <!-- Wild Swimming Section -->
+    <div class="section-header">
+      <div class="section-title">Wild Swimming Conditions</div>
+      <div class="section-subtitle">Indicative only · Always check before you swim</div>
+    </div>
+    <div class="swim-info-banner">
+      <strong>Conditions are estimated from live river and lake level data.</strong>
+      They are not a substitute for checking on the day — always assess conditions yourself before entering open water. Never swim alone, be aware of cold water shock, and check for any local restrictions.
+    </div>
+    <div class="swim-grid" id="swimGrid">
+      <div class="loading"><div class="spinner"></div></div>
+    </div>
+
     <div style="font-size:11px;color:var(--cream-dim);margin-bottom:28px">
       Data from the <a href="https://environment.data.gov.uk/flood-monitoring/doc/reference" target="_blank" style="color:var(--sage)">Environment Agency Real Time flood-monitoring API</a> · Updated every 15 minutes · Open Government Licence
     </div>
 
     <footer>
-      <div class="footer-text">Threlkeld, Cumbria · Rivers &amp; Lakes · EA Flood Monitoring</div>
+      <div class="footer-text">Threlkeld, Cumbria · Rivers, Lakes &amp; Wild Swimming · EA Flood Monitoring</div>
       <div class="footer-brand">threlkeld.info</div>
     </footer>
   </div>
@@ -472,6 +567,9 @@
       if (chart && chart.length > 0) {
         renderChart(chart, main);
       }
+
+      // Swim conditions
+      renderSwim(stations);
 
       // Split into rivers and lakes
       const rivers = nearby.filter(s => !s.lake);
@@ -586,6 +684,118 @@
           <text x="${PAD.left - 4}" y="${yPos(main.normal[0]) + 4}" text-anchor="end" fill="rgba(184,200,180,0.4)" font-size="10" font-family="Source Sans 3">${main.normal[0]}m</text>
           ${dayLabels.map(d => `<text x="${d.x}" y="${H - 6}" text-anchor="middle" fill="rgba(184,200,180,0.5)" font-size="10" font-family="Source Sans 3">${d.label}</text>`).join('')}
         </svg>`;
+    }
+
+    // Swim spot definitions
+    const SWIM_SPOTS = [
+      {
+        name: 'Derwentwater',
+        location: 'Keswick · Multiple access points',
+        stationId: '5178',
+        inflowIds: ['5174'],
+        normalMax: 1.40,
+        notes: 'Popular wild swim lake. Access from Keswick launch or Lodore.'
+      },
+      {
+        name: 'Ullswater',
+        location: 'Glenridding & Howtown',
+        stationId: '5166',
+        inflowIds: [],
+        normalMax: 2.05,
+        notes: 'Stunning glacial lake. Good access at Glenridding and Howtown.'
+      },
+      {
+        name: 'Bassenthwaite Lake',
+        location: 'Dubwath & Scarness',
+        stationId: '5179',
+        inflowIds: ['9419'],
+        normalMax: 2.07,
+        notes: 'Only natural lake in the Lake District. Limited access points.'
+      },
+      {
+        name: 'Thirlmere',
+        location: 'Wythburn & Swirls',
+        stationId: '5210',
+        inflowIds: ['5139'],
+        normalMax: 16.68,
+        notes: 'Reservoir — swimming not officially permitted but widely used.'
+      }
+    ];
+
+    function getSwimConditions(spot, stations) {
+      const lake = stations.find(s => s.id === spot.stationId);
+      if (!lake || lake.level === null) return { rating: 'unknown', factors: [] };
+
+      const inflows = spot.inflowIds.map(id => stations.find(s => s.id === id)).filter(Boolean);
+      const factors = [];
+      let score = 100;
+
+      // Lake level vs normal
+      const levelPct = lake.level / spot.normalMax;
+      if (levelPct > 1.0) {
+        factors.push({ label: 'Lake level', value: 'Above normal', cls: 'poor' });
+        score -= 40;
+      } else if (levelPct > 0.85) {
+        factors.push({ label: 'Lake level', value: 'Elevated', cls: 'fair' });
+        score -= 15;
+      } else {
+        factors.push({ label: 'Lake level', value: 'Normal', cls: 'good' });
+      }
+
+      // Inflow rivers
+      inflows.forEach(r => {
+        if (r.level === null) return;
+        const inflowPct = r.level / (r.normal ? r.normal[1] : 2.0);
+        if (inflowPct > 0.9) {
+          factors.push({ label: r.name.split(' at ')[0], value: 'High — poor visibility', cls: 'poor' });
+          score -= 30;
+        } else if (inflowPct > 0.7) {
+          factors.push({ label: r.name.split(' at ')[0], value: 'Elevated', cls: 'fair' });
+          score -= 10;
+        } else {
+          factors.push({ label: r.name.split(' at ')[0], value: 'Low — good visibility', cls: 'good' });
+        }
+      });
+
+      // Season water temp estimate
+      const month = new Date().getMonth();
+      let temp, tempCls;
+      if (month >= 5 && month <= 8) { temp = '14–18°C'; tempCls = 'good'; }
+      else if (month === 4 || month === 9) { temp = '10–14°C'; tempCls = 'fair'; }
+      else { temp = 'Below 10°C'; tempCls = 'poor'; score -= 20; }
+      factors.push({ label: 'Water temp (est.)', value: temp, cls: tempCls });
+
+      const rating = score >= 70 ? 'good' : score >= 40 ? 'fair' : 'poor';
+      return { rating, factors };
+    }
+
+    function renderSwim(stations) {
+      const grid = document.getElementById('swimGrid');
+      grid.innerHTML = SWIM_SPOTS.map(spot => {
+        const { rating, factors } = getSwimConditions(spot, stations);
+        const badgeLabel = rating === 'good' ? '✓ Good' : rating === 'fair' ? '⚠ Fair' : rating === 'poor' ? '✗ Poor' : '? Unknown';
+
+        return `
+          <div class="swim-card">
+            <div class="swim-card-header">
+              <div>
+                <div class="swim-name">${spot.name}</div>
+                <div class="swim-location">${spot.location}</div>
+              </div>
+              <span class="swim-badge ${rating}">${badgeLabel}</span>
+            </div>
+            <div class="swim-body">
+              <div class="swim-factors">
+                ${factors.map(f => `
+                  <div class="swim-factor">
+                    <span class="swim-factor-label">${f.label}</span>
+                    <span class="swim-factor-value ${f.cls}">${f.value}</span>
+                  </div>`).join('')}
+              </div>
+              <div class="swim-disclaimer">${spot.notes} Always assess conditions yourself before entering the water.</div>
+            </div>
+          </div>`;
+      }).join('');
     }
 
     // MQTT
