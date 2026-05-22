@@ -369,8 +369,8 @@
       height: 280px;
       border-radius: 50%;
       overflow: hidden;
-      opacity: 0.4;
-      filter: grayscale(100%) invert(1) hue-rotate(100deg) brightness(0.35) contrast(1.2);
+      opacity: 0.5;
+      filter: hue-rotate(100deg) brightness(0.6) saturate(0.4);
     }
 
     canvas#radarCanvas {
@@ -1004,8 +1004,9 @@
       keyboard: false
     });
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 13
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      maxZoom: 13,
+      attribution: '&copy; OpenStreetMap &copy; CARTO'
     }).addTo(radarMap);
 
     setTimeout(() => { radarMap.invalidateSize(); }, 200);
