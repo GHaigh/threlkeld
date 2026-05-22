@@ -206,6 +206,7 @@
           <tr>
             <th>Time</th>
             <th>Page</th>
+            <th>Location</th>
             <th>Referrer</th>
             <th>Screen</th>
             <th>Device</th>
@@ -319,6 +320,7 @@
           <tr>
             <td>${formatTime(v.timestamp)}</td>
             <td>${cleanPage(v.page)}</td>
+            <td class="td-dim">${v.location || '?'}</td>
             <td class="td-dim">${cleanReferrer(v.referrer)}</td>
             <td class="td-dim">${v.screen || '?'}</td>
             <td>${getDevice(v.userAgent)}</td>
