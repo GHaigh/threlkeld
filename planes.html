@@ -117,6 +117,10 @@
       flex: 1;
     }
 
+    @media (min-width: 900px) {
+      .stats-grid { grid-template-columns: repeat(3, 1fr); }
+    }
+
     .stats-grid .stat-box {
       display: flex;
       flex-direction: column;
@@ -158,6 +162,7 @@
 
     .flight-card:hover { border-color: var(--sage); }
     .flight-card.military { border-color: var(--military); background: linear-gradient(135deg, var(--forest-dark), var(--military-dim)); }
+    .flight-card.air-ambulance { border-color: #e05555; background: linear-gradient(135deg, var(--forest-dark), rgba(224,85,85,0.08)); }
 
     .flight-card-header {
       display: flex;
@@ -484,6 +489,7 @@
           <div class="stat-box"><div class="stat-value" id="statToday">—</div><div class="stat-label">Today</div></div>
           <div class="stat-box"><div class="stat-value" id="statTotal">—</div><div class="stat-label">Total Logged</div></div>
           <div class="stat-box"><div class="stat-value" id="statMilitary">—</div><div class="stat-label">Military</div></div>
+          <div class="stat-box"><div class="stat-value" id="statAirAmb">—</div><div class="stat-label">Air Ambulance</div></div>
           <div class="stat-box"><div class="stat-value" id="statHighest">—</div><div class="stat-label">Highest (ft)</div></div>
         </div>
       </div>
@@ -585,13 +591,32 @@
       return new Date(ts).toDateString() === new Date().toDateString();
     }
 
+    function function isAirAmbulance(f) {
+      const cs = (f.callsign || '').toUpperCase();
+      const airline = (f.airline || '').toUpperCase();
+      const model = (f.aircraft_model || '').toUpperCase();
+      // UK air ambulance callsigns and operators
+      return cs.startsWith('HELIMED') ||
+             cs.startsWith('HEMS') ||
+             cs.startsWith('CLIFT') ||
+             cs.startsWith('MAGPIE') ||
+             cs.startsWith('NOVAIR') ||
+             airline.includes('AIR AMBULANCE') ||
+             airline.includes('HEMS') ||
+             (model.includes('EC135') && cs.startsWith('G-')) ||
+             (model.includes('H145') && cs.startsWith('G-')) ||
+             (model.includes('AW169') && cs.startsWith('G-'));
+    }
+
     function renderStats(flights) {
       const today = flights.filter(f => isToday(f.timestamp));
       const military = flights.filter(f => f.military);
+      const airAmb = flights.filter(f => isAirAmbulance(f));
       const highest = flights.reduce((max, f) => Math.max(max, f.altitude || 0), 0);
       document.getElementById('statToday').textContent = today.length;
       document.getElementById('statTotal').textContent = flights.length;
       document.getElementById('statMilitary').textContent = military.length;
+      document.getElementById('statAirAmb').textContent = airAmb.length;
       document.getElementById('statHighest').textContent = highest > 0 ? Math.round(highest).toLocaleString() : '—';
     }
 
@@ -627,7 +652,7 @@
         const placeholderHtml = `<div class="flight-photo-placeholder" style="${hasPhoto ? 'display:none' : ''}">✈️</div>`;
 
         return `
-          <div class="flight-card ${f.military ? 'military' : ''}">
+          <div class="flight-card ${f.military ? 'military' : isAirAmbulance(f) ? 'air-ambulance' : ''}">
             <div class="flight-card-header">
               ${photoHtml}${placeholderHtml}
               <div>

@@ -244,6 +244,36 @@
       color: var(--cream);
     }
 
+    .bird-search {
+      width: 100%;
+      background: var(--forest-mid);
+      border: 1px solid var(--divider);
+      border-radius: 8px;
+      padding: 10px 14px;
+      color: var(--cream);
+      font-family: 'Source Sans 3', sans-serif;
+      font-size: 13px;
+      font-weight: 300;
+      margin-bottom: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .bird-search:focus { border-color: var(--sage); }
+    .bird-search::placeholder { color: var(--cream-dim); }
+
+    .search-results-label {
+      font-size: 11px;
+      color: var(--cream-dim);
+      margin-bottom: 10px;
+      font-style: italic;
+    }
+
+    .search-highlight {
+      background: rgba(122,184,122,0.2);
+      border-radius: 2px;
+      padding: 0 2px;
+    }
+
     .section-count { font-size: 11px; color: var(--sage); letter-spacing: 0.1em; }
 
     .detections-grid {
@@ -804,6 +834,8 @@
           <div class="section-title">Recent Detections</div>
           <div class="section-count" id="detectionCount"></div>
         </div>
+        <input type="text" class="bird-search" id="birdSearch" placeholder="🔍 Search species — e.g. Robin, Blackbird..." autocomplete="off">
+        <div class="search-results-label" id="searchLabel" style="display:none"></div>
         <div class="detections-grid" id="detectionsList">
           <div class="loading">
             <div class="loading-spinner"></div>
@@ -891,36 +923,39 @@
       return `${parts[2]}-${parts[1]}-${parts[0]}`;
     }
 
-    function renderDetections(data) {
-      const total = data.count || 0;
-      // Filter to last 24 hours only
-      const cutoff = Date.now() - 24 * 60 * 60 * 1000;
-      const allDets = [];
-      for (let i = 0; i < total; i++) {
-        if (data[i] && data[i].bird && new Date(data[i].timestamp).getTime() > cutoff) {
-          allDets.push(data[i]);
-        }
-      }
-      const count = allDets.length;
-      // statToday is set from stats topic which has accurate today count
-      if (count === 0) {
-        document.getElementById('detectionsList').innerHTML = '<div class="loading">No detections in the last 24 hours</div>';
-        document.getElementById('detectionCount').textContent = '';
+    let allDetectionsStore = [];
+
+    function renderDetectionsList(dets, searchTerm = '') {
+      const list = document.getElementById('detectionsList');
+      const label = document.getElementById('searchLabel');
+
+      if (dets.length === 0) {
+        list.innerHTML = searchTerm
+          ? `<div class="loading">No detections found for "<strong>${searchTerm}</strong>"</div>`
+          : '<div class="loading">No detections in the last 24 hours</div>';
         return;
       }
-      document.getElementById('detectionCount').textContent = `${count} in last 24 hours`;
+
+      const limit = searchTerm ? dets.length : 50;
       let html = '';
-      for (let i = 0; i < Math.min(count, 50); i++) {
-        const d = allDets[i];
+      for (let i = 0; i < Math.min(dets.length, limit); i++) {
+        const d = dets[i];
+        if (!d || !d.bird || !d.date) continue;
+        const score = Math.round
+      for (let i = 0; i < Math.min(dets.length, limit); i++) {
+        const d = dets[i];
         if (!d || !d.bird || !d.date) continue;
         const score = Math.round(parseFloat(d.score) * 100);
         const imgs = getBirdImageUrl(d.bird);
+        const birdName = searchTerm
+          ? d.bird.replace(new RegExp(`(${searchTerm})`, 'gi'), '<span class="search-highlight">$1</span>')
+          : d.bird;
         html += `
           <div class="detection-card" style="animation-delay:${i * 30}ms">
             <img class="bird-photo" src="${imgs.primary}" alt="${d.bird}"
                  onerror="this.src='${imgs.fallback}'; this.onerror=null"/>
             <div class="bird-info">
-              <div class="bird-name">${d.bird}</div>
+              <div class="bird-name">${birdName}</div>
               <div class="bird-meta">${formatDate(d.date)} · ${d.time}</div>
             </div>
             <div class="confidence-block">
@@ -930,7 +965,24 @@
             </div>
           </div>`;
       }
-      document.getElementById('detectionsList').innerHTML = html;
+      list.innerHTML = html || '<div class="loading">No results</div>';
+    }
+
+    function renderDetections(data) {
+      const total = data.count || 0;
+      const cutoff = Date.now() - 365 * 24 * 60 * 60 * 1000; // All data for search
+      allDetectionsStore = [];
+      for (let i = 0; i < total; i++) {
+        if (data[i] && data[i].bird) allDetectionsStore.push(data[i]);
+      }
+
+      // Default: show last 24 hours
+      const dayAgo = Date.now() - 24 * 60 * 60 * 1000;
+      const todayDets = allDetectionsStore.filter(d => new Date(d.timestamp).getTime() > dayAgo);
+      const count = todayDets.length;
+
+      document.getElementById('detectionCount').textContent = count > 0 ? `${count} in last 24 hours` : '';
+      renderDetectionsList(todayDets);
     }
 
     function renderBirdOfDay(stats) {
@@ -1150,6 +1202,43 @@
       if (e.target === calModalOverlayEl) closeCalModal();
     });
     document.addEventListener('keydown', e => { if (e.key==='Escape') closeCalModal(); });
+
+    // Bird search
+    document.getElementById('birdSearch').addEventListener('input', function() {
+      const term = this.value.trim();
+      const label = document.getElementById('searchLabel');
+      const countEl = document.getElementById('detectionCount');
+
+      if (!term) {
+        // Back to last 24 hours
+        label.style.display = 'none';
+        const dayAgo = Date.now() - 24 * 60 * 60 * 1000;
+        const todayDets = allDetectionsStore.filter(d => new Date(d.timestamp).getTime() > dayAgo);
+        countEl.textContent = `${todayDets.length} in last 24 hours`;
+        renderDetectionsList(todayDets);
+        return;
+      }
+
+      // Search all stored detections
+      const results = allDetectionsStore.filter(d =>
+        d.bird && d.bird.toLowerCase().includes(term.toLowerCase())
+      );
+
+      // Group by species and show latest first
+      const dates = results.map(d => new Date(d.timestamp));
+      const earliest = dates.length ? new Date(Math.min(...dates)) : null;
+      const latest = dates.length ? new Date(Math.max(...dates)) : null;
+
+      countEl.textContent = '';
+      label.style.display = results.length ? 'block' : 'block';
+      label.innerHTML = results.length
+        ? `${results.length} detection${results.length !== 1 ? 's' : ''} of "<strong>${term}</strong>"` +
+          (earliest ? ` · First: ${formatDate(earliest.toISOString().split('T')[0])}` : '') +
+          (latest && earliest && latest.toDateString() !== earliest.toDateString() ? ` · Last: ${formatDate(latest.toISOString().split('T')[0])}` : '')
+        : `No detections found for "<strong>${term}</strong>"`;
+
+      renderDetectionsList(results, term);
+    });
 
     const client = mqtt.connect(`wss://${MQTT_HOST}:${MQTT_PORT}/mqtt`);
 
