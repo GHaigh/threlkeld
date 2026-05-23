@@ -104,7 +104,7 @@
 
     .hero-stats {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(5, 1fr);
       gap: 12px;
       margin-top: 20px;
     }
@@ -141,10 +141,20 @@
     .summit-elev { font-size: 11px; color: var(--sage); margin-bottom: 12px; }
 
     .summit-metrics {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      display: flex;
+      flex-direction: column;
       gap: 8px;
-      margin-bottom: 12px;
+      margin-bottom: 10px;
+    }
+
+    .summit-metrics-row {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+    }
+
+    .summit-metrics-row .summit-metric {
+      min-width: 56px;
     }
 
     .summit-metric { text-align: center; }
@@ -362,11 +372,14 @@
   <script>
     const SUMMITS = [
       { name: 'Blencathra', lat: 54.638, lon: -3.053, elev: 868, hero: true },
-      { name: 'Skiddaw', lat: 54.654, lon: -3.148, elev: 931 },
-      { name: 'Helvellyn', lat: 54.527, lon: -3.016, elev: 950 },
-      { name: 'Great Dodd', lat: 54.582, lon: -3.023, elev: 857 },
-      { name: 'Clough Head', lat: 54.604, lon: -3.031, elev: 726 },
+      { name: 'Latrigg', lat: 54.612, lon: -3.123, elev: 368 },
       { name: 'Lonscale Fell', lat: 54.629, lon: -3.116, elev: 715 },
+      { name: 'Bannerdale Crags', lat: 54.626, lon: -3.017, elev: 683 },
+      { name: 'Bowscale Fell', lat: 54.665, lon: -3.017, elev: 702 },
+      { name: 'Souther Fell', lat: 54.654, lon: -3.001, elev: 522 },
+      { name: 'Great Mell Fell', lat: 54.617, lon: -2.963, elev: 537 },
+      { name: 'Clough Head', lat: 54.604, lon: -3.031, elev: 726 },
+      { name: 'Mungrisdale Common', lat: 54.652, lon: -3.038, elev: 675 },
     ];
 
     function windDir(deg) {
@@ -380,15 +393,32 @@
     }
 
     function getConditionRating(windMph, gustsMph, precipMm, visKm, tempC) {
-      if (gustsMph > 50 || precipMm > 5 || visKm < 0.2) return 'danger';
-      if (gustsMph > 35 || precipMm > 2 || visKm < 0.5 || windMph > 25) return 'poor';
-      if (gustsMph > 20 || precipMm > 0.5 || visKm < 2 || windMph > 15) return 'fair';
+      // Only use visibility if it's a valid positive number
+      const visOk = visKm > 0;
+      if (gustsMph > 50 || precipMm > 5 || (visOk && visKm < 0.2)) return 'danger';
+      if (gustsMph > 35 || precipMm > 2 || (visOk && visKm < 0.5) || windMph > 25) return 'poor';
+      if (gustsMph > 20 || precipMm > 0.5 || (visOk && visKm < 2) || windMph > 15) return 'fair';
       return 'good';
     }
 
     function conditionLabel(rating) {
       const labels = { good: '✓ Good', fair: '⚠ Fair', poor: '✗ Poor', danger: '⛔ Dangerous' };
       return labels[rating] || '?';
+    }
+
+    function conditionReason(windMph, gustsMph, precipMm, visKm) {
+      const reasons = [];
+      const visOk = visKm > 0;
+      if (gustsMph > 50) reasons.push(`severe gusts ${gustsMph}mph`);
+      else if (gustsMph > 35) reasons.push(`strong gusts ${gustsMph}mph`);
+      else if (gustsMph > 20) reasons.push(`gusty ${gustsMph}mph`);
+      if (precipMm > 5) reasons.push('heavy rain');
+      else if (precipMm > 2) reasons.push('moderate rain');
+      else if (precipMm > 0.5) reasons.push('light rain');
+      if (visOk && visKm < 0.2) reasons.push(`visibility ${Math.round(visKm * 1000)}m — in cloud`);
+      else if (visOk && visKm < 0.5) reasons.push(`poor visibility ${Math.round(visKm * 1000)}m`);
+      else if (visOk && visKm < 2) reasons.push(`visibility ${visKm.toFixed(1)}km`);
+      return reasons.length ? reasons.join(' · ') : 'conditions acceptable';
     }
 
     function formatDay(dateStr) {
@@ -542,21 +572,29 @@
 
     async function loadSummits() {
       const nearbySummits = SUMMITS.filter(s => !s.hero);
-      const results = await Promise.all(nearbySummits.map(async s => {
-        const data = await fetchSummitWeather(s.lat, s.lon, s.elev);
-        const hi = getCurrentHourIndex(data);
-        return {
-          ...s,
-          temp: Math.round(data.hourly.temperature_2m[hi]),
-          wind: Math.round(data.hourly.windspeed_10m[hi]),
-          gusts: Math.round(data.hourly.windgusts_10m[hi]),
-          precip: data.hourly.precipitation[hi],
-          vis: data.hourly.visibility[hi] / 1000,
-          wmo: data.hourly.weathercode[hi]
-        };
-      }));
+      // Stagger requests to avoid rate limiting
+      const results = [];
+      for (const s of nearbySummits) {
+        try {
+          await new Promise(r => setTimeout(r, 300));
+          const data = await fetchSummitWeather(s.lat, s.lon, s.elev);
+          const hi = getCurrentHourIndex(data);
+          results.push({
+            ...s,
+            temp: Math.round(data.hourly.temperature_2m[hi]),
+            wind: Math.round(data.hourly.windspeed_10m[hi]),
+            gusts: Math.round(data.hourly.windgusts_10m[hi]),
+            precip: data.hourly.precipitation[hi],
+            vis: (data.hourly.visibility[hi] || 0) / 1000,
+            wmo: data.hourly.weathercode[hi]
+          });
+        } catch(e) {
+          results.push({ ...s, temp: null, wind: null, gusts: null, precip: null, vis: null, wmo: 0 });
+        }
+      }
 
       document.getElementById('summitsGrid').innerHTML = results.map(s => {
+        if (s.temp === null) return `<div class="summit-card"><div class="summit-name">${s.name}</div><div class="summit-elev">${s.elev}m</div><div style="color:var(--cream-dim);font-size:12px;font-style:italic">Data unavailable</div></div>`;
         const rating = getConditionRating(s.wind, s.gusts, s.precip, s.vis, s.temp);
         const colors = { good: 'var(--good)', fair: 'var(--fair)', poor: 'var(--poor)', danger: 'var(--danger)' };
         return `
@@ -569,19 +607,32 @@
               <span class="condition-badge ${rating}" style="font-size:9px;padding:3px 8px">${conditionLabel(rating)}</span>
             </div>
             <div class="summit-metrics">
-              <div class="summit-metric">
-                <div class="summit-metric-value">${s.temp}°</div>
-                <div class="summit-metric-label">Temp °C</div>
+              <div class="summit-metrics-row">
+                <div class="summit-metric">
+                  <div class="summit-metric-value">${s.temp}°</div>
+                  <div class="summit-metric-label">Temp °C</div>
+                </div>
+                <div class="summit-metric">
+                  <div class="summit-metric-value">${s.wind}</div>
+                  <div class="summit-metric-label">Wind mph</div>
+                </div>
+                <div class="summit-metric">
+                  <div class="summit-metric-value">${s.gusts}</div>
+                  <div class="summit-metric-label">Gusts mph</div>
+                </div>
               </div>
-              <div class="summit-metric">
-                <div class="summit-metric-value">${s.wind}</div>
-                <div class="summit-metric-label">Wind mph</div>
-              </div>
-              <div class="summit-metric">
-                <div class="summit-metric-value">${s.gusts}</div>
-                <div class="summit-metric-label">Gusts mph</div>
+              <div class="summit-metrics-row">
+                <div class="summit-metric">
+                  <div class="summit-metric-value">${s.vis > 0 ? (s.vis < 1 ? Math.round(s.vis * 1000) + 'm' : s.vis.toFixed(1) + 'km') : '—'}</div>
+                  <div class="summit-metric-label">Visibility</div>
+                </div>
+                <div class="summit-metric">
+                  <div class="summit-metric-value">${s.precip.toFixed(1)}</div>
+                  <div class="summit-metric-label">Rain mm/hr</div>
+                </div>
               </div>
             </div>
+            ${rating !== 'good' ? `<div style="font-size:11px;color:var(--cream-dim);text-align:center;margin-top:4px;line-height:1.5">${conditionReason(s.wind, s.gusts, s.precip, s.vis)}</div>` : ''}
           </div>`;
       }).join('');
     }
