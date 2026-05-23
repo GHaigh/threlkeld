@@ -326,6 +326,35 @@
     .filter-btn.active { background: var(--sage); color: var(--forest-deep); border-color: var(--sage); font-weight: 500; }
     .filter-btn.military-filter.active { background: var(--military); border-color: var(--military); }
 
+    /* Stat modal */
+    .stat-modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+      z-index: 1000; display: none; align-items: center; justify-content: center; padding: 20px;
+    }
+    .stat-modal-overlay.show { display: flex; }
+    .stat-modal { background: var(--forest-dark); border: 1px solid var(--divider); border-radius: 12px; width: 100%; max-width: 700px; max-height: 80vh; display: flex; flex-direction: column; overflow: hidden; }
+    .stat-modal-header { display: flex; justify-content: space-between; align-items: center; padding: 20px 24px; border-bottom: 1px solid var(--divider); flex-shrink: 0; }
+    .stat-modal-title { font-family: 'Playfair Display', serif; font-size: 20px; color: var(--cream); }
+    .stat-modal-count { font-size: 12px; color: var(--cream-dim); margin-top: 2px; }
+    .stat-modal-close { background: none; border: none; color: var(--cream-dim); font-size: 20px; cursor: pointer; padding: 4px 8px; border-radius: 4px; transition: color 0.2s; }
+    .stat-modal-close:hover { color: var(--cream); }
+    .stat-modal-body { overflow-y: auto; padding: 16px 24px; flex: 1; }
+    .stat-modal-body::-webkit-scrollbar { width: 4px; }
+    .stat-modal-body::-webkit-scrollbar-thumb { background: var(--forest-light); border-radius: 2px; }
+    .modal-flight-item { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--divider); }
+    .modal-flight-item:last-child { border-bottom: none; }
+    .modal-flight-photo { width: 48px; height: 36px; object-fit: cover; border-radius: 4px; background: var(--forest-mid); flex-shrink: 0; }
+    .modal-flight-placeholder { width: 48px; height: 36px; background: var(--forest-mid); border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+    .modal-flight-info { flex: 1; min-width: 0; }
+    .modal-flight-callsign { font-size: 14px; color: var(--cream); font-weight: 500; }
+    .modal-flight-route { font-size: 12px; color: var(--cream-dim); margin-top: 2px; }
+    .modal-flight-meta { font-size: 11px; color: var(--cream-dim); margin-top: 2px; }
+    .modal-flight-right { text-align: right; flex-shrink: 0; }
+    .modal-flight-alt { font-family: 'Playfair Display', serif; font-size: 18px; color: var(--cream); }
+    .modal-flight-time { font-size: 11px; color: var(--cream-dim); margin-top: 2px; }
+    .stat-box.clickable { cursor: pointer; transition: border-color 0.15s; }
+    .stat-box.clickable:hover { border-color: var(--sage); }
+
     footer {
       border-top: 1px solid var(--divider);
       padding: 20px 0 32px;
@@ -742,8 +771,6 @@
       if (currentFilter === 'month') filtered = filtered.filter(f => isThisMonth(f.timestamp));
       if (currentFilter === 'year') filtered = filtered.filter(f => isThisYear(f.timestamp));
       if (currentFilter === 'military') filtered = filtered.filter(f => f.military);
-      if (currentFilter === 'airambulance') filtered = filtered.filter(f => isAirAmbulance(f));
-      if (currentFilter === 'highest') filtered = [...filtered].sort((a, b) => (b.altitude || 0) - (a.altitude || 0)).slice(0, 50);
 
       document.getElementById('historyCount').textContent = `${filtered.length} flights`;
 
@@ -775,17 +802,58 @@
     }
 
 
+    // Stat modal
+    function showStatModal(title, flights) {
+      document.getElementById('statModalTitle').textContent = title;
+      document.getElementById('statModalCount').textContent = `${flights.length} flight${flights.length !== 1 ? 's' : ''}`;
+      document.getElementById('statModalBody').innerHTML = flights.length === 0
+        ? '<div style="text-align:center;color:var(--cream-dim);font-style:italic;padding:40px">No flights found</div>'
+        : flights.map(f => {
+            const hasPhoto = f.photo && f.photo.length > 0;
+            return `
+              <div class="modal-flight-item">
+                ${hasPhoto
+                  ? `<img class="modal-flight-photo" src="${f.photo}" alt="${f.callsign}" onerror="this.style.display='none'">`
+                  : `<div class="modal-flight-placeholder">✈️</div>`}
+                <div class="modal-flight-info">
+                  <div class="modal-flight-callsign">${f.callsign}${f.military ? ' 🎖️' : ''}${isAirAmbulance(f) ? ' 🚁' : ''}</div>
+                  <div class="modal-flight-route">${f.origin} → ${f.destination}</div>
+                  <div class="modal-flight-meta">${f.aircraft_model || 'Unknown aircraft'} · ${f.airline || ''}</div>
+                </div>
+                <div class="modal-flight-right">
+                  <div class="modal-flight-alt">${Math.round(f.altitude || 0).toLocaleString()}<span style="font-size:11px;color:var(--cream-dim)">ft</span></div>
+                  <div class="modal-flight-time">${minutesAgo(f.timestamp)}</div>
+                </div>
+              </div>`;
+          }).join('');
+      document.getElementById('statModalOverlay').classList.add('show');
+    }
+
+    document.getElementById('statModalClose').addEventListener('click', () => {
+      document.getElementById('statModalOverlay').classList.remove('show');
+    });
+    document.getElementById('statModalOverlay').addEventListener('click', (e) => {
+      if (e.target === e.currentTarget) document.getElementById('statModalOverlay').classList.remove('show');
+    });
+
     // Stat box click handlers
     document.querySelectorAll('.stat-box.clickable').forEach(box => {
       box.addEventListener('click', () => {
         const filter = box.dataset.filter;
-        document.querySelectorAll('.stat-box.clickable').forEach(b => b.classList.remove('active'));
-        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-        box.classList.add('active');
-        currentFilter = filter;
-        renderHistory(allFlights);
-        renderStats(allFlights);
-        renderCurrent(allFlights);
+        if (!allFlights.length) return;
+
+        if (filter === 'military') {
+          showStatModal('Military Flights', allFlights.filter(f => f.military));
+        } else if (filter === 'airambulance') {
+          showStatModal('Air Ambulance Flights', allFlights.filter(f => isAirAmbulance(f)));
+        } else if (filter === 'highest') {
+          const sorted = [...allFlights].sort((a, b) => (b.altitude || 0) - (a.altitude || 0));
+          showStatModal('Highest Flights', sorted.slice(0, 20));
+        } else if (filter === 'today') {
+          showStatModal("Today's Flights", allFlights.filter(f => isToday(f.timestamp)));
+        } else if (filter === 'all') {
+          showStatModal('All Logged Flights', allFlights.slice(0, 50));
+        }
       });
     });
 
@@ -821,5 +889,19 @@
       } catch(e) { console.error('Parse error:', e); }
     });
   </script>
+  <!-- Stat Modal -->
+  <div class="stat-modal-overlay" id="statModalOverlay">
+    <div class="stat-modal">
+      <div class="stat-modal-header">
+        <div>
+          <div class="stat-modal-title" id="statModalTitle"></div>
+          <div class="stat-modal-count" id="statModalCount"></div>
+        </div>
+        <button class="stat-modal-close" id="statModalClose">✕</button>
+      </div>
+      <div class="stat-modal-body" id="statModalBody"></div>
+    </div>
+  </div>
+
 </body>
 </html>
