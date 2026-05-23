@@ -941,10 +941,6 @@
       for (let i = 0; i < Math.min(dets.length, limit); i++) {
         const d = dets[i];
         if (!d || !d.bird || !d.date) continue;
-        const score = Math.round
-      for (let i = 0; i < Math.min(dets.length, limit); i++) {
-        const d = dets[i];
-        if (!d || !d.bird || !d.date) continue;
         const score = Math.round(parseFloat(d.score) * 100);
         const imgs = getBirdImageUrl(d.bird);
         const birdName = searchTerm
