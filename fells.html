@@ -379,10 +379,10 @@
       return Math.round(13.12 + 0.6215 * tempC - 11.37 * Math.pow(windKph, 0.16) + 0.3965 * tempC * Math.pow(windKph, 0.16));
     }
 
-    function getConditionRating(windKph, gusts, precipMm, visKm, tempC) {
-      if (gusts > 80 || precipMm > 5 || visKm < 0.2) return 'danger';
-      if (gusts > 50 || precipMm > 2 || visKm < 0.5 || windKph > 40) return 'poor';
-      if (gusts > 30 || precipMm > 0.5 || visKm < 2 || windKph > 25) return 'fair';
+    function getConditionRating(windMph, gustsMph, precipMm, visKm, tempC) {
+      if (gustsMph > 50 || precipMm > 5 || visKm < 0.2) return 'danger';
+      if (gustsMph > 35 || precipMm > 2 || visKm < 0.5 || windMph > 25) return 'poor';
+      if (gustsMph > 20 || precipMm > 0.5 || visKm < 2 || windMph > 15) return 'fair';
       return 'good';
     }
 
@@ -442,7 +442,7 @@
       const vis = data.hourly.visibility[hi] / 1000;
       const wmo = data.hourly.weathercode[hi];
       const chill = windChill(temp, wind * 1.609);
-      const rating = getConditionRating(wind * 1.609, gusts * 1.609, precip, vis, temp);
+      const rating = getConditionRating(wind, gusts, precip, vis, temp);
 
       // Estimate freezing level
       const lapseRate = 6.5; // °C per 1000m
@@ -509,7 +509,7 @@
       document.getElementById('forecastChart').innerHTML = `
         <div class="forecast-hours">${todayHours.map(h => `<div class="forecast-hour">${h.hour}:00</div>`).join('')}</div>
         <div class="forecast-bars">${todayHours.map(h => {
-          const r = getConditionRating(h.wind * 1.609, h.gusts * 1.609, h.precip, 10, h.temp);
+          const r = getConditionRating(h.wind, h.gusts, h.precip, 10, h.temp);
           const colors = { good: 'var(--good)', fair: 'var(--fair)', poor: 'var(--poor)', danger: 'var(--danger)' };
           const heightPct = Math.round((h.gusts / maxWind) * 100);
           return `<div class="forecast-bar" style="background:${colors[r]};height:${heightPct}%" data-tip="${h.gusts}mph gusts · ${h.temp}°C"></div>`;
@@ -525,7 +525,7 @@
         const maxT = Math.round(data.daily.temperature_2m_max[i]);
         const minT = Math.round(data.daily.temperature_2m_min[i]);
         const wmo = data.daily.weathercode[i];
-        const r = getConditionRating(maxW * 1.609, maxG * 1.609, precip / 24, 2, minT);
+        const r = getConditionRating(maxW, maxG, precip / 24, 2, minT);
         return `
           <div class="day-card">
             <div class="day-name">${formatDay(day)} ${weatherIcon(wmo)}</div>
@@ -557,7 +557,7 @@
       }));
 
       document.getElementById('summitsGrid').innerHTML = results.map(s => {
-        const rating = getConditionRating(s.wind * 1.609, s.gusts * 1.609, s.precip, s.vis, s.temp);
+        const rating = getConditionRating(s.wind, s.gusts, s.precip, s.vis, s.temp);
         const colors = { good: 'var(--good)', fair: 'var(--fair)', poor: 'var(--poor)', danger: 'var(--danger)' };
         return `
           <div class="summit-card">
