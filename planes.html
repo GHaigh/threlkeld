@@ -136,6 +136,9 @@
       padding: 16px;
       text-align: center;
     }
+    .stat-box.clickable { cursor: pointer; transition: border-color 0.15s, background 0.15s; }
+    .stat-box.clickable:hover { border-color: var(--sage); background: var(--forest-mid); }
+    .stat-box.clickable.active { border-color: var(--sage); background: var(--forest-mid); }
 
     .stat-value { font-family: 'Playfair Display', serif; font-size: 32px; color: var(--cream); line-height: 1; margin-bottom: 4px; }
     .stat-label { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--sage); }
@@ -486,11 +489,11 @@
       </div>
       <div class="top-right">
         <div class="stats-grid">
-          <div class="stat-box"><div class="stat-value" id="statToday">—</div><div class="stat-label">Today</div></div>
-          <div class="stat-box"><div class="stat-value" id="statTotal">—</div><div class="stat-label">Total Logged</div></div>
-          <div class="stat-box"><div class="stat-value" id="statMilitary">—</div><div class="stat-label">Military</div></div>
-          <div class="stat-box"><div class="stat-value" id="statAirAmb">—</div><div class="stat-label">Air Ambulance</div></div>
-          <div class="stat-box"><div class="stat-value" id="statHighest">—</div><div class="stat-label">Highest (ft)</div></div>
+          <div class="stat-box clickable" data-filter="today" title="Show today's flights"><div class="stat-value" id="statToday">—</div><div class="stat-label">Today</div></div>
+          <div class="stat-box clickable" data-filter="all" title="Show all flights"><div class="stat-value" id="statTotal">—</div><div class="stat-label">Total Logged</div></div>
+          <div class="stat-box clickable" data-filter="military" title="Show military flights"><div class="stat-value" id="statMilitary">—</div><div class="stat-label">Military</div></div>
+          <div class="stat-box clickable" data-filter="airambulance" title="Show air ambulance flights"><div class="stat-value" id="statAirAmb">—</div><div class="stat-label">Air Ambulance</div></div>
+          <div class="stat-box clickable" data-filter="highest" title="Show highest flight"><div class="stat-value" id="statHighest">—</div><div class="stat-label">Highest (ft)</div></div>
         </div>
       </div>
     </div>
@@ -739,6 +742,8 @@
       if (currentFilter === 'month') filtered = filtered.filter(f => isThisMonth(f.timestamp));
       if (currentFilter === 'year') filtered = filtered.filter(f => isThisYear(f.timestamp));
       if (currentFilter === 'military') filtered = filtered.filter(f => f.military);
+      if (currentFilter === 'airambulance') filtered = filtered.filter(f => isAirAmbulance(f));
+      if (currentFilter === 'highest') filtered = [...filtered].sort((a, b) => (b.altitude || 0) - (a.altitude || 0)).slice(0, 50);
 
       document.getElementById('historyCount').textContent = `${filtered.length} flights`;
 
@@ -769,6 +774,20 @@
       renderHistory(flights);
     }
 
+
+    // Stat box click handlers
+    document.querySelectorAll('.stat-box.clickable').forEach(box => {
+      box.addEventListener('click', () => {
+        const filter = box.dataset.filter;
+        document.querySelectorAll('.stat-box.clickable').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        box.classList.add('active');
+        currentFilter = filter;
+        renderHistory(allFlights);
+        renderStats(allFlights);
+        renderCurrent(allFlights);
+      });
+    });
 
     // Filter buttons
     document.querySelectorAll('.filter-btn').forEach(btn => {
