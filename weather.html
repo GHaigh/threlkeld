@@ -172,7 +172,7 @@
     /* Current conditions */
     .conditions-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      grid-template-columns: repeat(3, 1fr);
       gap: 16px;
       margin-bottom: 40px;
     }
@@ -293,10 +293,6 @@
     .stargazing-factor { display: flex; justify-content: space-between; font-size: 13px; }
     .stargazing-factor-label { color: var(--cream-dim); }
     .stargazing-factor-value { color: var(--cream); }
-
-    /* Wind rose */
-    .wind-rose-wrap { background: var(--forest-dark); border: 1px solid var(--divider); border-radius: 10px; padding: 20px; margin-bottom: 28px; display: flex; align-items: center; justify-content: center; gap: 32px; flex-wrap: wrap; }
-    .wind-rose-canvas { flex-shrink: 0; }
 
     /* Correlation */
     .correlation-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; margin-bottom: 28px; }
@@ -1033,15 +1029,6 @@
           </div>
 
           <div class="condition-panel">
-            <div class="panel-header">☀️ Solar & UV</div>
-            <div class="panel-body">
-              <div class="condition-row"><span class="condition-label">Solar Radiation</span><span class="condition-value highlight">${fmt(d.solar, 0)} W/m²</span></div>
-              <div class="condition-row"><span class="condition-label">Solar Lux</span><span class="condition-value">${fmt(d.solar_lux, 0)} lx</span></div>
-              <div class="condition-row"><span class="condition-label">UV Index</span><span class="condition-value ${parseFloat(d.uv) >= 6 ? 'warning' : ''}">${fmt(d.uv, 0)}</span></div>
-            </div>
-          </div>
-
-          <div class="condition-panel">
             <div class="panel-header">🔵 Pressure</div>
             <div class="panel-body">
               <div class="condition-row"><span class="condition-label">Relative</span><span class="condition-value highlight">${fmt(d.pressure, 1)} hPa</span></div>
@@ -1057,40 +1044,16 @@
               <div class="condition-row"><span class="condition-label">Last Strike</span><span class="condition-value">${fmtDate(d.lightning_last)}</span></div>
             </div>
           </div>
-        </div>
 
-        <!-- Records -->
-        <div class="section-header" style="margin-top:0">
-          <div class="section-title">All-Time Records</div>
-          <div class="section-sub">Since station installation</div>
-        </div>
-        <div class="records-grid" id="recordsGrid"></div>
-
-        <!-- Stargazing -->
-        <div class="section-header">
-          <div class="section-title">Stargazing Conditions</div>
-          <div class="section-sub">Tonight · Threlkeld Dark Skies</div>
-        </div>
-        <div class="stargazing-card" id="stargazingCard">
-          <div class="loading"><div class="loading-spinner"></div></div>
-        </div>
-
-        <!-- Wind Rose -->
-        <div class="section-header">
-          <div class="section-title">Wind Rose</div>
-          <div class="section-sub">Prevailing directions · Last 30 days</div>
-        </div>
-        <div class="wind-rose-wrap">
-          <canvas id="windRoseCanvas" width="240" height="240" class="wind-rose-canvas"></canvas>
-          <div id="windRoseLegend" style="font-size:12px;color:var(--cream-dim);line-height:2"></div>
-        </div>
-
-        <!-- Bird/Weather Correlation -->
-        <div class="section-header">
-          <div class="section-title">Weather & Bird Activity</div>
-          <div class="section-sub">How conditions affect detections</div>
-        </div>
-        <div class="correlation-grid" id="correlationGrid"></div>
+          <div class="condition-panel" style="grid-column: span 1">
+            <div class="panel-header">☀️ Solar & UV</div>
+            <div class="panel-body">
+              <div class="condition-row"><span class="condition-label">Solar Radiation</span><span class="condition-value highlight">${fmt(d.solar, 0)} W/m²</span></div>
+              <div class="condition-row"><span class="condition-label">Solar Lux</span><span class="condition-value">${fmt(d.solar_lux, 0)} lx</span></div>
+              <div class="condition-row"><span class="condition-label">UV Index</span><span class="condition-value ${parseFloat(d.uv) >= 6 ? 'warning' : ''}">${fmt(d.uv, 0)}</span></div>
+            </div>
+          </div>
+        </div></div>
 
         <div class="charts-section">
           <div class="section-header">
@@ -1132,21 +1095,23 @@
     // MQTT
     // ── Records ──────────────────────────────────────────────
     function renderRecords(history) {
-      if (!history || history.length === 0) return;
-      const temps = history.map(d => ({ max: d.outdoor_temperature?.max, min: d.outdoor_temperature?.min, date: d.date })).filter(d => d.max != null);
-      const winds = history.map(d => ({ max: d.wind_gust?.max, date: d.date })).filter(d => d.max != null);
-      const rain = history.map(d => ({ sum: d.rain?.sum, date: d.date })).filter(d => d.sum != null);
-      const pressure = history.map(d => ({ max: d.pressure?.max, min: d.pressure?.min, date: d.date })).filter(d => d.max != null);
+      if (!history) return;
+      const temps = history.outdoor_temperature || [];
+      const winds = history.wind_speed || [];
+      const rain = history.daily_rain_rate_piezo || [];
+      const pressure = history.relative_pressure || [];
 
-      const hottest = temps.reduce((a, b) => b.max > a.max ? b : a, temps[0]);
-      const coldest = temps.reduce((a, b) => b.min < a.min ? b : a, temps[0]);
-      const windiest = winds.reduce((a, b) => b.max > a.max ? b : a, winds[0]);
-      const wettest = rain.reduce((a, b) => b.sum > a.sum ? b : a, rain[0]);
-      const highestP = pressure.reduce((a, b) => b.max > a.max ? b : a, pressure[0]);
-      const lowestP = pressure.reduce((a, b) => b.min < a.min ? b : a, pressure[0]);
+      if (!temps.length) return;
 
       const fmt = (v, dp=1) => v != null ? Number(v).toFixed(dp) : '—';
       const fmtDate = d => d ? new Date(d).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' }) : '';
+
+      const hottest = temps.reduce((a, b) => (b.max||0) > (a.max||0) ? b : a, temps[0]);
+      const coldest = temps.reduce((a, b) => (b.min??99) < (a.min??99) ? b : a, temps[0]);
+      const windiest = winds.length ? winds.reduce((a, b) => (b.max||0) > (a.max||0) ? b : a, winds[0]) : null;
+      const wettest = rain.length ? rain.reduce((a, b) => (b.sum||0) > (a.sum||0) ? b : a, rain[0]) : null;
+      const highestP = pressure.length ? pressure.reduce((a, b) => (b.max||0) > (a.max||0) ? b : a, pressure[0]) : null;
+      const lowestP = pressure.length ? pressure.reduce((a, b) => (b.min??9999) < (a.min??9999) ? b : a, pressure[0]) : null;
 
       document.getElementById('recordsGrid').innerHTML = `
         <div class="record-card"><div class="record-icon">🌡️</div><div class="record-value">${fmt(hottest?.max)}°C</div><div class="record-label">Hottest Day</div><div class="record-date">${fmtDate(hottest?.date)}</div></div>
@@ -1224,148 +1189,64 @@
       }
     }
 
-    // ── Wind Rose ─────────────────────────────────────────────
-    function renderWindRose(history) {
-      const canvas = document.getElementById('windRoseCanvas');
-      if (!canvas || !history || history.length === 0) return;
-      const ctx = canvas.getContext('2d');
-      const W = 240, cx = W/2, cy = W/2, r = 90;
-
-      // Bucket wind directions into 16 sectors
-      const dirs = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
-      const counts = new Array(16).fill(0);
-      let total = 0;
-
-      history.forEach(d => {
-        const deg = d.wind_direction?.mean;
-        if (deg == null) return;
-        const idx = Math.round(deg / 22.5) % 16;
-        counts[idx]++;
-        total++;
-      });
-
-      if (total === 0) return;
-
-      ctx.clearRect(0, 0, W, W);
-
-      // Background rings
-      [0.25, 0.5, 0.75, 1].forEach(pct => {
-        ctx.beginPath();
-        ctx.arc(cx, cy, r * pct, 0, Math.PI * 2);
-        ctx.strokeStyle = 'rgba(122,184,122,0.1)';
-        ctx.lineWidth = 1;
-        ctx.stroke();
-      });
-
-      // Cardinal lines
-      [0, 45, 90, 135].forEach(angle => {
-        const rad = (angle - 90) * Math.PI / 180;
-        ctx.beginPath();
-        ctx.moveTo(cx - Math.cos(rad) * r, cy - Math.sin(rad) * r);
-        ctx.lineTo(cx + Math.cos(rad) * r, cy + Math.sin(rad) * r);
-        ctx.strokeStyle = 'rgba(122,184,122,0.1)';
-        ctx.lineWidth = 1;
-        ctx.stroke();
-      });
-
-      // Direction petals
-      const maxCount = Math.max(...counts);
-      counts.forEach((count, i) => {
-        if (count === 0) return;
-        const angle = (i * 22.5 - 90) * Math.PI / 180;
-        const halfWidth = (11.25 * Math.PI / 180);
-        const petal = (count / maxCount) * r;
-        const alpha = 0.3 + (count / total) * 0.7;
-
-        ctx.beginPath();
-        ctx.moveTo(cx, cy);
-        ctx.arc(cx, cy, petal, angle - halfWidth, angle + halfWidth);
-        ctx.closePath();
-        ctx.fillStyle = `rgba(74,144,164,${alpha})`;
-        ctx.fill();
-        ctx.strokeStyle = 'rgba(74,144,164,0.6)';
-        ctx.lineWidth = 0.5;
-        ctx.stroke();
-      });
-
-      // Cardinal labels
-      const cardinals = [['N', 0], ['E', 90], ['S', 180], ['W', 270]];
-      ctx.font = '11px Source Sans 3, sans-serif';
-      ctx.fillStyle = 'rgba(184,200,180,0.8)';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      cardinals.forEach(([label, deg]) => {
-        const rad = (deg - 90) * Math.PI / 180;
-        const lx = cx + Math.cos(rad) * (r + 14);
-        const ly = cy + Math.sin(rad) * (r + 14);
-        ctx.fillText(label, lx, ly);
-      });
-
-      // Centre dot
-      ctx.beginPath();
-      ctx.arc(cx, cy, 3, 0, Math.PI * 2);
-      ctx.fillStyle = 'var(--sage)';
-      ctx.fill();
-
-      // Legend - top 3 directions
-      const ranked = counts.map((c, i) => ({ dir: dirs[i], count: c, pct: Math.round(c/total*100) }))
-        .sort((a, b) => b.count - a.count).slice(0, 5);
-      document.getElementById('windRoseLegend').innerHTML =
-        '<div style="font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--sage);margin-bottom:8px">Prevailing</div>' +
-        ranked.map(d => `<div><span style="color:var(--cream)">${d.dir}</span> — ${d.pct}%</div>`).join('');
-    }
 
     // ── Bird/Weather Correlation ──────────────────────────────
     function renderCorrelation(history) {
-      if (!history || history.length < 7) return;
       const el = document.getElementById('correlationGrid');
-      if (!el) return;
+      if (!el || !history) return;
 
-      // We need bird data — use a simple heuristic from weather patterns
-      // Rain correlation: rainy days vs dry days
-      const rainyDays = history.filter(d => (d.rain?.sum || 0) > 2);
-      const dryDays = history.filter(d => (d.rain?.sum || 0) <= 2);
-      const avgRainyTemp = rainyDays.length ? rainyDays.reduce((s, d) => s + (d.outdoor_temperature?.mean || 0), 0) / rainyDays.length : 0;
-      const avgDryTemp = dryDays.length ? dryDays.reduce((s, d) => s + (d.outdoor_temperature?.mean || 0), 0) / dryDays.length : 0;
+      const temps = history.outdoor_temperature || [];
+      const rain = history.daily_rain_rate_piezo || [];
+      const winds = history.wind_speed || [];
+      const pressure = history.relative_pressure || [];
 
-      // Wind correlation
-      const calmDays = history.filter(d => (d.wind_speed?.mean || 0) < 10);
-      const windyDays = history.filter(d => (d.wind_speed?.mean || 0) >= 10);
+      if (temps.length < 7) return;
 
-      // Pressure trend
-      const recentPressure = history.slice(0, 7).map(d => d.pressure?.mean || 0);
-      const pressureTrend = recentPressure.length > 1
-        ? recentPressure[0] - recentPressure[recentPressure.length-1]
-        : 0;
+      // Use last 30 days only
+      const t30 = temps.slice(-30);
+      const r30 = rain.slice(-30);
+      const w30 = winds.slice(-30);
+      const p30 = pressure.slice(-30);
+      const days = t30.length;
+      if (days === 0) return;
+
+      const rainyDays = r30.filter(d => (d.sum || 0) > 2).length;
+      const dryDays = days - rainyDays;
+      const windyDays = w30.filter(d => (d.mean || 0) >= 10).length;
+      const calmDays = days - windyDays;
+
+      const recent7 = p30.slice(-7).map(d => d.mean || 0);
+      const pressureTrend = recent7.length > 1 ? recent7[recent7.length-1] - recent7[0] : 0;
       const pressureDir = pressureTrend > 2 ? '📈 Rising — improving' : pressureTrend < -2 ? '📉 Falling — deteriorating' : '➡️ Stable';
 
-      // Best birding conditions estimate
-      const bestDays = history.filter(d =>
-        (d.rain?.sum || 0) < 1 &&
-        (d.wind_speed?.mean || 0) < 15 &&
-        (d.outdoor_temperature?.max || 0) > 8
-      );
+      const idealCount = t30.filter((t, i) => {
+        const rv = r30[i]?.sum || 0;
+        const wv = w30[i]?.mean || 0;
+        return rv < 1 && wv < 15 && (t.max || 0) > 8;
+      }).length;
+
+      const avgMaxTemp = (t30.reduce((s, d) => s + (d.max || 0), 0) / days).toFixed(1);
 
       el.innerHTML = `
         <div class="correlation-card">
           <div class="correlation-title">☀️ Dry vs Rainy Days</div>
-          <div class="correlation-stat">${dryDays.length} / ${rainyDays.length}</div>
-          <div class="correlation-desc">Dry days vs rainy days in the last ${history.length} days. Dry days average ${avgDryTemp.toFixed(1)}°C, rainy days ${avgRainyTemp.toFixed(1)}°C.</div>
+          <div class="correlation-stat">${dryDays} / ${rainyDays}</div>
+          <div class="correlation-desc">Dry vs rainy days (over 2mm) in the last 30 days. Dry mornings typically produce the best dawn chorus activity.</div>
         </div>
         <div class="correlation-card">
           <div class="correlation-title">💨 Calm vs Windy Days</div>
-          <div class="correlation-stat">${calmDays.length} / ${windyDays.length}</div>
-          <div class="correlation-desc">Calm days (under 10mph avg) vs windy. Dawn chorus detections are typically higher on calm mornings.</div>
+          <div class="correlation-stat">${calmDays} / ${windyDays}</div>
+          <div class="correlation-desc">Calm days (under 10mph average) vs windy in the last 30 days. Calm mornings favour bird song carrying further.</div>
         </div>
         <div class="correlation-card">
           <div class="correlation-title">🔵 Pressure Trend</div>
           <div class="correlation-stat">${Math.abs(pressureTrend).toFixed(1)} hPa</div>
-          <div class="correlation-desc">${pressureDir} over the last 7 days. Rising pressure generally brings clearer skies and better birding conditions.</div>
+          <div class="correlation-desc">${pressureDir} over the last 7 days. Rising pressure generally brings clearer, calmer conditions — good for birding.</div>
         </div>
         <div class="correlation-card">
           <div class="correlation-title">🐦 Ideal Birding Days</div>
-          <div class="correlation-stat">${bestDays.length} days</div>
-          <div class="correlation-desc">Days with under 1mm rain, under 15mph wind, and above 8°C in the last ${history.length} days — optimal dawn chorus conditions.</div>
+          <div class="correlation-stat">${idealCount} / 30</div>
+          <div class="correlation-desc">Days under 1mm rain, under 15mph wind, above 8°C in the last 30 days. Average daytime high: ${avgMaxTemp}°C.</div>
         </div>`;
     }
 
@@ -1400,7 +1281,6 @@
           historyData = data;
           if (currentData) renderMiniCharts();
           renderRecords(data);
-          renderWindRose(data);
           renderCorrelation(data);
         }
       } catch(e) { console.error('Parse error:', e); }
