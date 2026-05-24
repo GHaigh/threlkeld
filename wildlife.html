@@ -328,7 +328,6 @@
         Record a sighting ↗
       </a>
     </div>
-
     <!-- Stats -->
     <div class="stats-row">
       <div class="stat-box"><div class="stat-value" id="statTotal">—</div><div class="stat-label">Observations</div></div>
@@ -530,19 +529,26 @@
     // ── Red Squirrel ─────────────────────────────────────────
     async function fetchSquirrel() {
       try {
-        const [total, recent] = await Promise.all([
-          fetch(`https://api.inaturalist.org/v1/observations?lat=${LAT}&lng=${LON}&radius=${RADIUS}&quality_grade=research&taxon_name=Sciurus%20vulgaris`).then(r => r.json()),
-          fetch(`https://api.inaturalist.org/v1/observations?lat=${LAT}&lng=${LON}&radius=${RADIUS}&quality_grade=research&taxon_name=Sciurus%20vulgaris&d1=${new Date(Date.now() - 365*24*60*60*1000).toISOString().split('T')[0]}`).then(r => r.json())
-        ]);
+        const totalRes = await fetch(`https://api.inaturalist.org/v1/observations?lat=${LAT}&lng=${LON}&radius=${RADIUS}&quality_grade=research&taxon_name=Sciurus%20vulgaris&per_page=1&order_by=observed_on&order=desc`);
+        const total = await totalRes.json();
+        await new Promise(r => setTimeout(r, 500));
+        const d1 = new Date(Date.now() - 365*24*60*60*1000).toISOString().split('T')[0];
+        const recentRes = await fetch(`https://api.inaturalist.org/v1/observations?lat=${LAT}&lng=${LON}&radius=${RADIUS}&quality_grade=research&taxon_name=Sciurus%20vulgaris&d1=${d1}&per_page=1`);
+        const recent = await recentRes.json();
+
         const latest = total.results?.[0];
         document.getElementById('squirrelTotal').textContent = total.total_results || '0';
         document.getElementById('squirrelLastYear').textContent = recent.total_results || '0';
         document.getElementById('squirrelLastSeen').textContent = latest?.observed_on
-          ? formatDate(latest.observed_on) : 'No recent records';
+          ? formatDate(latest.observed_on) : 'No records';
         if (total.total_results > 0) {
           document.getElementById('squirrelCard').style.borderColor = 'rgba(200,168,74,0.8)';
         }
-      } catch(e) { console.error('Squirrel fetch failed:', e); }
+      } catch(e) {
+        document.getElementById('squirrelTotal').textContent = '—';
+        document.getElementById('squirrelLastYear').textContent = '—';
+        document.getElementById('squirrelLastSeen').textContent = '—';
+      }
     }
 
     // ── Seasonal Species ──────────────────────────────────────
