@@ -284,9 +284,62 @@
     .spinner { width: 20px; height: 20px; border: 2px solid var(--divider); border-top-color: var(--sage); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 12px; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
+    /* Named walks */
+    .walks-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; margin-bottom: 28px; }
+    .walk-card { background: var(--forest-dark); border: 1px solid var(--divider); border-radius: 10px; padding: 18px; }
+    .walk-name { font-size: 15px; color: var(--cream); margin-bottom: 2px; font-weight: 400; }
+    .walk-summit { font-size: 11px; color: var(--sage); margin-bottom: 10px; }
+    .walk-meta { display: flex; gap: 16px; margin-bottom: 10px; flex-wrap: wrap; }
+    .walk-meta-item { font-size: 11px; color: var(--cream-dim); }
+    .walk-meta-item strong { color: var(--cream); }
+    .walk-reason { font-size: 12px; color: var(--cream-dim); line-height: 1.6; margin-top: 8px; font-style: italic; }
+
     footer { border-top: 1px solid var(--divider); padding: 20px 0 32px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-top: 20px; }
     .footer-text { font-size: 11px; color: var(--cream-dim); }
     .footer-brand { font-size: 11px; color: var(--sage); }
+
+    /* Mobile hamburger nav */
+    .nav-hamburger {
+      display: none;
+      flex-direction: column;
+      gap: 5px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 4px;
+      margin-left: auto;
+    }
+    .nav-hamburger span {
+      display: block;
+      width: 22px;
+      height: 2px;
+      background: var(--cream-dim);
+      border-radius: 2px;
+      transition: all 0.25s;
+    }
+    .nav-hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+    .nav-hamburger.open span:nth-child(2) { opacity: 0; }
+    .nav-hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+    @media (max-width: 700px) {
+      .nav-hamburger { display: flex; }
+      .nav-links {
+        display: none;
+        position: absolute;
+        top: 56px;
+        left: 0;
+        right: 0;
+        background: var(--forest-dark);
+        border-bottom: 1px solid var(--divider);
+        padding: 12px 24px;
+        flex-direction: column;
+        gap: 14px;
+        z-index: 100;
+      }
+      .nav-links.open { display: flex; }
+      .nav-divider { display: none; }
+      nav { position: relative; }
+    }
   </style>
 </head>
 <body>
@@ -302,6 +355,9 @@
         <a href="weather.html" class="nav-link">🌤️ Weather</a>
         <a href="wildlife.html" class="nav-link">🦔 Wildlife</a>
       </div>
+      <button class="nav-hamburger" id="navHamburger" aria-label="Menu">
+        <span></span><span></span><span></span>
+      </button>
     </nav>
 
     <header>
@@ -311,6 +367,15 @@
       </div>
       <div class="header-updated" id="headerUpdated">Loading...</div>
     </header>
+
+    <!-- Named Walks -->
+    <div class="section-header">
+      <div class="section-title">Walk Suitability</div>
+      <div class="section-subtitle">Named routes · Current conditions</div>
+    </div>
+    <div class="walks-grid" id="walksGrid">
+      <div class="loading"><div class="spinner"></div>Loading walk conditions...</div>
+    </div>
 
     <!-- MWIS banner -->
     <div class="mwis-banner">
@@ -637,12 +702,130 @@
       }).join('');
     }
 
+    // Named walks
+    const WALKS = [
+      {
+        name: 'Sharp Edge',
+        summit: 'Blencathra · 868m',
+        grade: 'Scramble',
+        distance: '9km',
+        ascent: '760m',
+        description: 'The finest ridge scramble in the Lake District. Exposed knife-edge arête requiring hands and feet. Serious in wet or icy conditions.',
+        thresholds: { gustDanger: 35, gustPoor: 25, precipDanger: 2, precipFair: 0.5, visDanger: 0.5, visFair: 2 }
+      },
+      {
+        name: 'Halls Fell Ridge',
+        summit: 'Blencathra · 868m',
+        grade: 'Scramble',
+        distance: '8km',
+        ascent: '760m',
+        description: 'Direct route to Blencathra's summit via a rocky ridge. Less exposed than Sharp Edge but still requires care on wet rock.',
+        thresholds: { gustDanger: 40, gustPoor: 28, precipDanger: 3, precipFair: 1, visDanger: 0.3, visFair: 1 }
+      },
+      {
+        name: 'Gategill Fell',
+        summit: 'Blencathra · 868m',
+        grade: 'Fell walk',
+        distance: '8km',
+        ascent: '760m',
+        description: 'Straightforward fell walk to Blencathra via the southern flank. Good in most conditions but avoid in very low visibility.',
+        thresholds: { gustDanger: 55, gustPoor: 40, precipDanger: 5, precipFair: 2, visDanger: 0.2, visFair: 0.5 }
+      },
+      {
+        name: 'Blencathra Circular',
+        summit: 'Blencathra · 868m',
+        grade: 'Fell walk',
+        distance: '13km',
+        ascent: '800m',
+        description: 'Full circuit via Scales Fell and Bannerdale Crags. Long day on open moorland — needs good visibility and settled weather.',
+        thresholds: { gustDanger: 50, gustPoor: 35, precipDanger: 4, precipFair: 1.5, visDanger: 0.3, visFair: 1 }
+      },
+      {
+        name: 'Latrigg',
+        summit: 'Latrigg · 368m',
+        grade: 'Easy walk',
+        distance: '5km',
+        ascent: '230m',
+        description: 'Gentle grassy summit above Keswick with superb views of Derwentwater and Skiddaw. Suitable in most conditions.',
+        thresholds: { gustDanger: 70, gustPoor: 55, precipDanger: 10, precipFair: 5, visDanger: 0.1, visFair: 0.3 }
+      },
+      {
+        name: 'Bowscale Tarn',
+        summit: 'Bowscale Fell · 702m',
+        grade: 'Fell walk',
+        distance: '8km',
+        ascent: '500m',
+        description: 'Classic walk to a remote glacial tarn above Mungrisdale. Open moorland — needs decent visibility.',
+        thresholds: { gustDanger: 55, gustPoor: 40, precipDanger: 5, precipFair: 2, visDanger: 0.2, visFair: 0.5 }
+      },
+    ];
+
+    function getWalkRating(walk, wind, gusts, precip, vis) {
+      const t = walk.thresholds;
+      const visOk = vis > 0;
+      if (gusts > t.gustDanger || precip > t.precipDanger || (visOk && vis < t.visDanger))
+        return 'danger';
+      if (gusts > t.gustPoor || precip > t.precipFair || (visOk && vis < t.visFair))
+        return 'poor';
+      if (gusts > t.gustPoor * 0.7 || precip > 0.1)
+        return 'fair';
+      return 'good';
+    }
+
+    async function loadWalks() {
+      // Reuse Blencathra data
+      const data = await fetchSummitWeather(54.638, -3.053, 868);
+      const hi = getCurrentHourIndex(data);
+      const wind = Math.round(data.hourly.windspeed_10m[hi]);
+      const gusts = Math.round(data.hourly.windgusts_10m[hi]);
+      const precip = data.hourly.precipitation[hi];
+      const vis = (data.hourly.visibility[hi] || 0) / 1000;
+      const colors = { good: 'var(--good)', fair: 'var(--fair)', poor: 'var(--poor)', danger: 'var(--danger)' };
+      const labels = { good: '✓ Good', fair: '⚠ Fair', poor: '✗ Poor', danger: '⛔ Dangerous' };
+
+      document.getElementById('walksGrid').innerHTML = WALKS.map(walk => {
+        const rating = getWalkRating(walk, wind, gusts, precip, vis);
+        const gradeColor = walk.grade === 'Scramble' ? 'var(--poor)' :
+                           walk.grade === 'Easy walk' ? 'var(--good)' : 'var(--sage)';
+        return `
+          <div class="walk-card">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+              <div>
+                <div class="walk-name">${walk.name}</div>
+                <div class="walk-summit">${walk.summit}</div>
+              </div>
+              <span class="condition-badge ${rating}" style="font-size:9px;padding:3px 10px;flex-shrink:0">${labels[rating]}</span>
+            </div>
+            <div class="walk-meta">
+              <div class="walk-meta-item"><strong>${walk.distance}</strong> distance</div>
+              <div class="walk-meta-item"><strong>${walk.ascent}</strong> ascent</div>
+              <div class="walk-meta-item" style="color:${gradeColor}"><strong>${walk.grade}</strong></div>
+            </div>
+            <div class="walk-reason">${walk.description}</div>
+          </div>`;
+      }).join('');
+    }
+
     // Load all
     loadHero().catch(e => {
       document.getElementById('heroCard').innerHTML = '<div class="loading">Could not load weather data</div>';
       console.error(e);
     });
     loadSummits().catch(console.error);
+    loadWalks().catch(console.error);
+  
+    // Mobile nav
+    document.getElementById('navHamburger').addEventListener('click', function() {
+      this.classList.toggle('open');
+      document.querySelector('.nav-links').classList.toggle('open');
+    });
+    // Close on link click
+    document.querySelectorAll('.nav-link').forEach(l => {
+      l.addEventListener('click', () => {
+        document.getElementById('navHamburger').classList.remove('open');
+        document.querySelector('.nav-links').classList.remove('open');
+      });
+    });
   </script>
 </body>
 </html>
