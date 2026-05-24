@@ -355,6 +355,15 @@
     .stat-box.clickable { cursor: pointer; transition: border-color 0.15s; }
     .stat-box.clickable:hover { border-color: var(--sage); }
 
+    .stat-box-split { padding: 12px 14px; }
+    .split-label { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--sage); margin-bottom: 8px; text-align: center; }
+    .split-row { display: flex; align-items: stretch; gap: 0; }
+    .split-half { flex: 1; text-align: center; padding: 4px 8px; border-radius: 6px; cursor: pointer; transition: background 0.15s; }
+    .split-half:hover { background: var(--forest-mid); }
+    .split-half .stat-value { font-size: 22px; }
+    .split-sub { font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--cream-dim); margin-top: 2px; }
+    .split-divider { width: 1px; background: var(--divider); margin: 4px 4px; flex-shrink: 0; }
+
     footer {
       border-top: 1px solid var(--divider);
       padding: 20px 0 32px;
@@ -520,9 +529,36 @@
         <div class="stats-grid">
           <div class="stat-box clickable" data-filter="today" title="Show today's flights"><div class="stat-value" id="statToday">—</div><div class="stat-label">Today</div></div>
           <div class="stat-box clickable" data-filter="all" title="Show all flights"><div class="stat-value" id="statTotal">—</div><div class="stat-label">Total Logged</div></div>
-          <div class="stat-box clickable" data-filter="military" title="Show military flights"><div class="stat-value" id="statMilitary">—</div><div class="stat-label">Military</div></div>
-          <div class="stat-box clickable" data-filter="airambulance" title="Show air ambulance flights"><div class="stat-value" id="statAirAmb">—</div><div class="stat-label">Air Ambulance</div></div>
+          <div class="stat-box stat-box-split">
+            <div class="split-label">🎖️ Military</div>
+            <div class="split-row">
+              <div class="split-half clickable" data-filter="military-today" title="Military today">
+                <div class="stat-value" id="statMilitaryToday">—</div>
+                <div class="split-sub">Today</div>
+              </div>
+              <div class="split-divider"></div>
+              <div class="split-half clickable" data-filter="military" title="All military">
+                <div class="stat-value" id="statMilitary">—</div>
+                <div class="split-sub">All time</div>
+              </div>
+            </div>
+          </div>
+          <div class="stat-box stat-box-split">
+            <div class="split-label">🚁 Air Ambulance</div>
+            <div class="split-row">
+              <div class="split-half clickable" data-filter="airambulance-today" title="Air ambulance today">
+                <div class="stat-value" id="statAirAmbToday">—</div>
+                <div class="split-sub">Today</div>
+              </div>
+              <div class="split-divider"></div>
+              <div class="split-half clickable" data-filter="airambulance" title="All air ambulance">
+                <div class="stat-value" id="statAirAmb">—</div>
+                <div class="split-sub">All time</div>
+              </div>
+            </div>
+          </div>
           <div class="stat-box clickable" data-filter="highest" title="Show highest flight"><div class="stat-value" id="statHighest">—</div><div class="stat-label">Highest (ft)</div></div>
+          <div class="stat-box clickable" data-filter="aircraft" title="Show aircraft types"><div class="stat-value" id="statAircraft">—</div><div class="stat-label">Aircraft Types</div></div>
         </div>
       </div>
     </div>
@@ -657,13 +693,19 @@
     function renderStats(flights) {
       const today = flights.filter(f => isToday(f.timestamp));
       const military = flights.filter(f => f.military);
+      const militaryToday = military.filter(f => isToday(f.timestamp));
       const airAmb = flights.filter(f => isAirAmbulance(f));
+      const airAmbToday = airAmb.filter(f => isToday(f.timestamp));
       const highest = flights.reduce((max, f) => Math.max(max, f.altitude || 0), 0);
       document.getElementById('statToday').textContent = today.length;
       document.getElementById('statTotal').textContent = flights.length;
       document.getElementById('statMilitary').textContent = military.length;
+      document.getElementById('statMilitaryToday').textContent = militaryToday.length;
       document.getElementById('statAirAmb').textContent = airAmb.length;
+      document.getElementById('statAirAmbToday').textContent = airAmbToday.length;
       document.getElementById('statHighest').textContent = highest > 0 ? Math.round(highest).toLocaleString() : '—';
+      const uniqueTypes = new Set(flights.map(f => f.aircraft_model).filter(m => m && m !== 'Unknown')).size;
+      document.getElementById('statAircraft').textContent = uniqueTypes || '—';
     }
 
     function minutesAgo(ts) {
@@ -823,6 +865,24 @@
       document.getElementById('statModalBody').innerHTML = flights.length === 0
         ? '<div style="text-align:center;color:var(--cream-dim);font-style:italic;padding:40px">No flights found</div>'
         : flights.map(f => {
+            // Aircraft types view
+            if (f._typeCount !== undefined) {
+              const pct = Math.round((f._typeCount / allFlights.length) * 100);
+              return `
+                <div class="modal-flight-item">
+                  <div class="modal-flight-placeholder">✈️</div>
+                  <div class="modal-flight-info">
+                    <div class="modal-flight-callsign">${f.aircraft_model}</div>
+                    <div style="margin-top:4px;height:4px;background:var(--forest-mid);border-radius:2px;overflow:hidden">
+                      <div style="height:100%;width:${pct}%;background:var(--sage);border-radius:2px"></div>
+                    </div>
+                  </div>
+                  <div class="modal-flight-right">
+                    <div class="modal-flight-alt">${f._typeCount}</div>
+                    <div class="modal-flight-time">${pct}%</div>
+                  </div>
+                </div>`;
+            }
             const hasPhoto = f.photo && f.photo.length > 0;
             return `
               <div class="modal-flight-item">
@@ -850,24 +910,53 @@
       if (e.target === e.currentTarget) document.getElementById('statModalOverlay').classList.remove('show');
     });
 
-    // Stat box click handlers
-    document.querySelectorAll('.stat-box.clickable').forEach(box => {
-      box.addEventListener('click', () => {
-        const filter = box.dataset.filter;
-        if (!allFlights.length) return;
+    // Stat box click handlers — both full boxes and split halves
+    function handleStatClick(filter) {
+      if (!allFlights.length) return;
+      if (filter === 'military') {
+        showStatModal('Military Flights — All Time', allFlights.filter(f => f.military));
+      } else if (filter === 'military-today') {
+        showStatModal("Military Flights — Today", allFlights.filter(f => f.military && isToday(f.timestamp)));
+      } else if (filter === 'airambulance') {
+        showStatModal('Air Ambulance — All Time', allFlights.filter(f => isAirAmbulance(f)));
+      } else if (filter === 'airambulance-today') {
+        showStatModal('Air Ambulance — Today', allFlights.filter(f => isAirAmbulance(f) && isToday(f.timestamp)));
+      } else if (filter === 'aircraft') {
+        const types = {};
+        allFlights.forEach(f => {
+          const m = f.aircraft_model;
+          if (m && m !== 'Unknown') types[m] = (types[m] || 0) + 1;
+        });
+        const sorted = Object.entries(types).sort((a, b) => b[1] - a[1]);
+        const fakeFlights = sorted.map(([model, count]) => ({
+          callsign: `${count} flight${count !== 1 ? 's' : ''}`,
+          aircraft_model: model,
+          origin: '', destination: '',
+          airline: '',
+          altitude: 0,
+          timestamp: new Date().toISOString(),
+          photo: '',
+          _typeCount: count
+        }));
+        showStatModal(`Aircraft Types — ${sorted.length} unique`, fakeFlights);
+      } else if (filter === 'highest') {
+        const sorted = [...allFlights].sort((a, b) => (b.altitude || 0) - (a.altitude || 0));
+        showStatModal('Highest Flights', sorted.slice(0, 20));
+      } else if (filter === 'today') {
+        showStatModal("Today's Flights", allFlights.filter(f => isToday(f.timestamp)));
+      } else if (filter === 'all') {
+        showStatModal('All Logged Flights', allFlights.slice(0, 50));
+      }
+    }
 
-        if (filter === 'military') {
-          showStatModal('Military Flights', allFlights.filter(f => f.military));
-        } else if (filter === 'airambulance') {
-          showStatModal('Air Ambulance Flights', allFlights.filter(f => isAirAmbulance(f)));
-        } else if (filter === 'highest') {
-          const sorted = [...allFlights].sort((a, b) => (b.altitude || 0) - (a.altitude || 0));
-          showStatModal('Highest Flights', sorted.slice(0, 20));
-        } else if (filter === 'today') {
-          showStatModal("Today's Flights", allFlights.filter(f => isToday(f.timestamp)));
-        } else if (filter === 'all') {
-          showStatModal('All Logged Flights', allFlights.slice(0, 50));
-        }
+    document.querySelectorAll('.stat-box.clickable').forEach(box => {
+      box.addEventListener('click', () => handleStatClick(box.dataset.filter));
+    });
+
+    document.querySelectorAll('.split-half.clickable').forEach(half => {
+      half.addEventListener('click', (e) => {
+        e.stopPropagation();
+        handleStatClick(half.dataset.filter);
       });
     });
 
