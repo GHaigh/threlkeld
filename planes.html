@@ -953,6 +953,7 @@
       renderCurrent(flights);
       renderChart(flights);
       renderHistory(flights);
+      renderRoutes(flights);
     }
 
 
@@ -961,19 +962,25 @@
       const el = document.getElementById('routesCard');
       if (!el) return;
 
-      // Build route counts — skip unknowns
       const routes = {};
+      let withRoute = 0;
+
       flights.forEach(f => {
-        const orig = f.origin || '?';
-        const dest = f.destination || '?';
-        if (orig === '?' && dest === '?') return;
-        if (orig === dest) return;
-        // Normalise A→B and B→A as the same route
-        const key = [orig, dest].sort().join(' ↔ ');
-        const label = `${orig} → ${dest}`;
-        if (!routes[key]) routes[key] = { label, count: 0, examples: [] };
+        const orig = (f.origin || '').trim();
+        const dest = (f.destination || '').trim();
+        const hasOrig = orig && orig !== '?' && orig !== 'Unknown';
+        const hasDest = dest && dest !== '?' && dest !== 'Unknown';
+        if (!hasOrig && !hasDest) return;
+        if (hasOrig && hasDest && orig === dest) return;
+
+        withRoute++;
+        const from = hasOrig ? orig : '?';
+        const to = hasDest ? dest : '?';
+        const key = [from, to].sort().join('|');
+        const label = `${from} → ${to}`;
+        if (!routes[key]) routes[key] = { label, count: 0, airline: '' };
         routes[key].count++;
-        if (routes[key].examples.length < 1) routes[key].examples.push(f.airline || '');
+        if (!routes[key].airline && f.airline) routes[key].airline = f.airline;
       });
 
       const sorted = Object.values(routes)
@@ -981,7 +988,10 @@
         .slice(0, 10);
 
       if (sorted.length === 0) {
-        el.innerHTML = '<div style="color:var(--cream-dim);font-style:italic;font-size:13px">No route data yet</div>';
+        el.innerHTML = `<div style="color:var(--cream-dim);font-size:13px;font-style:italic">
+          No route data available — FlightRadar24 only provides origin/destination for scheduled commercial flights.
+          Of ${flights.length} logged flights, ${withRoute} have partial route data.
+        </div>`;
         return;
       }
 
@@ -991,7 +1001,7 @@
           <div class="route-rank">${i + 1}</div>
           <div class="route-name">
             ${r.label}
-            ${r.examples[0] ? `<br><span>${r.examples[0]}</span>` : ''}
+            ${r.airline ? `<br><span>${r.airline}</span>` : ''}
           </div>
           <div class="route-bar-wrap">
             <div class="route-bar-fill" style="width:${Math.round((r.count/max)*100)}%"></div>
