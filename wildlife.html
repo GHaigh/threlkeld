@@ -2,9 +2,20 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+    <meta property="og:type" content="website">
+  <meta property="og:title" content="Wildlife · Threlkeld">
+  <meta property="og:description" content="Local wildlife sightings near Threlkeld from iNaturalist. Red squirrels, otters, bats and seasonal species guide.">
+  <meta property="og:url" content="https://threlkeld.info/wildlife.html">
+  <meta property="og:image" content="https://threlkeld.info/favicon.svg">
+  <meta property="og:site_name" content="Threlkeld Projects">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Wildlife · Threlkeld">
+  <meta name="twitter:description" content="Local wildlife sightings near Threlkeld from iNaturalist. Red squirrels, otters, bats and seasonal species guide.">
+  <meta name="description" content="Local wildlife sightings near Threlkeld from iNaturalist. Red squirrels, otters, bats and seasonal species guide.">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Local Wildlife · Threlkeld</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Source+Sans+3:wght@300;400;500&display=swap" rel="stylesheet">
   <style>
     :root {
@@ -121,6 +132,24 @@
     .seasonal-badge.in-season { background: rgba(122,184,122,0.15); color: var(--sage); border: 1px solid rgba(122,184,122,0.3); }
     .seasonal-badge.out { background: rgba(184,200,180,0.05); color: var(--cream-dim); border: 1px solid var(--divider); }
     .seasonal-months { font-size: 11px; color: var(--cream-dim); line-height: 1.5; }
+
+    /* Observation map */
+    .obs-map {
+      height: 380px;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid var(--divider);
+      margin-bottom: 28px;
+    }
+    .leaflet-popup-content-wrapper {
+      background: var(--forest-dark);
+      color: var(--cream);
+      border: 1px solid var(--divider);
+      border-radius: 8px;
+      box-shadow: none;
+    }
+    .leaflet-popup-tip { background: var(--forest-dark); }
+    .leaflet-popup-content { font-family: 'Source Sans 3', sans-serif; font-size: 12px; line-height: 1.6; }
 
     /* Taxon filters */
     .filter-row { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
@@ -383,6 +412,13 @@
     </div>
 
     <!-- Notable species -->
+    <!-- Observation Map -->
+    <div class="section-header">
+      <div class="section-title">Recent Sightings Map</div>
+      <div class="section-subtitle">Last 100 verified observations · 10km radius</div>
+    </div>
+    <div class="obs-map" id="obsMap"></div>
+
     <div class="section-header">
       <div class="section-title">Notable Species</div>
       <div class="section-subtitle">Known to occur near Threlkeld</div>
@@ -418,6 +454,7 @@
     </footer>
   </div>
 
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
     const LAT = 54.616;
     const LON = -3.056;
@@ -654,11 +691,72 @@
       }).join('');
     }
 
+    // ── Observation Map ──────────────────────────────────────
+    async function initMap() {
+      const map = L.map('obsMap', {
+        center: [LAT, LON],
+        zoom: 12,
+        zoomControl: true
+      });
+
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '© OpenStreetMap © CARTO',
+        maxZoom: 18
+      }).addTo(map);
+
+      // Home marker
+      L.circleMarker([LAT, LON], {
+        radius: 8, fillColor: '#7ab87a', color: '#7ab87a',
+        weight: 2, opacity: 1, fillOpacity: 0.8
+      }).addTo(map).bindPopup('<strong>Threlkeld</strong><br>Home location');
+
+      // Fetch recent observations
+      try {
+        const res = await fetch(
+          `https://api.inaturalist.org/v1/observations?lat=${LAT}&lng=${LON}&radius=${RADIUS}&quality_grade=research&per_page=100&order_by=observed_on&order=desc&without_iconic_taxa=Aves`
+        );
+        const data = await res.json();
+
+        const taxonColors = {
+          'Mammalia': '#c8a84a',
+          'Reptilia': '#7ab87a',
+          'Amphibia': '#4a90a4',
+          'Insecta': '#a87ab8',
+          'Plantae': '#6ab86a',
+          'Fungi': '#c87a4a',
+          'Actinopterygii': '#4ab8b8',
+        };
+
+        data.results.forEach(obs => {
+          if (!obs.location) return;
+          const [lat, lng] = obs.location.split(',').map(Number);
+          if (isNaN(lat) || isNaN(lng)) return;
+
+          const taxon = obs.taxon?.iconic_taxon_name || 'Other';
+          const color = taxonColors[taxon] || '#b8c8b4';
+          const name = obs.taxon?.preferred_common_name || obs.taxon?.name || 'Unknown';
+          const date = obs.observed_on ? new Date(obs.observed_on).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' }) : '';
+          const emoji = obs.taxon?.iconic_taxon_name === 'Mammalia' ? '🦔' :
+                        obs.taxon?.iconic_taxon_name === 'Reptilia' ? '🦎' :
+                        obs.taxon?.iconic_taxon_name === 'Amphibia' ? '🐸' :
+                        obs.taxon?.iconic_taxon_name === 'Insecta' ? '🦋' : '🌿';
+
+          L.circleMarker([lat, lng], {
+            radius: 6, fillColor: color, color: color,
+            weight: 1.5, opacity: 0.9, fillOpacity: 0.6
+          }).addTo(map).bindPopup(
+            `<strong>${emoji} ${name}</strong><br>${taxon}<br>${date}`
+          );
+        });
+      } catch(e) { console.error('Map fetch failed:', e); }
+    }
+
     // Init
     fetchStats();
     fetchNotable();
     fetchSquirrel();
     renderSeasonal();
+    initMap();
     load(1, false);
   
     // Mobile nav

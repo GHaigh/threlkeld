@@ -2,6 +2,16 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+    <meta property="og:type" content="website">
+  <meta property="og:title" content="Rivers & Wild Swimming · Threlkeld">
+  <meta property="og:description" content="Live river levels for the Glenderamackin, Greta and Derwent. Wild swimming conditions for Lake District lakes.">
+  <meta property="og:url" content="https://threlkeld.info/river.html">
+  <meta property="og:image" content="https://threlkeld.info/favicon.svg">
+  <meta property="og:site_name" content="Threlkeld Projects">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Rivers & Wild Swimming · Threlkeld">
+  <meta name="twitter:description" content="Live river levels for the Glenderamackin, Greta and Derwent. Wild swimming conditions for Lake District lakes.">
+  <meta name="description" content="Live river levels for the Glenderamackin, Greta and Derwent. Wild swimming conditions for Lake District lakes.">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Rivers, Lakes & Wild Swimming · Threlkeld</title>
@@ -206,6 +216,10 @@
     .station-card.flood-state { border-color: var(--flood); }
     .station-card.high-state { border-color: var(--high); }
 
+    .hero-trend { font-size: 28px; margin-left: 8px; vertical-align: middle; }
+    .hero-trend.trend-rising { color: var(--flood); }
+    .hero-trend.trend-falling { color: var(--good); }
+    .hero-trend.trend-steady { color: var(--cream-dim); }
     .station-name { font-size: 14px; color: var(--cream); margin-bottom: 2px; font-weight: 400; }
     .trend-arrow { font-size: 16px; margin-left: 6px; }
     .trend-rising { color: var(--flood); }
@@ -482,7 +496,7 @@
         <div class="history-item-sub">90% of readings</div>
       </div>
       <div>
-        <div class="history-item-value" id="histCurrent">—</div>
+        <div class="history-item-value" id="histCurrent">—</div><span class="hero-trend" id="heroTrend"></span>
         <div class="history-item-label">Current level</div>
         <div class="history-item-sub" id="histState">—</div>
       </div>
@@ -602,6 +616,14 @@
 
       document.getElementById('histCurrent').textContent = main.level.toFixed(2) + 'm';
       document.getElementById('histState').textContent = stateLabel(state);
+      // Trend arrow on hero
+      const heroTrend = getTrend(chart);
+      const heroTrendEl = document.getElementById('heroTrend');
+      if (heroTrendEl) {
+        heroTrendEl.textContent = heroTrend.arrow;
+        heroTrendEl.className = `hero-trend ${heroTrend.cls}`;
+        heroTrendEl.title = heroTrend.label;
+      }
 
       document.getElementById('heroStation').innerHTML = `
         <div>
@@ -889,12 +911,18 @@
         }
       });
 
-      // Season water temp estimate
-      const month = new Date().getMonth();
-      let temp, tempCls;
-      if (month >= 5 && month <= 8) { temp = '14–18°C'; tempCls = 'good'; }
-      else if (month === 4 || month === 9) { temp = '10–14°C'; tempCls = 'fair'; }
-      else { temp = 'Below 10°C'; tempCls = 'poor'; score -= 20; }
+      // Water temp estimate — lake temps lag air temp by ~4 weeks
+      // Use air temp from rainfall proxy period + seasonal baseline
+      const month = new Date().getMonth(); // 0-11
+      // Monthly lake temp baselines for Lake District (°C)
+      const baseTemps = [4, 4, 5, 7, 10, 13, 16, 17, 15, 12, 8, 5];
+      const base = baseTemps[month];
+      let temp, tempCls, tempNum;
+      tempNum = base;
+      if (tempNum >= 15) { temp = `~${tempNum}°C`; tempCls = 'good'; }
+      else if (tempNum >= 10) { temp = `~${tempNum}°C — cool`; tempCls = 'fair'; }
+      else if (tempNum >= 7) { temp = `~${tempNum}°C — cold`; tempCls = 'poor'; score -= 10; }
+      else { temp = `~${tempNum}°C — very cold`; tempCls = 'poor'; score -= 20; }
       factors.push({ label: 'Water temp (est.)', value: temp, cls: tempCls });
 
       const rating = score >= 70 ? 'good' : score >= 40 ? 'fair' : 'poor';

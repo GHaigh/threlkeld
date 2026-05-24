@@ -2,9 +2,20 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+    <meta property="og:type" content="website">
+  <meta property="og:title" content="Fell Conditions · Threlkeld">
+  <meta property="og:description" content="Live summit conditions for Blencathra and the Northern Fells. Wind, temperature, visibility and walk suitability ratings.">
+  <meta property="og:url" content="https://threlkeld.info/fells.html">
+  <meta property="og:image" content="https://threlkeld.info/favicon.svg">
+  <meta property="og:site_name" content="Threlkeld Projects">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Fell Conditions · Threlkeld">
+  <meta name="twitter:description" content="Live summit conditions for Blencathra and the Northern Fells. Wind, temperature, visibility and walk suitability ratings.">
+  <meta name="description" content="Live summit conditions for Blencathra and the Northern Fells. Wind, temperature, visibility and walk suitability ratings.">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Fell Conditions · Threlkeld</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Source+Sans+3:wght@300;400;500&display=swap" rel="stylesheet">
   <style>
     :root {
@@ -294,6 +305,35 @@
     .walk-meta-item strong { color: var(--cream); }
     .walk-reason { font-size: 12px; color: var(--cream-dim); line-height: 1.6; margin-top: 8px; font-style: italic; }
 
+    /* Fell map */
+    .fell-map {
+      height: 420px;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid var(--divider);
+      margin-bottom: 28px;
+    }
+    .leaflet-popup-content-wrapper {
+      background: var(--forest-dark);
+      color: var(--cream);
+      border: 1px solid var(--divider);
+      border-radius: 8px;
+      box-shadow: none;
+    }
+    .leaflet-popup-tip { background: var(--forest-dark); }
+    .leaflet-popup-content {
+      font-family: 'Source Sans 3', sans-serif;
+      font-size: 12px;
+      line-height: 1.8;
+      margin: 10px 14px;
+    }
+    .popup-name { font-size: 14px; color: var(--cream); font-weight: 500; margin-bottom: 4px; }
+    .popup-badge { display: inline-block; font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; padding: 2px 8px; border-radius: 10px; margin-bottom: 6px; }
+    .popup-badge.good { background: rgba(122,184,122,0.2); color: #7ab87a; }
+    .popup-badge.fair { background: rgba(200,168,74,0.2); color: #c8a84a; }
+    .popup-badge.poor { background: rgba(200,122,74,0.2); color: #c87a4a; }
+    .popup-badge.danger { background: rgba(200,74,74,0.2); color: #c84a4a; }
+
     footer { border-top: 1px solid var(--divider); padding: 20px 0 32px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-top: 20px; }
     .footer-text { font-size: 11px; color: var(--cream-dim); }
     .footer-brand { font-size: 11px; color: var(--sage); }
@@ -415,6 +455,13 @@
       <div class="loading"><div class="spinner"></div></div>
     </div>
 
+    <!-- Summit Map -->
+    <div class="section-header">
+      <div class="section-title">Summit Map</div>
+      <div class="section-subtitle">Click any summit for current conditions</div>
+    </div>
+    <div class="fell-map" id="fellMap"></div>
+
     <!-- Nearby summits -->
     <div class="section-header">
       <div class="section-title">Nearby Summits</div>
@@ -434,6 +481,7 @@
     </footer>
   </div>
 
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
     const SUMMITS = [
       { name: 'Blencathra', lat: 54.638, lon: -3.053, elev: 868, hero: true },
@@ -545,6 +593,7 @@
       const freezingLevel = valleyTemp > 0 ? Math.round(valleyTemp / lapseRate * 1000) : 0;
 
       document.getElementById('headerUpdated').textContent = `Updated ${new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`;
+      updateMapMarker('Blencathra', temp, wind, gusts, precip, vis, rating);
 
       document.getElementById('heroCard').innerHTML = `
         <div>
@@ -657,6 +706,13 @@
           results.push({ ...s, temp: null, wind: null, gusts: null, precip: null, vis: null, wmo: 0 });
         }
       }
+
+      results.forEach(s => {
+        if (s.temp !== null) {
+          const r = getConditionRating(s.wind, s.gusts, s.precip, s.vis, s.temp);
+          updateMapMarker(s.name, s.temp, s.wind, s.gusts, s.precip, s.vis, r);
+        }
+      });
 
       document.getElementById('summitsGrid').innerHTML = results.map(s => {
         if (s.temp === null) return `<div class="summit-card"><div class="summit-name">${s.name}</div><div class="summit-elev">${s.elev}m</div><div style="color:var(--cream-dim);font-size:12px;font-style:italic">Data unavailable</div></div>`;
@@ -806,6 +862,70 @@
       }).join('');
     }
 
+    // ── Fell Map ──────────────────────────────────────────────
+    let fellMap = null;
+    const summitMarkers = {};
+
+    function initFellMap() {
+      fellMap = L.map('fellMap', {
+        center: [54.638, -3.053],
+        zoom: 11,
+        zoomControl: true
+      });
+
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '© OpenStreetMap © CARTO',
+        maxZoom: 18
+      }).addTo(fellMap);
+
+      // Threlkeld home marker
+      L.circleMarker([54.616, -3.056], {
+        radius: 6, fillColor: '#7ab87a', color: '#7ab87a',
+        weight: 2, opacity: 1, fillOpacity: 0.9
+      }).addTo(fellMap).bindPopup('<div class="popup-name">🏠 Threlkeld</div><div style="color:var(--cream-dim);font-size:11px">Home · 180m</div>');
+
+      // Add summit markers — populated with data once loaded
+      SUMMITS.forEach(s => {
+        const colors = { good: '#7ab87a', fair: '#c8a84a', poor: '#c87a4a', danger: '#c84a4a' };
+        const marker = L.circleMarker([s.lat, s.lon], {
+          radius: s.hero ? 10 : 7,
+          fillColor: '#4a90a4',
+          color: '#4a90a4',
+          weight: 2,
+          opacity: 1,
+          fillOpacity: 0.7
+        }).addTo(fellMap);
+
+        marker.bindPopup(
+          `<div class="popup-name">🏔️ ${s.name}</div>` +
+          `<div style="color:var(--sage);font-size:11px;margin-bottom:6px">${s.elev}m</div>` +
+          `<div style="color:var(--cream-dim);font-style:italic;font-size:11px">Loading conditions...</div>`,
+          { maxWidth: 200 }
+        );
+
+        summitMarkers[s.name] = marker;
+      });
+    }
+
+    function updateMapMarker(name, temp, wind, gusts, precip, vis, rating) {
+      const marker = summitMarkers[name];
+      if (!marker) return;
+      const colors = { good: '#7ab87a', fair: '#c8a84a', poor: '#c87a4a', danger: '#c84a4a' };
+      const labels = { good: '✓ Good', fair: '⚠ Fair', poor: '✗ Poor', danger: '⛔ Dangerous' };
+      const color = colors[rating] || '#4a90a4';
+
+      marker.setStyle({ fillColor: color, color: color });
+      marker.setPopupContent(
+        `<div class="popup-name">🏔️ ${name}</div>` +
+        `<span class="popup-badge ${rating}">${labels[rating]}</span><br>` +
+        `<span style="color:var(--cream-dim)">Temp</span> <strong>${temp}°C</strong> &nbsp;` +
+        `<span style="color:var(--cream-dim)">Wind</span> <strong>${wind}mph</strong><br>` +
+        `<span style="color:var(--cream-dim)">Gusts</span> <strong>${gusts}mph</strong> &nbsp;` +
+        `<span style="color:var(--cream-dim)">Rain</span> <strong>${precip.toFixed(1)}mm/hr</strong><br>` +
+        `<span style="color:var(--cream-dim)">Visibility</span> <strong>${vis < 1 ? Math.round(vis*1000)+'m' : vis.toFixed(1)+'km'}</strong>`
+      );
+    }
+
     // Load all
     loadHero().catch(e => {
       document.getElementById('heroCard').innerHTML = '<div class="loading">Could not load weather data</div>';
@@ -813,6 +933,7 @@
     });
     loadSummits().catch(console.error);
     loadWalks().catch(console.error);
+    initFellMap();
   
     // Mobile nav
     document.getElementById('navHamburger').addEventListener('click', function() {
