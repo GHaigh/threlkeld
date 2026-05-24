@@ -289,6 +289,32 @@
     .record-label { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--sage); }
     .record-date { font-size: 11px; color: var(--cream-dim); margin-top: 4px; }
 
+    /* Growing degree days */
+    .gdd-card {
+      background: var(--forest-dark);
+      border: 1px solid var(--divider);
+      border-radius: 10px;
+      padding: 20px 24px;
+      margin-bottom: 28px;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 24px;
+      align-items: center;
+    }
+    @media (max-width: 600px) { .gdd-card { grid-template-columns: 1fr; } }
+    .gdd-score { text-align: center; }
+    .gdd-value { font-family: 'Playfair Display', serif; font-size: 52px; color: var(--cream); line-height: 1; }
+    .gdd-unit { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--sage); margin-top: 4px; }
+    .gdd-facts { display: flex; flex-direction: column; gap: 8px; }
+    .gdd-fact { display: flex; justify-content: space-between; font-size: 13px; gap: 16px; }
+    .gdd-fact-label { color: var(--cream-dim); }
+    .gdd-fact-value { color: var(--cream); text-align: right; }
+    .gdd-progress { text-align: right; }
+    .gdd-progress-label { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--sage); margin-bottom: 8px; }
+    .gdd-bar-wrap { width: 120px; height: 8px; background: var(--forest-mid); border-radius: 4px; overflow: hidden; margin-bottom: 6px; }
+    .gdd-bar-fill { height: 100%; border-radius: 4px; background: var(--sage); transition: width 0.5s; }
+    .gdd-bar-label { font-size: 11px; color: var(--cream-dim); }
+
     /* Stargazing */
     .stargazing-card { background: var(--forest-dark); border: 1px solid var(--divider); border-radius: 10px; padding: 20px; margin-bottom: 28px; display: grid; grid-template-columns: auto 1fr; gap: 20px; align-items: center; }
     @media (max-width: 600px) { .stargazing-card { grid-template-columns: 1fr; } }
@@ -664,7 +690,7 @@
     </div>
 
     <footer>
-      <div class="footer-text">Threlkeld, Cumbria · Ecowitt GW2000A Weather Station</div>
+      <div class="footer-text"><span id="footerUpdated" style="margin-right:12px;color:var(--cream-dim)"></span>Threlkeld, Cumbria · Ecowitt GW2000A Weather Station</div>
       <div class="footer-brand">Part of Threlkeld Local Projects</div>
     </footer>
   </div>
@@ -1118,6 +1144,15 @@
         </div>
         <div class="records-grid" id="recordsGrid"></div>
 
+        <!-- Growing Degree Days -->
+        <div class="section-header">
+          <div class="section-title">Growing Degree Days</div>
+          <div class="section-sub">Accumulated heat units since 1 Jan · Base 5°C</div>
+        </div>
+        <div class="gdd-card" id="gddCard">
+          <div class="loading"><div class="loading-spinner"></div></div>
+        </div>
+
         <!-- Stargazing -->
         <div class="section-header">
           <div class="section-title">Stargazing Conditions</div>
@@ -1199,6 +1234,85 @@
         <div class="record-card"><div class="record-icon">🌧️</div><div class="record-value">${fmt(wettest?.sum)} mm</div><div class="record-label">Wettest Day</div><div class="record-date">${fmtDate(wettest?.date)}</div></div>
         <div class="record-card"><div class="record-icon">⬆️</div><div class="record-value">${fmt(highestP?.max)} hPa</div><div class="record-label">Highest Pressure</div><div class="record-date">${fmtDate(highestP?.date)}</div></div>
         <div class="record-card"><div class="record-icon">⬇️</div><div class="record-value">${fmt(lowestP?.min)} hPa</div><div class="record-label">Lowest Pressure</div><div class="record-date">${fmtDate(lowestP?.date)}</div></div>`;
+    }
+
+    // ── Growing Degree Days ──────────────────────────────────
+    function renderGDD(history) {
+      const el = document.getElementById('gddCard');
+      if (!el || !history) return;
+
+      const temps = history.outdoor_temperature || [];
+      if (temps.length === 0) return;
+
+      const now = new Date();
+      const startOfYear = new Date(now.getFullYear(), 0, 1);
+      const BASE_TEMP = 5; // °C — standard horticultural base
+
+      // Calculate GDD for each day this year
+      let totalGDD = 0;
+      const yearTemps = temps.filter(d => new Date(d.date) >= startOfYear);
+      yearTemps.forEach(d => {
+        const mean = d.mean ?? ((d.max + d.min) / 2);
+        const gdd = Math.max(0, mean - BASE_TEMP);
+        totalGDD += gdd;
+      });
+      totalGDD = Math.round(totalGDD);
+
+      // Typical Cumbria annual GDD ~800-1200 (base 5°C)
+      // Key milestones
+      const milestones = [
+        { gdd: 50,  label: 'Grass growing actively', icon: '🌱' },
+        { gdd: 100, label: 'Hawthorn in leaf',        icon: '🌿' },
+        { gdd: 200, label: 'Oak leaves emerging',     icon: '🍃' },
+        { gdd: 350, label: 'Peak wildflower season',  icon: '🌸' },
+        { gdd: 500, label: 'Swifts arrive',           icon: '🐦' },
+        { gdd: 700, label: 'Heather in bloom',        icon: '🟣' },
+        { gdd: 900, label: 'First frosts likely',     icon: '❄️' },
+      ];
+
+      const reached = milestones.filter(m => totalGDD >= m.gdd);
+      const next = milestones.find(m => totalGDD < m.gdd);
+      const last = reached[reached.length - 1];
+
+      // Day of year progress
+      const dayOfYear = Math.round((now - startOfYear) / (1000 * 60 * 60 * 24));
+      const annualTarget = 1000; // typical Cumbria
+      const pct = Math.min(100, Math.round((totalGDD / annualTarget) * 100));
+
+      el.innerHTML = `
+        <div class="gdd-score">
+          <div class="gdd-value">${totalGDD}</div>
+          <div class="gdd-unit">Degree Days</div>
+        </div>
+        <div class="gdd-facts">
+          <div class="gdd-fact">
+            <span class="gdd-fact-label">Base temperature</span>
+            <span class="gdd-fact-value">5°C (horticultural)</span>
+          </div>
+          <div class="gdd-fact">
+            <span class="gdd-fact-label">Days recorded</span>
+            <span class="gdd-fact-value">${yearTemps.length} of ${dayOfYear}</span>
+          </div>
+          <div class="gdd-fact">
+            <span class="gdd-fact-label">Latest milestone</span>
+            <span class="gdd-fact-value">${last ? last.icon + ' ' + last.label : 'Season starting'}</span>
+          </div>
+          <div class="gdd-fact">
+            <span class="gdd-fact-label">Next milestone</span>
+            <span class="gdd-fact-value">${next ? next.icon + ' ' + next.label + ' (' + next.gdd + ' GDD)' : '✅ All reached'}</span>
+          </div>
+        </div>
+        <div class="gdd-progress">
+          <div class="gdd-progress-label">Season progress</div>
+          ${milestones.map(m => `
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;font-size:11px">
+              <span>${m.icon}</span>
+              <div style="flex:1;height:4px;background:var(--forest-mid);border-radius:2px;overflow:hidden;width:80px">
+                <div style="height:100%;width:${totalGDD >= m.gdd ? 100 : 0}%;background:var(--sage);border-radius:2px"></div>
+              </div>
+              <span style="color:${totalGDD >= m.gdd ? 'var(--sage)' : 'var(--cream-dim)'};min-width:30px">${m.gdd}</span>
+            </div>`).join('')}
+        </div>`;
     }
 
     // ── Stargazing ────────────────────────────────────────────
@@ -1360,6 +1474,7 @@
           historyData = data;
           if (currentData) renderMiniCharts();
           renderRecords(data);
+          renderGDD(data);
           renderCorrelation(data);
         }
       } catch(e) { console.error('Parse error:', e); }
@@ -1377,6 +1492,11 @@
         document.querySelector('.nav-links').classList.remove('open');
       });
     });
+  
+    // Footer timestamp
+    document.getElementById('footerUpdated') && (document.getElementById('footerUpdated').textContent = 
+      'Updated ' + new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) + 
+      ' · ' + new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }));
   </script>
 </body>
 </html>

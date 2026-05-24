@@ -972,7 +972,7 @@
     </div>
 
     <footer>
-      <div class="footer-text">Threlkeld, Cumbria · Powered by BirdNET-Pi acoustic monitoring</div>
+      <div class="footer-text"><span id="footerUpdated" style="margin-right:12px;color:var(--cream-dim)"></span>Threlkeld, Cumbria · Powered by BirdNET-Pi acoustic monitoring</div>
       <div class="footer-brand">Part of Threlkeld Local Projects</div>
     </footer>
   </div>
@@ -1447,6 +1447,11 @@
         document.querySelector('.nav-links').classList.remove('open');
       });
     });
+  
+    // Footer timestamp
+    document.getElementById('footerUpdated') && (document.getElementById('footerUpdated').textContent = 
+      'Updated ' + new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) + 
+      ' · ' + new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }));
   </script>
   <!-- Calendar Modal -->
   <div class="cal-modal-overlay" id="calModalOverlay">

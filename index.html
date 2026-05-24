@@ -664,7 +664,7 @@
     </div>
 
     <footer>
-      <div class="footer-text">Threlkeld, Cumbria · All data collected and processed locally</div>
+      <div class="footer-text"><span id="footerUpdated" style="margin-right:12px;color:var(--cream-dim)"></span>Threlkeld, Cumbria · All data collected and processed locally</div>
       <div class="footer-location">54.6°N 3.0°W</div>
     </footer>
   </div>
@@ -699,6 +699,11 @@
         document.querySelector('.nav-links').classList.remove('open');
       });
     });
+  
+    // Footer timestamp
+    document.getElementById('footerUpdated') && (document.getElementById('footerUpdated').textContent = 
+      'Updated ' + new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) + 
+      ' · ' + new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }));
   </script>
 </body>
 </html>

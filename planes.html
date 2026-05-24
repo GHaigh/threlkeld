@@ -332,6 +332,30 @@
     .filter-btn.active { background: var(--sage); color: var(--forest-deep); border-color: var(--sage); font-weight: 500; }
     .filter-btn.military-filter.active { background: var(--military); border-color: var(--military); }
 
+    /* Routes chart */
+    .routes-card {
+      background: var(--forest-dark);
+      border: 1px solid var(--divider);
+      border-radius: 10px;
+      padding: 20px 24px;
+      margin-bottom: 28px;
+    }
+    .route-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 7px 0;
+      border-bottom: 1px solid var(--divider);
+      font-size: 13px;
+    }
+    .route-row:last-child { border-bottom: none; }
+    .route-rank { font-family: 'Playfair Display', serif; font-size: 16px; color: var(--cream-dim); width: 20px; flex-shrink: 0; }
+    .route-name { flex: 1; color: var(--cream); min-width: 0; }
+    .route-name span { color: var(--cream-dim); font-size: 11px; }
+    .route-bar-wrap { width: 100px; height: 6px; background: var(--forest-mid); border-radius: 3px; overflow: hidden; flex-shrink: 0; }
+    .route-bar-fill { height: 100%; border-radius: 3px; background: var(--sage); }
+    .route-count { font-size: 12px; color: var(--cream-dim); width: 30px; text-align: right; flex-shrink: 0; }
+
     /* Stat modal */
     .stat-modal-overlay {
       position: fixed; inset: 0; background: rgba(0,0,0,0.7);
@@ -643,6 +667,15 @@
     </div>
 
     <!-- History -->
+    <!-- Routes chart -->
+    <div class="section-header">
+      <div class="section-title">Most Frequent Routes</div>
+      <div class="section-subtitle">Top 10 · All logged flights</div>
+    </div>
+    <div class="routes-card" id="routesCard">
+      <div style="color:var(--cream-dim);font-style:italic;font-size:13px">Loading routes...</div>
+    </div>
+
     <div class="history-section">
       <div class="section-header">
         <div class="section-title">Flight History</div>
@@ -678,7 +711,7 @@
     </div>
 
     <footer>
-      <div class="footer-text">Threlkeld, Cumbria · FlightRadar24 Integration · 15km radius</div>
+      <div class="footer-text"><span id="footerUpdated" style="margin-right:12px;color:var(--cream-dim)"></span>Threlkeld, Cumbria · FlightRadar24 Integration · 15km radius</div>
       <div class="footer-brand">Part of Threlkeld Local Projects</div>
     </footer>
   </div>
@@ -910,6 +943,50 @@
     }
 
 
+    // ── Routes chart ─────────────────────────────────────────
+    function renderRoutes(flights) {
+      const el = document.getElementById('routesCard');
+      if (!el) return;
+
+      // Build route counts — skip unknowns
+      const routes = {};
+      flights.forEach(f => {
+        const orig = f.origin || '?';
+        const dest = f.destination || '?';
+        if (orig === '?' && dest === '?') return;
+        if (orig === dest) return;
+        // Normalise A→B and B→A as the same route
+        const key = [orig, dest].sort().join(' ↔ ');
+        const label = `${orig} → ${dest}`;
+        if (!routes[key]) routes[key] = { label, count: 0, examples: [] };
+        routes[key].count++;
+        if (routes[key].examples.length < 1) routes[key].examples.push(f.airline || '');
+      });
+
+      const sorted = Object.values(routes)
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 10);
+
+      if (sorted.length === 0) {
+        el.innerHTML = '<div style="color:var(--cream-dim);font-style:italic;font-size:13px">No route data yet</div>';
+        return;
+      }
+
+      const max = sorted[0].count;
+      el.innerHTML = sorted.map((r, i) => `
+        <div class="route-row">
+          <div class="route-rank">${i + 1}</div>
+          <div class="route-name">
+            ${r.label}
+            ${r.examples[0] ? `<br><span>${r.examples[0]}</span>` : ''}
+          </div>
+          <div class="route-bar-wrap">
+            <div class="route-bar-fill" style="width:${Math.round((r.count/max)*100)}%"></div>
+          </div>
+          <div class="route-count">${r.count}×</div>
+        </div>`).join('');
+    }
+
     // Stat modal
     function showStatModal(title, flights) {
       document.getElementById('statModalTitle').textContent = title;
@@ -1021,6 +1098,7 @@
         renderHistory(allFlights);
         renderStats(allFlights);
         renderCurrent(allFlights);
+        renderRoutes(allFlights);
       });
     });
 
@@ -1056,6 +1134,11 @@
         document.querySelector('.nav-links').classList.remove('open');
       });
     });
+  
+    // Footer timestamp
+    document.getElementById('footerUpdated') && (document.getElementById('footerUpdated').textContent = 
+      'Updated ' + new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) + 
+      ' · ' + new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }));
   </script>
 
 </body>
