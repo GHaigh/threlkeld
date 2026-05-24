@@ -836,6 +836,7 @@
         <a href="river.html" class="nav-link">🌊 Rivers</a>
         <a href="weather.html" class="nav-link">🌤️ Weather</a>
         <a href="wildlife.html" class="nav-link">🦔 Wildlife</a>
+        <a href="about.html" class="nav-link">ℹ️ About</a>
       </div>
       <button class="nav-hamburger" id="navHamburger" aria-label="Menu">
         <span></span><span></span><span></span>
@@ -908,7 +909,12 @@
         </div>
         <input type="text" class="bird-search" id="birdSearch" placeholder="🔍 Search species — e.g. Robin, Blackbird..." autocomplete="off">
         <div class="search-results-label" id="searchLabel" style="display:none"></div>
-        <div class="detections-grid" id="detectionsList">
+        <!-- Offline banner -->
+    <div id="offlineBanner" style="display:none;background:rgba(200,168,74,0.1);border:1px solid rgba(200,168,74,0.3);border-radius:8px;padding:10px 16px;margin-bottom:16px;font-size:12px;color:var(--cream-dim);align-items:center;gap:10px">
+      <span>⚠️</span>
+      <span>Live data unavailable — showing cached data from <strong id="offlineAge">a moment ago</strong>. Reconnecting...</span>
+    </div>
+    <div class="detections-grid" id="detectionsList">
           <div class="loading">
             <div class="loading-spinner"></div>
             Waiting for bird data...
@@ -1395,6 +1401,41 @@
       renderDetectionsList(results, term);
     });
 
+
+    // ── MQTT resilience ───────────────────────────────────────
+    const CACHE_KEY = 'threlkeld_birds_cache';
+
+    function saveCache(data) {
+      try { localStorage.setItem(CACHE_KEY, JSON.stringify({ data, ts: Date.now() })); } catch(e) {}
+    }
+
+    function loadCache() {
+      try {
+        const raw = localStorage.getItem(CACHE_KEY);
+        if (!raw) return null;
+        const { data, ts } = JSON.parse(raw);
+        const age = Math.round((Date.now() - ts) / 60000);
+        return { data, age };
+      } catch(e) { return null; }
+    }
+
+    function showOfflineBanner(age) {
+      const el = document.getElementById('offlineBanner');
+      if (el) el.style.display = 'flex';
+      const ageEl = document.getElementById('offlineAge');
+      if (ageEl) ageEl.textContent = age < 60
+        ? `${age} minute${age !== 1 ? 's' : ''} ago`
+        : `${Math.round(age/60)} hour${Math.round(age/60) !== 1 ? 's' : ''} ago`;
+    }
+
+    function hideOfflineBanner() {
+      const el = document.getElementById('offlineBanner');
+      if (el) el.style.display = 'none';
+    }
+    // Load cached data on startup
+    const cached = loadCache();
+    if (cached) { showOfflineBanner(cached.age); }
+
     const client = mqtt.connect(`wss://${MQTT_HOST}:${MQTT_PORT}/mqtt`);
 
     client.on('connect', () => {
@@ -1424,6 +1465,7 @@
         document.getElementById('lastUpdate').textContent = `Updated ${new Date().toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'})}`;
         if (topic === DETECTIONS_TOPIC) {
           renderDetections(data);
+          hideOfflineBanner(); saveCache(data);
           // Update calendar
           const dets = [];
           const cnt = data.count || 0;

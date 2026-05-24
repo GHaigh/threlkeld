@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>About · Threlkeld Projects</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Source+Sans+3:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --forest-deep: #0d1a0d; --forest-dark: #1a2e1a; --forest-mid: #243022;
+      --sage: #7ab87a; --sage-light: #a8d4a8; --cream: #e8f0e4; --cream-dim: #b8c8b4;
+      --divider: rgba(122, 184, 122, 0.15);
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: var(--forest-deep); color: var(--cream); font-family: 'Source Sans 3', sans-serif; font-weight: 300; min-height: 100vh; }
+    body::before { content: ''; position: fixed; inset: 0; background-image: radial-gradient(ellipse at 20% 30%, rgba(122,184,122,0.06) 0%, transparent 60%); pointer-events: none; z-index: 0; }
+    .page { max-width: 860px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
+
+    nav { display: flex; align-items: center; gap: 24px; padding: 16px 0; border-bottom: 1px solid var(--divider); margin-bottom: 28px; }
+    .nav-home { font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--sage); text-decoration: none; }
+    .nav-home:hover { color: var(--cream); }
+    .nav-divider { color: var(--divider); }
+    .nav-links { display: flex; gap: 20px; margin-left: auto; flex-wrap: wrap; }
+    .nav-link { font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--cream-dim); text-decoration: none; transition: color 0.2s; }
+    .nav-link:hover, .nav-link.active { color: var(--sage); }
+
+    header { padding: 20px 0 32px; border-bottom: 1px solid var(--divider); margin-bottom: 40px; }
+    .header-eyebrow { font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--sage); margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+    .header-eyebrow::before { content: ''; display: inline-block; width: 20px; height: 1px; background: var(--sage); }
+    h1 { font-family: 'Playfair Display', serif; font-size: clamp(28px, 4vw, 44px); font-weight: 400; }
+    h1 em { font-style: italic; color: var(--sage-light); }
+
+    h2 { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 400; color: var(--cream); margin: 36px 0 12px; }
+    p { font-size: 15px; color: var(--cream-dim); line-height: 1.85; margin-bottom: 16px; }
+    p strong { color: var(--cream); font-weight: 400; }
+    a { color: var(--sage); text-decoration: none; }
+    a:hover { color: var(--sage-light); }
+
+    .stack-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; margin: 16px 0 28px; }
+    .stack-card { background: var(--forest-dark); border: 1px solid var(--divider); border-radius: 10px; padding: 16px 18px; }
+    .stack-layer { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--sage); margin-bottom: 6px; }
+    .stack-name { font-size: 14px; color: var(--cream); margin-bottom: 4px; }
+    .stack-desc { font-size: 12px; color: var(--cream-dim); line-height: 1.6; }
+
+    .pipeline { display: flex; align-items: center; gap: 0; flex-wrap: wrap; background: var(--forest-dark); border: 1px solid var(--divider); border-radius: 10px; padding: 20px; margin: 16px 0 28px; overflow-x: auto; }
+    .pipeline-step { text-align: center; padding: 8px 14px; min-width: 100px; }
+    .pipeline-icon { font-size: 24px; margin-bottom: 6px; }
+    .pipeline-name { font-size: 11px; color: var(--cream); margin-bottom: 2px; }
+    .pipeline-detail { font-size: 10px; color: var(--cream-dim); line-height: 1.4; }
+    .pipeline-arrow { font-size: 18px; color: var(--sage); padding: 0 4px; flex-shrink: 0; }
+
+    .stat-row { display: flex; gap: 24px; flex-wrap: wrap; margin: 16px 0 28px; }
+    .stat-item { text-align: center; }
+    .stat-num { font-family: 'Playfair Display', serif; font-size: 32px; color: var(--cream); }
+    .stat-label { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--sage); margin-top: 2px; }
+
+    .hardware-list { background: var(--forest-dark); border: 1px solid var(--divider); border-radius: 10px; padding: 16px 20px; margin: 16px 0 28px; }
+    .hardware-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--divider); font-size: 13px; }
+    .hardware-item:last-child { border-bottom: none; }
+    .hardware-name { color: var(--cream-dim); }
+    .hardware-spec { color: var(--cream); text-align: right; }
+
+    footer { border-top: 1px solid var(--divider); padding: 20px 0 32px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-top: 40px; }
+    .footer-text { font-size: 11px; color: var(--cream-dim); }
+    .footer-brand { font-size: 11px; color: var(--sage); }
+
+    /* Mobile nav */
+    .nav-hamburger { display: none; flex-direction: column; gap: 5px; background: none; border: none; cursor: pointer; padding: 4px; margin-left: auto; }
+    .nav-hamburger span { display: block; width: 22px; height: 2px; background: var(--cream-dim); border-radius: 2px; transition: all 0.25s; }
+    .nav-hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+    .nav-hamburger.open span:nth-child(2) { opacity: 0; }
+    .nav-hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+    @media (max-width: 700px) {
+      .nav-hamburger { display: flex; }
+      .nav-links { display: none; position: absolute; top: 56px; left: 0; right: 0; background: var(--forest-dark); border-bottom: 1px solid var(--divider); padding: 12px 24px; flex-direction: column; gap: 14px; z-index: 100; }
+      .nav-links.open { display: flex; }
+      .nav-divider { display: none; }
+      nav { position: relative; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <nav>
+      <a href="index.html" class="nav-home">← Threlkeld Projects</a>
+      <span class="nav-divider">|</span>
+      <div class="nav-links">
+        <a href="birds.html" class="nav-link">🐦 Birds</a>
+        <a href="fells.html" class="nav-link">🏔️ Fells</a>
+        <a href="planes.html" class="nav-link">✈️ Planes</a>
+        <a href="river.html" class="nav-link">🌊 Rivers</a>
+        <a href="weather.html" class="nav-link">🌤️ Weather</a>
+        <a href="wildlife.html" class="nav-link">🦔 Wildlife</a>
+      </div>
+      <button class="nav-hamburger" id="navHamburger" aria-label="Menu">
+        <span></span><span></span><span></span>
+      </button>
+    </nav>
+
+    <header>
+      <div class="header-eyebrow">Threlkeld · Cumbria · Northern Lake District</div>
+      <h1>About <em>This Project</em></h1>
+    </header>
+
+    <p><strong>Threlkeld Projects</strong> is a personal nature monitoring platform built by Greg Haigh, a software developer living in Threlkeld village at the foot of Blencathra in the Northern Lake District. It started as a simple bird detection experiment and grew into a comprehensive live data platform covering birds, weather, rivers, flights, fells and wildlife.</p>
+
+    <p>Everything on this site is real, live data from Threlkeld — no APIs aggregating national data, no cached feeds. The bird detections are from a microphone in the garden. The river level is from a gauge 500 metres away. The flight data is from planes actually overflying this exact location. The weather station is on the roof.</p>
+
+    <h2>The Numbers</h2>
+    <div class="stat-row">
+      <div class="stat-item"><div class="stat-num">7</div><div class="stat-label">Live pages</div></div>
+      <div class="stat-item"><div class="stat-num">9</div><div class="stat-label">River stations</div></div>
+      <div class="stat-item"><div class="stat-num">9</div><div class="stat-label">Fell summits</div></div>
+      <div class="stat-item"><div class="stat-num">5000</div><div class="stat-label">Max bird detections</div></div>
+      <div class="stat-item"><div class="stat-num">2000</div><div class="stat-label">Max flights logged</div></div>
+      <div class="stat-item"><div class="stat-num">0</div><div class="stat-label">Cloud bills</div></div>
+    </div>
+
+    <h2>Data Pipeline</h2>
+    <p>All data flows through the same pipeline — sensors and APIs feed into Home Assistant and Node-RED running on a Raspberry Pi at home, which publishes everything to a public MQTT broker. The website subscribes directly from the browser — no backend, no database, no server costs.</p>
+
+    <div class="pipeline">
+      <div class="pipeline-step"><div class="pipeline-icon">🎙️</div><div class="pipeline-name">Sensors</div><div class="pipeline-detail">BirdNET-Pi<br>Weather station<br>EA river API</div></div>
+      <div class="pipeline-arrow">→</div>
+      <div class="pipeline-step"><div class="pipeline-icon">🏠</div><div class="pipeline-name">Home Assistant</div><div class="pipeline-detail">HA OS 2026<br>Raspberry Pi 4</div></div>
+      <div class="pipeline-arrow">→</div>
+      <div class="pipeline-step"><div class="pipeline-icon">⚙️</div><div class="pipeline-name">Node-RED</div><div class="pipeline-detail">v4.1 · Processing<br>Notifications<br>File storage</div></div>
+      <div class="pipeline-arrow">→</div>
+      <div class="pipeline-step"><div class="pipeline-icon">📡</div><div class="pipeline-name">MQTT</div><div class="pipeline-detail">HiveMQ broker<br>Public · Free<br>Retained topics</div></div>
+      <div class="pipeline-arrow">→</div>
+      <div class="pipeline-step"><div class="pipeline-icon">🌐</div><div class="pipeline-name">GitHub Pages</div><div class="pipeline-detail">Static HTML/JS<br>Free hosting<br>No backend</div></div>
+    </div>
+
+    <h2>Tech Stack</h2>
+    <div class="stack-grid">
+      <div class="stack-card">
+        <div class="stack-layer">Bird Detection</div>
+        <div class="stack-name">BirdNET-Pi</div>
+        <div class="stack-desc">Open source acoustic bird monitoring. Raspberry Pi 4 with USB microphone, runs BirdNET neural network in real time. Detects species from audio and publishes via MQTT.</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-layer">Home Automation</div>
+        <div class="stack-name">Home Assistant</div>
+        <div class="stack-desc">Open source home automation platform running on a Raspberry Pi 4. Collects weather station data, triggers automations, provides the webhook for analytics.</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-layer">Data Processing</div>
+        <div class="stack-name">Node-RED</div>
+        <div class="stack-desc">Visual flow-based programming tool running as a Home Assistant add-on. Processes all data streams, handles notifications, stores detection history to JSON files.</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-layer">Messaging</div>
+        <div class="stack-name">MQTT · HiveMQ</div>
+        <div class="stack-desc">Lightweight publish/subscribe protocol. HiveMQ's free public broker relays all data from home to the website. Retained messages mean data survives page refreshes.</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-layer">Weather Data</div>
+        <div class="stack-name">Ecowitt via HA</div>
+        <div class="stack-desc">Personal weather station on the roof feeding into Home Assistant. Temperature, wind, rainfall, solar radiation, UV, lightning, humidity and pressure — all live.</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-layer">River Data</div>
+        <div class="stack-name">EA Flood API</div>
+        <div class="stack-desc">Environment Agency's real-time flood monitoring API. Free, no key required. 9 stations covering the Glenderamackin, Greta, Derwent and 4 lakes. Updated every 15 minutes.</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-layer">Flight Data</div>
+        <div class="stack-name">FlightRadar24 · HA</div>
+        <div class="stack-desc">Home Assistant FlightRadar24 integration detects flights entering a 15km radius around Threlkeld and fires events into Node-RED for processing and storage.</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-layer">Mountain Weather</div>
+        <div class="stack-name">Open-Meteo</div>
+        <div class="stack-desc">Free weather API with no key required. Queried at specific summit elevations for real summit conditions — not valley readings extrapolated upward.</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-layer">Wildlife Data</div>
+        <div class="stack-name">iNaturalist API</div>
+        <div class="stack-desc">Community science platform. The API returns verified research-grade observations within 10km of Threlkeld. No key required. Updated in real time as observations are verified.</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-layer">Maps</div>
+        <div class="stack-name">Leaflet · CartoDB</div>
+        <div class="stack-desc">Open source mapping library with dark CartoDB tiles. Used on the wildlife observation map and fell summit map. No API key, no usage limits.</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-layer">Hosting</div>
+        <div class="stack-name">GitHub Pages</div>
+        <div class="stack-desc">Free static site hosting from a public GitHub repository. No server, no database, no build process — just HTML, CSS and JavaScript files committed and pushed.</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-layer">Notifications</div>
+        <div class="stack-name">HA · iOS Companion</div>
+        <div class="stack-desc">Push notifications via the Home Assistant iOS companion app. New species alerts, dawn chorus summaries and rare bird flags delivered directly to both iPhones.</div>
+      </div>
+    </div>
+
+    <h2>Hardware</h2>
+    <div class="hardware-list">
+      <div class="hardware-item"><span class="hardware-name">Bird detection</span><span class="hardware-spec">Raspberry Pi 4 4GB · USB microphone</span></div>
+      <div class="hardware-item"><span class="hardware-name">Home automation</span><span class="hardware-spec">Raspberry Pi 4 8GB · Home Assistant OS</span></div>
+      <div class="hardware-item"><span class="hardware-name">Weather station</span><span class="hardware-spec">Ecowitt HP2553 · Roof mounted</span></div>
+      <div class="hardware-item"><span class="hardware-name">Bat detector</span><span class="hardware-spec">Dodotronics UM200K · Raspberry Pi 4 · Coming summer 2026</span></div>
+      <div class="hardware-item"><span class="hardware-name">Stream sensor</span><span class="hardware-spec">Pi Zero 2W · JSN-SR04T ultrasonic · Planned</span></div>
+    </div>
+
+    <h2>Running Costs</h2>
+    <p>Almost zero. GitHub Pages is free. HiveMQ's public broker is free. Open-Meteo, iNaturalist, the EA API and CartoDB tiles are all free with no key required. The only costs are home electricity for the Raspberry Pis (~£3/month combined) and the hardware purchased once.</p>
+
+    <h2>Source & Contact</h2>
+    <p>The site is built and maintained by <strong>Greg Haigh</strong> in Threlkeld, Cumbria. The GitHub repository is at <a href="https://github.com/ghaigh/threlkeld" target="_blank">github.com/ghaigh/threlkeld</a>. Questions, ideas or spotted something interesting over Threlkeld? Get in touch at <a href="mailto:greg@threlkeld.info">greg@threlkeld.info</a>.</p>
+
+    <footer>
+      <div class="footer-text"><span id="footerUpdated"></span>Threlkeld, Cumbria · Northern Lake District</div>
+      <div class="footer-brand">threlkeld.info</div>
+    </footer>
+  </div>
+
+  <script>
+    document.getElementById('navHamburger').addEventListener('click', function() {
+      this.classList.toggle('open');
+      document.querySelector('.nav-links').classList.toggle('open');
+    });
+    document.querySelectorAll('.nav-link').forEach(l => {
+      l.addEventListener('click', () => {
+        document.getElementById('navHamburger').classList.remove('open');
+        document.querySelector('.nav-links').classList.remove('open');
+      });
+    });
+    document.getElementById('footerUpdated') && (document.getElementById('footerUpdated').textContent =
+      'Updated ' + new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) +
+      ' · ' + new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) + ' · ');
+  </script>
+</body>
+</html>

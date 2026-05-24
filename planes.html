@@ -172,6 +172,8 @@
     .flight-card:hover { border-color: var(--sage); }
     .flight-card.military { border-color: var(--military); background: linear-gradient(135deg, var(--forest-dark), var(--military-dim)); }
     .flight-card.air-ambulance { border-color: #e05555; background: linear-gradient(135deg, var(--forest-dark), rgba(224,85,85,0.08)); }
+    .flight-card.night-flight { border-color: rgba(100,100,180,0.5); background: linear-gradient(135deg, var(--forest-dark), rgba(80,80,160,0.08)); }
+    .night-badge { display: inline-block; font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase; padding: 2px 6px; border-radius: 8px; background: rgba(100,100,180,0.2); color: #a0a0e0; border: 1px solid rgba(100,100,180,0.3); margin-left: 4px; vertical-align: middle; }
 
     .flight-card-header {
       display: flex;
@@ -573,6 +575,7 @@
         <a href="river.html" class="nav-link">🌊 Rivers</a>
         <a href="weather.html" class="nav-link">🌤️ Weather</a>
         <a href="wildlife.html" class="nav-link">🦔 Wildlife</a>
+        <a href="about.html" class="nav-link">ℹ️ About</a>
       </div>
       <button class="nav-hamburger" id="navHamburger" aria-label="Menu">
         <span></span><span></span><span></span>
@@ -667,6 +670,11 @@
     </div>
 
     <!-- History -->
+    <!-- Offline banner -->
+    <div id="offlineBanner" style="display:none;background:rgba(200,168,74,0.1);border:1px solid rgba(200,168,74,0.3);border-radius:8px;padding:10px 16px;margin-bottom:16px;font-size:12px;color:var(--cream-dim);align-items:center;gap:10px">
+      <span>⚠️</span>
+      <span>Live data unavailable — showing cached data from <strong id="offlineAge">a moment ago</strong>. Reconnecting...</span>
+    </div>
     <!-- Routes chart -->
     <div class="section-header">
       <div class="section-title">Most Frequent Routes</div>
@@ -775,6 +783,11 @@
              (model.includes('AW169') && cs.startsWith('G-'));
     }
 
+    function isNightFlight(timestamp) {
+      const hour = new Date(timestamp).getHours();
+      return hour >= 0 && hour < 6;
+    }
+
     function renderStats(flights) {
       const today = flights.filter(f => isToday(f.timestamp));
       const military = flights.filter(f => f.military);
@@ -825,7 +838,7 @@
         const placeholderHtml = `<div class="flight-photo-placeholder" style="${hasPhoto ? 'display:none' : ''}">✈️</div>`;
 
         return `
-          <div class="flight-card ${f.military ? 'military' : isAirAmbulance(f) ? 'air-ambulance' : ''}">
+          <div class="flight-card ${f.military ? 'military' : isAirAmbulance(f) ? 'air-ambulance' : isNightFlight(f.timestamp) ? 'night-flight' : ''}">
             <div class="flight-card-header">
               ${photoHtml}${placeholderHtml}
               <div>
@@ -1019,7 +1032,7 @@
                   ? `<img class="modal-flight-photo" src="${f.photo}" alt="${f.callsign}" onerror="this.style.display='none'">`
                   : `<div class="modal-flight-placeholder">✈️</div>`}
                 <div class="modal-flight-info">
-                  <div class="modal-flight-callsign">${f.callsign}${f.military ? ' 🎖️' : ''}${isAirAmbulance(f) ? ' 🚁' : ''}</div>
+                  <div class="modal-flight-callsign">${f.callsign}${f.military ? ' 🎖️' : ''}${isAirAmbulance(f) ? ' 🚁' : isNightFlight(f.timestamp) ? ' 🌙' : ''}${isNightFlight(f.timestamp) ? '<span class="night-badge">🌙 Night</span>' : ''}</div>
                   <div class="modal-flight-route">${f.origin} → ${f.destination}</div>
                   <div class="modal-flight-meta">${f.aircraft_model || 'Unknown aircraft'} · ${f.airline || ''}</div>
                 </div>
@@ -1102,6 +1115,41 @@
       });
     });
 
+
+    // ── MQTT resilience ───────────────────────────────────────
+    const CACHE_KEY = 'threlkeld_planes_cache';
+
+    function saveCache(data) {
+      try { localStorage.setItem(CACHE_KEY, JSON.stringify({ data, ts: Date.now() })); } catch(e) {}
+    }
+
+    function loadCache() {
+      try {
+        const raw = localStorage.getItem(CACHE_KEY);
+        if (!raw) return null;
+        const { data, ts } = JSON.parse(raw);
+        const age = Math.round((Date.now() - ts) / 60000);
+        return { data, age };
+      } catch(e) { return null; }
+    }
+
+    function showOfflineBanner(age) {
+      const el = document.getElementById('offlineBanner');
+      if (el) el.style.display = 'flex';
+      const ageEl = document.getElementById('offlineAge');
+      if (ageEl) ageEl.textContent = age < 60
+        ? `${age} minute${age !== 1 ? 's' : ''} ago`
+        : `${Math.round(age/60)} hour${Math.round(age/60) !== 1 ? 's' : ''} ago`;
+    }
+
+    function hideOfflineBanner() {
+      const el = document.getElementById('offlineBanner');
+      if (el) el.style.display = 'none';
+    }
+    // Load cached data on startup
+    const cached = loadCache();
+    if (cached) { showOfflineBanner(cached.age); }
+
     const client = mqtt.connect(`wss://${MQTT_HOST}:${MQTT_PORT}/mqtt`);
 
     client.on('connect', () => {
@@ -1118,7 +1166,7 @@
     client.on('message', (topic, message) => {
       try {
         const flights = JSON.parse(message.toString());
-        if (Array.isArray(flights)) render(flights);
+        if (Array.isArray(flights)) { render(flights); hideOfflineBanner(); saveCache(flights); }
       } catch(e) { console.error('Parse error:', e); }
     });
   
