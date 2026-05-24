@@ -595,7 +595,21 @@
     </footer>
   </div>
 
-  <script>
+  <!-- Stat Modal -->
+  <div class="stat-modal-overlay" id="statModalOverlay">
+    <div class="stat-modal">
+      <div class="stat-modal-header">
+        <div>
+          <div class="stat-modal-title" id="statModalTitle"></div>
+          <div class="stat-modal-count" id="statModalCount"></div>
+        </div>
+        <button class="stat-modal-close" id="statModalClose">✕</button>
+      </div>
+      <div class="stat-modal-body" id="statModalBody"></div>
+    </div>
+  </div>
+
+    <script>
     const MQTT_HOST = 'broker.hivemq.com';
     const MQTT_PORT = 8884;
     const FLIGHTS_TOPIC = 'birdnetpi/greg2026/flights';
@@ -889,19 +903,6 @@
       } catch(e) { console.error('Parse error:', e); }
     });
   </script>
-  <!-- Stat Modal -->
-  <div class="stat-modal-overlay" id="statModalOverlay">
-    <div class="stat-modal">
-      <div class="stat-modal-header">
-        <div>
-          <div class="stat-modal-title" id="statModalTitle"></div>
-          <div class="stat-modal-count" id="statModalCount"></div>
-        </div>
-        <button class="stat-modal-close" id="statModalClose">✕</button>
-      </div>
-      <div class="stat-modal-body" id="statModalBody"></div>
-    </div>
-  </div>
 
 </body>
 </html>
