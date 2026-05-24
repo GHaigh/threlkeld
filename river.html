@@ -462,8 +462,8 @@
       <div class="section-subtitle">Indicative only · Always check before you swim</div>
     </div>
     <div class="swim-info-banner">
-      <strong>Conditions are estimated from live river and lake level data.</strong>
-      They are not a substitute for checking on the day — always assess conditions yourself before entering open water. Never swim alone, be aware of cold water shock, and check for any local restrictions.
+      <strong>Conditions are estimated from river levels, recent rainfall and EA annual classifications — not direct water testing.</strong>
+      They are not a substitute for checking on the day. After heavy rainfall, even good-rated lakes can have elevated E. coli from agricultural runoff. Never swim alone, be aware of cold water shock, and check for local restrictions. <a href="https://environment.data.gov.uk/bwq/profiles/" target="_blank" style="color:var(--sage)">EA bathing water profiles ↗</a>
     </div>
     <div class="swim-grid" id="swimGrid">
       <div class="loading"><div class="spinner"></div></div>
@@ -569,8 +569,11 @@
         renderChart(chart, main);
       }
 
-      // Swim conditions
-      renderSwim(stations);
+      // Swim conditions — pass recent rainfall from chart data
+      const recentRain = chart.length > 0
+        ? chart.slice(-96).reduce((sum, r) => sum + (r.value || 0), 0) // last 24h readings
+        : null;
+      renderSwim(stations, recentRain);
 
       // Split into rivers and lakes
       const rivers = nearby.filter(s => !s.lake);
@@ -691,11 +694,14 @@
     const SWIM_SPOTS = [
       {
         name: 'Derwentwater',
-        location: 'Keswick · Multiple access points',
+        location: 'Crow Park · Keswick',
         stationId: '5178',
         inflowIds: ['5174'],
         normalMax: 1.40,
-        notes: 'Popular wild swim lake. Access from Keswick launch or Lodore.'
+        notes: 'Popular wild swim lake. Designated bathing water at Crow Park.',
+        eaRating: 'poor',
+        eaYear: 2025,
+        eaUrl: 'https://environment.data.gov.uk/bwq/profiles/profile.html?site=ukd3903-37180'
       },
       {
         name: 'Ullswater',
@@ -703,7 +709,32 @@
         stationId: '5166',
         inflowIds: [],
         normalMax: 2.05,
-        notes: 'Stunning glacial lake. Good access at Glenridding and Howtown.'
+        notes: 'Stunning glacial lake. Good access at Glenridding and Howtown. Not yet a designated bathing water.',
+        eaRating: null,
+        eaYear: null,
+        eaUrl: null
+      },
+      {
+        name: 'Windermere',
+        location: 'Rayrigg Meadow · Millerground · Fell Foot · Lakeside YMCA',
+        stationId: null,
+        inflowIds: [],
+        normalMax: null,
+        notes: 'Four designated bathing water sites, all rated Excellent in 2025.',
+        eaRating: 'excellent',
+        eaYear: 2025,
+        eaUrl: 'https://environment.data.gov.uk/bwq/profiles/profile.html?site=ukd2105-35740'
+      },
+      {
+        name: 'Coniston Water',
+        location: 'Monk Coniston · Brown Howe · Boating Centre',
+        stationId: null,
+        inflowIds: [],
+        normalMax: null,
+        notes: 'Three designated sites. Monk Coniston and Brown Howe rated Excellent. Boating Centre rated Poor — avoid.',
+        eaRating: 'good',
+        eaYear: 2025,
+        eaUrl: 'https://environment.data.gov.uk/bwq/profiles/profile.html?site=ukd2109-36280'
       },
       {
         name: 'Bassenthwaite Lake',
@@ -711,7 +742,10 @@
         stationId: '5179',
         inflowIds: ['9419'],
         normalMax: 2.07,
-        notes: 'Only natural lake in the Lake District. Limited access points.'
+        notes: 'Only natural lake in the Lake District. Limited access points. Not yet designated.',
+        eaRating: null,
+        eaYear: null,
+        eaUrl: null
       },
       {
         name: 'Thirlmere',
@@ -719,37 +753,69 @@
         stationId: '5210',
         inflowIds: ['5139'],
         normalMax: 16.68,
-        notes: 'Reservoir — swimming not officially permitted but widely used.'
+        notes: 'Reservoir — swimming not officially permitted but widely used.',
+        eaRating: null,
+        eaYear: null,
+        eaUrl: null
       }
     ];
 
-    function getSwimConditions(spot, stations) {
-      const lake = stations.find(s => s.id === spot.stationId);
-      if (!lake || lake.level === null) return { rating: 'unknown', factors: [] };
+    function getSwimConditions(spot, stations, recentRainMm) {
+      const lake = spot.stationId ? stations.find(s => s.id === spot.stationId) : null;
+      // Sites without a level station still get EA rating and rainfall
+      if (!lake && !spot.eaRating && recentRainMm === null) return { rating: 'unknown', factors: [] };
 
-      const inflows = spot.inflowIds.map(id => stations.find(s => s.id === id)).filter(Boolean);
       const factors = [];
       let score = 100;
 
-      // Lake level vs normal
-      const levelPct = lake.level / spot.normalMax;
-      if (levelPct > 1.0) {
-        factors.push({ label: 'Lake level', value: 'Above normal', cls: 'poor' });
-        score -= 40;
-      } else if (levelPct > 0.85) {
-        factors.push({ label: 'Lake level', value: 'Elevated', cls: 'fair' });
-        score -= 15;
+      // EA annual classification
+      if (spot.eaRating === 'poor') {
+        factors.push({ label: 'EA classification', value: '⚠️ Poor (2024)', cls: 'poor' });
+        score -= 20; // ongoing concern but not a daily blocker
+      } else if (spot.eaRating === 'sufficient') {
+        factors.push({ label: 'EA classification', value: 'Sufficient (2024)', cls: 'fair' });
+        score -= 5;
+      } else if (spot.eaRating === 'good' || spot.eaRating === 'excellent') {
+        factors.push({ label: 'EA classification', value: `${spot.eaRating.charAt(0).toUpperCase() + spot.eaRating.slice(1)} (${spot.eaYear})`, cls: 'good' });
       } else {
-        factors.push({ label: 'Lake level', value: 'Normal', cls: 'good' });
+        factors.push({ label: 'EA classification', value: 'Not designated', cls: 'fair' });
+      }
+
+      // Recent rainfall proxy
+      if (recentRainMm !== null) {
+        if (recentRainMm > 10) {
+          factors.push({ label: 'Recent rainfall', value: `${recentRainMm.toFixed(0)}mm — elevated runoff risk`, cls: 'poor' });
+          score -= 35;
+        } else if (recentRainMm > 3) {
+          factors.push({ label: 'Recent rainfall', value: `${recentRainMm.toFixed(0)}mm — some runoff possible`, cls: 'fair' });
+          score -= 15;
+        } else {
+          factors.push({ label: 'Recent rainfall', value: recentRainMm > 0 ? `${recentRainMm.toFixed(1)}mm — low risk` : 'Dry — low risk', cls: 'good' });
+        }
+      }
+
+      // Lake level vs normal (only if we have a station)
+      if (lake && lake.level !== null && spot.normalMax) {
+        const levelPct = lake.level / spot.normalMax;
+        if (levelPct > 1.0) {
+          factors.push({ label: 'Lake level', value: 'Above normal', cls: 'poor' });
+          score -= 20;
+        } else if (levelPct > 0.85) {
+          factors.push({ label: 'Lake level', value: 'Elevated', cls: 'fair' });
+          score -= 10;
+        } else {
+          factors.push({ label: 'Lake level', value: 'Normal', cls: 'good' });
+        }
       }
 
       // Inflow rivers
+      const inflows = spot.inflowIds ? spot.inflowIds.map(id => stations.find(s => s.id === id)).filter(Boolean) : [];
       inflows.forEach(r => {
         if (r.level === null) return;
         const inflowPct = r.level / (r.normal ? r.normal[1] : 2.0);
         if (inflowPct > 0.9) {
           factors.push({ label: r.name.split(' at ')[0], value: 'High — poor visibility', cls: 'poor' });
-          score -= 30;
+          score -= 25;
         } else if (inflowPct > 0.7) {
           factors.push({ label: r.name.split(' at ')[0], value: 'Elevated', cls: 'fair' });
           score -= 10;
@@ -770,11 +836,12 @@
       return { rating, factors };
     }
 
-    function renderSwim(stations) {
+    function renderSwim(stations, recentRainMm) {
       const grid = document.getElementById('swimGrid');
       grid.innerHTML = SWIM_SPOTS.map(spot => {
-        const { rating, factors } = getSwimConditions(spot, stations);
+        const { rating, factors } = getSwimConditions(spot, stations, recentRainMm);
         const badgeLabel = rating === 'good' ? '✓ Good' : rating === 'fair' ? '⚠ Fair' : rating === 'poor' ? '✗ Poor' : '? Unknown';
+        const eaLink = spot.eaUrl ? `<a href="${spot.eaUrl}" target="_blank" style="color:var(--sage);font-size:11px;text-decoration:none">EA water quality data ↗</a>` : '<span style="font-size:11px;color:var(--cream-dim)">Not a designated bathing water</span>';
 
         return `
           <div class="swim-card">
@@ -794,6 +861,7 @@
                   </div>`).join('')}
               </div>
               <div class="swim-disclaimer">${spot.notes} Always assess conditions yourself before entering the water.</div>
+              <div style="margin-top:8px">${eaLink}</div>
             </div>
           </div>`;
       }).join('');
