@@ -103,9 +103,9 @@
       <h1>About <em>This Project</em></h1>
     </header>
 
-    <p><strong>Threlkeld Projects</strong> is a personal nature monitoring platform built by Greg Haigh, a software developer living in Threlkeld village at the foot of Blencathra in the Northern Lake District. It started as a simple bird detection experiment and grew into a comprehensive live data platform covering birds, weather, rivers, flights, fells and wildlife.</p>
+    <p><strong>Threlkeld Projects</strong> is a personal nature monitoring platform built by an IT professional with over 35 years of experience, living in Threlkeld village at the foot of Blencathra in the Northern Lake District. It started as a simple bird detection experiment and grew into a comprehensive live data platform covering birds, weather, rivers, flights, fells and wildlife.</p>
 
-    <p>Everything on this site is real, live data from Threlkeld — no APIs aggregating national data, no cached feeds. The bird detections are from a microphone in the garden. The river level is from a gauge 500 metres away. The flight data is from planes actually overflying this exact location. The weather station is on the roof.</p>
+    <p>All data is live and sourced as locally as possible. The bird detections come from a microphone in the garden. The weather is from a station on the roof. The river level is from an EA gauge 500 metres away. The flight data is from planes actually overflying this location. Where local sensors aren't possible — fell summit conditions, wildlife sightings, wild swimming classifications — the best available APIs and community data are used instead, clearly labelled throughout the site.</p>
 
     <h2>The Numbers</h2>
     <div class="stat-row">
@@ -142,7 +142,7 @@
       <div class="stack-card">
         <div class="stack-layer">Home Automation</div>
         <div class="stack-name">Home Assistant</div>
-        <div class="stack-desc">Open source home automation platform running on a Raspberry Pi 4. Collects weather station data, triggers automations, provides the webhook for analytics.</div>
+        <div class="stack-desc">Open source home automation platform running as a VM on a Lenovo ThinkCentre running Proxmox. Collects weather station data, triggers automations, provides the webhook for analytics.</div>
       </div>
       <div class="stack-card">
         <div class="stack-layer">Data Processing</div>
@@ -157,7 +157,7 @@
       <div class="stack-card">
         <div class="stack-layer">Weather Data</div>
         <div class="stack-name">Ecowitt via HA</div>
-        <div class="stack-desc">Personal weather station on the roof feeding into Home Assistant. Temperature, wind, rainfall, solar radiation, UV, lightning, humidity and pressure — all live.</div>
+        <div class="stack-desc">Personal weather station on a pole mount feeding into Home Assistant. Temperature, wind, rainfall, solar radiation, UV, lightning, humidity and pressure — all live.</div>
       </div>
       <div class="stack-card">
         <div class="stack-layer">River Data</div>
@@ -199,8 +199,8 @@
     <h2>Hardware</h2>
     <div class="hardware-list">
       <div class="hardware-item"><span class="hardware-name">Bird detection</span><span class="hardware-spec">Raspberry Pi 4 4GB · USB microphone</span></div>
-      <div class="hardware-item"><span class="hardware-name">Home automation</span><span class="hardware-spec">Raspberry Pi 4 8GB · Home Assistant OS</span></div>
-      <div class="hardware-item"><span class="hardware-name">Weather station</span><span class="hardware-spec">Ecowitt HP2553 · Roof mounted</span></div>
+      <div class="hardware-item"><span class="hardware-name">Home automation</span><span class="hardware-spec">Lenovo ThinkCentre · Proxmox · Home Assistant VM</span></div>
+      <div class="hardware-item"><span class="hardware-name">Weather station</span><span class="hardware-spec">Ecowitt HP2553 · Pole mounted</span></div>
       <div class="hardware-item"><span class="hardware-name">Bat detector</span><span class="hardware-spec">Dodotronics UM200K · Raspberry Pi 4 · Coming summer 2026</span></div>
       <div class="hardware-item"><span class="hardware-name">Stream sensor</span><span class="hardware-spec">Pi Zero 2W · JSN-SR04T ultrasonic · Planned</span></div>
     </div>
@@ -208,8 +208,44 @@
     <h2>Running Costs</h2>
     <p>Almost zero. GitHub Pages is free. HiveMQ's public broker is free. Open-Meteo, iNaturalist, the EA API and CartoDB tiles are all free with no key required. The only costs are home electricity for the Raspberry Pis (~£3/month combined) and the hardware purchased once.</p>
 
+    <h2>What's Coming Next</h2>
+    <p>The project is actively growing. Several hardware builds are planned or underway for 2026:</p>
+
+    <div class="stack-grid">
+      <div class="stack-card">
+        <div class="stack-layer">Summer 2026</div>
+        <div class="stack-name">🦇 Bat Detector</div>
+        <div class="stack-desc">A Raspberry Pi 4 running acoupi_batdetect2 with a Dodotronics UM200K ultrasonic microphone. Will automatically identify bat species passing through the garden at dusk. Threlkeld's stream and fell edge make it prime pipistrelle and Daubenton's habitat.</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-layer">Summer 2026</div>
+        <div class="stack-name">💧 Garden Stream Sensor</div>
+        <div class="stack-desc">A Pi Zero 2W with a waterproof JSN-SR04T ultrasonic sensor mounted above the garden stream — a direct tributary of the Glenderamackin. Will give hyperlocal flood early warning before the EA gauges downstream even register the event.</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-layer">2026</div>
+        <div class="stack-name">🐦 Smart Bird Box</div>
+        <div class="stack-desc">A handmade nest box with an ESP32-CAM wide-angle camera and 850nm IR night vision, solar powered and WiFi enabled. Watch live from any browser on the home network — no app, no subscription. Trial units going to friends and neighbours first.</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-layer">2026</div>
+        <div class="stack-name">🦇 Smart Bat Box</div>
+        <div class="stack-desc">Same concept as the bird box but designed for pipistrelles — narrow crevice design in rough-sawn larch, with a Pi Camera Module 3 NoIR and 940nm IR LEDs completely invisible to bats. Mounted stream-side where bat activity is highest.</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-layer">Ongoing</div>
+        <div class="stack-name">📊 Year-on-Year Analysis</div>
+        <div class="stack-desc">As detection history accumulates, the site will add seasonal comparisons — first swallow of the year, peak dawn chorus week, year-on-year species trends. The data is already being collected; the analysis will follow as the dataset matures.</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-layer">Planned</div>
+        <div class="stack-name">🪵 Commercial Boxes</div>
+        <div class="stack-desc">If the trial boxes prove reliable, there are plans to sell handmade smart bird and bat boxes. Self-configuring via a WiFi hotspot on first boot — plug in, connect your phone, done. Handcrafted from local Cumbrian timber with lifetime local delivery.</div>
+      </div>
+    </div>
+
     <h2>Source & Contact</h2>
-    <p>The site is built and maintained by <strong>Greg Haigh</strong> in Threlkeld, Cumbria. The GitHub repository is at <a href="https://github.com/ghaigh/threlkeld" target="_blank">github.com/ghaigh/threlkeld</a>. Questions, ideas or spotted something interesting over Threlkeld? Get in touch at <a href="mailto:greg@threlkeld.info">greg@threlkeld.info</a>.</p>
+    <p>The site is built and maintained in Threlkeld, Cumbria. The GitHub repository is at <a href="https://github.com/ghaigh/threlkeld" target="_blank">github.com/ghaigh/threlkeld</a>. Questions, ideas or spotted something interesting over Threlkeld? Get in touch at <a href="mailto:greg@threlkeld.info">greg@threlkeld.info</a>.</p>
 
     <footer>
       <div class="footer-text"><span id="footerUpdated"></span>Threlkeld, Cumbria · Northern Lake District</div>
