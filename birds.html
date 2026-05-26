@@ -278,21 +278,7 @@
       font-style: italic;
     }
 
-    /* Year on year */
-    .yoy-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; margin-bottom: 28px; }
-    .yoy-card { background: var(--forest-dark); border: 1px solid var(--divider); border-radius: 8px; padding: 14px; text-align: center; }
-    .yoy-value { font-family: 'Playfair Display', serif; font-size: 28px; color: var(--cream); line-height: 1; margin-bottom: 2px; }
-    .yoy-label { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--sage); margin-top: 4px; }
-    .yoy-change { font-size: 12px; margin-top: 6px; }
-    .yoy-change.up { color: #7ab87a; }
-    .yoy-change.down { color: #c87a4a; }
-    .yoy-change.same { color: var(--cream-dim); }
-    .yoy-species-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 28px; }
-    .yoy-species-card { background: var(--forest-dark); border: 1px solid var(--divider); border-radius: 8px; padding: 12px; }
-    .yoy-species-title { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--sage); margin-bottom: 8px; }
-    .yoy-species-item { display: flex; justify-content: space-between; font-size: 12px; color: var(--cream-dim); padding: 3px 0; border-bottom: 1px solid var(--divider); }
-    .yoy-species-item:last-child { border-bottom: none; }
-    .yoy-species-item span:last-child { color: var(--cream); }
+
 
     .search-highlight {
       background: rgba(122,184,122,0.2);
@@ -387,7 +373,7 @@
     .conf-fill { height: 100%; border-radius: 2px; background: var(--sage); }
     .conf-pct { font-size: 10px; color: var(--sage); }
 
-    .right-col { display: flex; flex-direction: column; gap: 24px; }
+    .right-col { display: flex; flex-direction: column; gap: 20px; }
 
     .summary-grid {
       display: grid;
@@ -901,7 +887,13 @@
       <span id="speciesBadgeText"></span>
     </div>
 
-    <div class="main-grid">
+    <!-- Offline banner -->
+    <div id="offlineBanner" style="display:none;background:rgba(200,168,74,0.1);border:1px solid rgba(200,168,74,0.3);border-radius:8px;padding:10px 16px;margin-bottom:16px;font-size:12px;color:var(--cream-dim);align-items:center;gap:10px">
+      <span>⚠️</span>
+      <span>Live data unavailable — showing cached data from <strong id="offlineAge">a moment ago</strong>. Reconnecting...</span>
+    </div>
+
+        <div class="main-grid">
       <div>
         <div class="section-header">
           <div class="section-title">Recent Detections</div>
@@ -909,11 +901,7 @@
         </div>
         <input type="text" class="bird-search" id="birdSearch" placeholder="🔍 Search species — e.g. Robin, Blackbird..." autocomplete="off">
         <div class="search-results-label" id="searchLabel" style="display:none"></div>
-        <!-- Offline banner -->
-    <div id="offlineBanner" style="display:none;background:rgba(200,168,74,0.1);border:1px solid rgba(200,168,74,0.3);border-radius:8px;padding:10px 16px;margin-bottom:16px;font-size:12px;color:var(--cream-dim);align-items:center;gap:10px">
-      <span>⚠️</span>
-      <span>Live data unavailable — showing cached data from <strong id="offlineAge">a moment ago</strong>. Reconnecting...</span>
-    </div>
+        <div class="detections-grid"
     <div class="detections-grid" id="detectionsList">
           <div class="loading">
             <div class="loading-spinner"></div>
@@ -923,14 +911,8 @@
       </div>
 
       <div class="right-col">
-        <!-- Year on Year -->
-        <div class="section-header" style="margin-top:0">
-          <div class="section-title">This Month vs Last Year</div>
-        </div>
-        <div class="yoy-grid" id="yoyGrid"></div>
-        <div class="yoy-species-grid" id="yoySpeciesGrid"></div>
         <div>
-          <div class="section-header">
+          <div class="section-header" style="margin-top:0">
             <div class="section-title">Species Summary</div>
           </div>
           <div class="summary-grid">
@@ -1063,7 +1045,6 @@
 
       document.getElementById('detectionCount').textContent = count > 0 ? `${count} in last 24 hours` : '';
       renderDetectionsList(todayDets);
-      renderYoY(allDetectionsStore);
     }
 
     function renderBirdOfDay(stats) {
@@ -1283,86 +1264,6 @@
       if (e.target === calModalOverlayEl) closeCalModal();
     });
     document.addEventListener('keydown', e => { if (e.key==='Escape') closeCalModal(); });
-
-    // ── Year on Year ─────────────────────────────────────────
-    function renderYoY(allDets) {
-      if (!allDets || allDets.length === 0) return;
-
-      const now = new Date();
-      const thisMonth = now.getMonth();
-      const thisYear = now.getFullYear();
-      const lastYear = thisYear - 1;
-
-      // This month this year
-      const thisMonthDets = allDets.filter(d => {
-        const dt = new Date(d.timestamp);
-        return dt.getMonth() === thisMonth && dt.getFullYear() === thisYear;
-      });
-
-      // Same month last year
-      const lastYearDets = allDets.filter(d => {
-        const dt = new Date(d.timestamp);
-        return dt.getMonth() === thisMonth && dt.getFullYear() === lastYear;
-      });
-
-      const thisSpecies = new Set(thisMonthDets.map(d => d.bird)).size;
-      const lastSpecies = new Set(lastYearDets.map(d => d.bird)).size;
-      const thisDets = thisMonthDets.length;
-      const lastDets = lastYearDets.length;
-
-      const monthName = now.toLocaleDateString('en-GB', { month: 'long' });
-
-      function changeHtml(current, previous) {
-        if (!previous) return '';
-        const diff = current - previous;
-        const pct = Math.round((diff / previous) * 100);
-        if (diff > 0) return `<div class="yoy-change up">↑ ${diff} vs ${lastYear}</div>`;
-        if (diff < 0) return `<div class="yoy-change down">↓ ${Math.abs(diff)} vs ${lastYear}</div>`;
-        return `<div class="yoy-change same">= Same as ${lastYear}</div>`;
-      }
-
-      const yoyEl = document.getElementById('yoyGrid');
-      if (!yoyEl) return;
-
-      yoyEl.innerHTML = `
-        <div class="yoy-card">
-          <div class="yoy-value">${thisDets}</div>
-          <div class="yoy-label">Detections · ${monthName}</div>
-          ${changeHtml(thisDets, lastDets)}
-        </div>
-        <div class="yoy-card">
-          <div class="yoy-value">${thisSpecies}</div>
-          <div class="yoy-label">Species · ${monthName}</div>
-          ${changeHtml(thisSpecies, lastSpecies)}
-        </div>`;
-
-      // Top species comparison
-      function topSpecies(dets, n=8) {
-        const counts = {};
-        dets.forEach(d => { counts[d.bird] = (counts[d.bird] || 0) + 1; });
-        return Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, n);
-      }
-
-      const thisTop = topSpecies(thisMonthDets);
-      const lastTop = topSpecies(lastYearDets);
-
-      const speciesEl = document.getElementById('yoySpeciesGrid');
-      if (!speciesEl) return;
-
-      speciesEl.innerHTML = `
-        <div class="yoy-species-card">
-          <div class="yoy-species-title">Top Species · ${monthName} ${thisYear}</div>
-          ${thisTop.length ? thisTop.map(([bird, count]) =>
-            `<div class="yoy-species-item"><span>${bird}</span><span>${count}×</span></div>`
-          ).join('') : '<div style="color:var(--cream-dim);font-size:12px;font-style:italic">No data yet</div>'}
-        </div>
-        <div class="yoy-species-card">
-          <div class="yoy-species-title">Top Species · ${monthName} ${lastYear}</div>
-          ${lastTop.length ? lastTop.map(([bird, count]) =>
-            `<div class="yoy-species-item"><span>${bird}</span><span>${count}×</span></div>`
-          ).join('') : '<div style="color:var(--cream-dim);font-size:12px;font-style:italic">No data for ${lastYear}</div>'}
-        </div>`;
-    }
 
     // Bird search
     document.getElementById('birdSearch').addEventListener('input', function() {
