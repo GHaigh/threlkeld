@@ -671,18 +671,18 @@
       </div>
       <div class="map-wrap">
         <div class="map-bg">
-          <img src="https://tile.openstreetmap.org/11/1005/650.png" style="position:absolute;width:25%;height:33.3333%;top:0%;left:0%;opacity:0.85">
-          <img src="https://tile.openstreetmap.org/11/1005/651.png" style="position:absolute;width:25%;height:33.3333%;top:33.3333%;left:0%;opacity:0.85">
-          <img src="https://tile.openstreetmap.org/11/1005/652.png" style="position:absolute;width:25%;height:33.3333%;top:66.6666%;left:0%;opacity:0.85">
-          <img src="https://tile.openstreetmap.org/11/1006/650.png" style="position:absolute;width:25%;height:33.3333%;top:0%;left:25%;opacity:0.85">
-          <img src="https://tile.openstreetmap.org/11/1006/651.png" style="position:absolute;width:25%;height:33.3333%;top:33.3333%;left:25%;opacity:0.85">
-          <img src="https://tile.openstreetmap.org/11/1006/652.png" style="position:absolute;width:25%;height:33.3333%;top:66.6666%;left:25%;opacity:0.85">
-          <img src="https://tile.openstreetmap.org/11/1007/650.png" style="position:absolute;width:25%;height:33.3333%;top:0%;left:50%;opacity:0.85">
-          <img src="https://tile.openstreetmap.org/11/1007/651.png" style="position:absolute;width:25%;height:33.3333%;top:33.3333%;left:50%;opacity:0.85">
-          <img src="https://tile.openstreetmap.org/11/1007/652.png" style="position:absolute;width:25%;height:33.3333%;top:66.6666%;left:50%;opacity:0.85">
-          <img src="https://tile.openstreetmap.org/11/1008/650.png" style="position:absolute;width:25%;height:33.3333%;top:0%;left:75%;opacity:0.85">
-          <img src="https://tile.openstreetmap.org/11/1008/651.png" style="position:absolute;width:25%;height:33.3333%;top:33.3333%;left:75%;opacity:0.85">
-          <img src="https://tile.openstreetmap.org/11/1008/652.png" style="position:absolute;width:25%;height:33.3333%;top:66.6666%;left:75%;opacity:0.85">
+          <img src="https://tile.openstreetmap.org/12/2012/1302.png" style="position:absolute;width:25%;height:33.3333%;top:0%;left:0%;opacity:0.85">
+          <img src="https://tile.openstreetmap.org/12/2012/1303.png" style="position:absolute;width:25%;height:33.3333%;top:33.3333%;left:0%;opacity:0.85">
+          <img src="https://tile.openstreetmap.org/12/2012/1304.png" style="position:absolute;width:25%;height:33.3333%;top:66.6667%;left:0%;opacity:0.85">
+          <img src="https://tile.openstreetmap.org/12/2013/1302.png" style="position:absolute;width:25%;height:33.3333%;top:0%;left:25%;opacity:0.85">
+          <img src="https://tile.openstreetmap.org/12/2013/1303.png" style="position:absolute;width:25%;height:33.3333%;top:33.3333%;left:25%;opacity:0.85">
+          <img src="https://tile.openstreetmap.org/12/2013/1304.png" style="position:absolute;width:25%;height:33.3333%;top:66.6667%;left:25%;opacity:0.85">
+          <img src="https://tile.openstreetmap.org/12/2014/1302.png" style="position:absolute;width:25%;height:33.3333%;top:0%;left:50%;opacity:0.85">
+          <img src="https://tile.openstreetmap.org/12/2014/1303.png" style="position:absolute;width:25%;height:33.3333%;top:33.3333%;left:50%;opacity:0.85">
+          <img src="https://tile.openstreetmap.org/12/2014/1304.png" style="position:absolute;width:25%;height:33.3333%;top:66.6667%;left:50%;opacity:0.85">
+          <img src="https://tile.openstreetmap.org/12/2015/1302.png" style="position:absolute;width:25%;height:33.3333%;top:0%;left:75%;opacity:0.85">
+          <img src="https://tile.openstreetmap.org/12/2015/1303.png" style="position:absolute;width:25%;height:33.3333%;top:33.3333%;left:75%;opacity:0.85">
+          <img src="https://tile.openstreetmap.org/12/2015/1304.png" style="position:absolute;width:25%;height:33.3333%;top:66.6667%;left:75%;opacity:0.85">
         </div>
         <svg id="flightSvg" xmlns="http://www.w3.org/2000/svg" style="position:absolute;top:0;left:0;width:100%;height:100%;z-index:2"></svg>
         <div id="mapTooltip" class="map-tooltip"></div>
@@ -1164,7 +1164,7 @@
 
 
     // ── Flight Map (locked OSM + SVG overlay) ───────────────
-    const MAP_BOUNDS = { minLon: -3.3398, maxLon: -2.6367, minLat: 54.4700, maxLat: 54.7753 };
+    const MAP_BOUNDS = { minLon: -3.1641, maxLon: -2.8125, minLat: 54.5211, maxLat: 54.6738 };
     const HOME_LAT = 54.616, HOME_LON = -3.056;
 
     function initFlightMap() { /* static map, nothing to init */ }
@@ -1188,7 +1188,8 @@
 
       // Home dot and radius ring only — tiles provide the map background
       html += `<circle cx="${home.x.toFixed(1)}" cy="${home.y.toFixed(1)}" r="7" fill="#7ab87a" stroke="#0d1a0d" stroke-width="2"/>`;
-      html += `<circle cx="${home.x.toFixed(1)}" cy="${home.y.toFixed(1)}" r="55" fill="none" stroke="rgba(122,184,122,0.3)" stroke-width="1.5" stroke-dasharray="4 6"/>`;
+      const radiusPx = Math.round((15/17) * (H/2));
+      html += `<circle cx="${home.x.toFixed(1)}" cy="${home.y.toFixed(1)}" r="${radiusPx}" fill="rgba(122,184,122,0.03)" stroke="rgba(122,184,122,0.4)" stroke-width="1.5" stroke-dasharray="4 6"/>`;
 
       // Flight dots
       flights.slice(0, 50).forEach((f, i) => {
