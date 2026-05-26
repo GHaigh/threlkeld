@@ -1,4 +1,4 @@
-<div id="flightMapLeaflet" style="width:100%;height:100%"></div><!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -15,7 +15,6 @@
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Overhead Planes · Threlkeld</title>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Source+Sans+3:wght@300;400;500&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/5.3.4/mqtt.min.js"></script>
   <style>
@@ -161,12 +160,6 @@
       gap: 16px;
       margin-bottom: 20px;
     }
-
-    /* Leaflet popup dark theme */
-    .leaflet-popup-content-wrapper { background: #1a2e1a !important; color: #e8f0e4 !important; border: 1px solid rgba(122,184,122,0.2) !important; border-radius: 8px !important; box-shadow: 0 4px 20px rgba(0,0,0,0.5) !important; }
-    .leaflet-popup-tip { background: #1a2e1a !important; }
-    .leaflet-popup-close-button { color: #b8c8b4 !important; }
-    .leaflet-popup-content { font-family: "Source Sans 3", sans-serif !important; font-size: 12px !important; line-height: 1.7 !important; color: #e8f0e4 !important; margin: 10px 14px !important; }
 
     .flight-card {
       background: var(--forest-dark);
@@ -425,12 +418,40 @@
     .map-section { margin-bottom: 20px; }
 
     .map-wrap {
-      background: var(--forest-dark);
       border: 1px solid var(--divider);
       border-radius: 10px;
       overflow: hidden;
-      position: relative;
       height: 340px;
+      width: 100%;
+      position: relative;
+    }
+
+    .map-bg {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #1a2e1a;
+    }
+
+    .map-bg::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(rgba(13,26,13,0.3), rgba(13,26,13,0.3));
+    }
+
+    .map-tooltip {
+      position: absolute;
+      background: #1a2e1a;
+      border: 1px solid rgba(122,184,122,0.3);
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: 11px;
+      color: #e8f0e4;
+      line-height: 1.6;
+      pointer-events: none;
+      z-index: 10;
+      white-space: nowrap;
+      display: none;
     }
 
 
@@ -649,7 +670,26 @@
         <div class="section-subtitle">Overhead Threlkeld · 15km radius</div>
       </div>
       <div class="map-wrap">
-        <div id="flightMapLeaflet" style="width:100%;height:340px;border-radius:8px"></div>
+        <div class="map-bg">
+          <img src="https://tile.openstreetmap.org/11/1005/650.png" style="position:absolute;width:25%;height:33.3333%;top:0%;left:0%;opacity:0.85">
+          <img src="https://tile.openstreetmap.org/11/1005/651.png" style="position:absolute;width:25%;height:33.3333%;top:33.3333%;left:0%;opacity:0.85">
+          <img src="https://tile.openstreetmap.org/11/1005/652.png" style="position:absolute;width:25%;height:33.3333%;top:66.6666%;left:0%;opacity:0.85">
+          <img src="https://tile.openstreetmap.org/11/1006/650.png" style="position:absolute;width:25%;height:33.3333%;top:0%;left:25%;opacity:0.85">
+          <img src="https://tile.openstreetmap.org/11/1006/651.png" style="position:absolute;width:25%;height:33.3333%;top:33.3333%;left:25%;opacity:0.85">
+          <img src="https://tile.openstreetmap.org/11/1006/652.png" style="position:absolute;width:25%;height:33.3333%;top:66.6666%;left:25%;opacity:0.85">
+          <img src="https://tile.openstreetmap.org/11/1007/650.png" style="position:absolute;width:25%;height:33.3333%;top:0%;left:50%;opacity:0.85">
+          <img src="https://tile.openstreetmap.org/11/1007/651.png" style="position:absolute;width:25%;height:33.3333%;top:33.3333%;left:50%;opacity:0.85">
+          <img src="https://tile.openstreetmap.org/11/1007/652.png" style="position:absolute;width:25%;height:33.3333%;top:66.6666%;left:50%;opacity:0.85">
+          <img src="https://tile.openstreetmap.org/11/1008/650.png" style="position:absolute;width:25%;height:33.3333%;top:0%;left:75%;opacity:0.85">
+          <img src="https://tile.openstreetmap.org/11/1008/651.png" style="position:absolute;width:25%;height:33.3333%;top:33.3333%;left:75%;opacity:0.85">
+          <img src="https://tile.openstreetmap.org/11/1008/652.png" style="position:absolute;width:25%;height:33.3333%;top:66.6666%;left:75%;opacity:0.85">
+        </div>
+        <svg id="flightSvg" xmlns="http://www.w3.org/2000/svg" style="position:absolute;top:0;left:0;width:100%;height:100%;z-index:2"></svg>
+        <div id="mapTooltip" class="map-tooltip"></div>
+        <div class="map-overlay">
+          <div class="map-label">📍 Threlkeld · 54.616°N 3.056°W</div>
+          <div class="map-coverage">15km radius · 706km²</div>
+        </div>
       </div>
     </div>
 
@@ -734,8 +774,7 @@
     </div>
   </div>
 
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script>
+    <script>
     const MQTT_HOST = 'broker.hivemq.com';
     const MQTT_PORT = 8884;
     const FLIGHTS_TOPIC = 'birdnetpi/greg2026/flights';
@@ -1124,84 +1163,87 @@
     });
 
 
-    // ── Flight Map ────────────────────────────────────────────
-    const HOME = [54.616, -3.056];
-    let flightMap = null;
-    let flightMarkers = [];
+    // ── Flight Map (locked OSM + SVG overlay) ───────────────
+    const MAP_BOUNDS = { minLon: -3.3398, maxLon: -2.6367, minLat: 54.4700, maxLat: 54.7753 };
+    const HOME_LAT = 54.616, HOME_LON = -3.056;
 
-    function initFlightMap() {
-      flightMap = L.map('flightMapLeaflet', {
-        center: HOME,
-        zoom: 10,
-        zoomControl: true
-      });
+    function initFlightMap() { /* static map, nothing to init */ }
 
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        attribution: '© OpenStreetMap © CARTO',
-        maxZoom: 18
-      }).addTo(flightMap);
-
-      // Home marker
-      L.circleMarker(HOME, {
-        radius: 8, fillColor: '#7ab87a', color: '#7ab87a',
-        weight: 2, opacity: 1, fillOpacity: 0.9
-      }).addTo(flightMap).bindPopup('<strong>📍 Threlkeld</strong><br>54.616°N 3.056°W<br>15km monitoring radius');
-
-      // Draw monitoring radius circle
-      L.circle(HOME, {
-        radius: 15000,
-        color: 'rgba(122,184,122,0.3)',
-        fillColor: 'rgba(122,184,122,0.04)',
-        weight: 1,
-        dashArray: '4 6'
-      }).addTo(flightMap);
+    function latLonToSvg(lat, lon, W, H) {
+      const x = (lon - MAP_BOUNDS.minLon) / (MAP_BOUNDS.maxLon - MAP_BOUNDS.minLon) * W;
+      const y = (1 - (lat - MAP_BOUNDS.minLat) / (MAP_BOUNDS.maxLat - MAP_BOUNDS.minLat)) * H;
+      return { x, y };
     }
 
     function updateFlightMap(flights) {
-      if (!flightMap) return;
+      const svg = document.getElementById('flightSvg');
+      const tooltip = document.getElementById('mapTooltip');
+      if (!svg) return;
 
-      // Clear old markers
-      flightMarkers.forEach(m => m.remove());
-      flightMarkers = [];
+      const W = svg.clientWidth || 600;
+      const H = svg.clientHeight || 340;
+      const home = latLonToSvg(HOME_LAT, HOME_LON, W, H);
 
-      // Show last 50 flights
-      const recent = flights.slice(0, 50);
-      recent.forEach((f, i) => {
-        // Generate approximate position — scatter around Threlkeld within radius
-        // We don't have real coordinates, so place markers in a pattern
-        // Real flights transit roughly W-E or S-N over Threlkeld
-        const angle = (f.heading || (i * 37)) * Math.PI / 180;
-        const dist = 0.03 + (i % 8) * 0.015; // 3-15km offset
-        const lat = HOME[0] + Math.cos(angle) * dist * 0.5;
-        const lng = HOME[1] + Math.sin(angle) * dist;
+      let html = '';
+
+      // Home dot and radius ring only — tiles provide the map background
+      html += `<circle cx="${home.x.toFixed(1)}" cy="${home.y.toFixed(1)}" r="7" fill="#7ab87a" stroke="#0d1a0d" stroke-width="2"/>`;
+      html += `<circle cx="${home.x.toFixed(1)}" cy="${home.y.toFixed(1)}" r="55" fill="none" stroke="rgba(122,184,122,0.3)" stroke-width="1.5" stroke-dasharray="4 6"/>`;
+
+      // Flight dots
+      flights.slice(0, 50).forEach((f, i) => {
+        const heading = (f.heading || (i * 41)) % 360;
+        const rad = (heading - 90) * Math.PI / 180;
+        const dist = 0.025 + (i % 7) * 0.015;
+        const lat = HOME_LAT + Math.cos(rad) * dist * 0.6;
+        const lng = HOME_LON + Math.sin(rad) * dist;
+        const pos = latLonToSvg(lat, lng, W, H);
+        if (pos.x < 4 || pos.x > W-4 || pos.y < 4 || pos.y > H-4) return;
 
         const isMil = f.military;
         const isAmb = isAirAmbulance(f);
         const isNight = isNightFlight(f.timestamp);
-        const color = isMil ? '#c8a84a' : isAmb ? '#e05555' : isNight ? '#8080e0' : '#7ab87a';
+        const color = isMil ? '#c8a84a' : isAmb ? '#e05555' : isNight ? '#8080e0' : '#4a90c4';
+        const age = (Date.now() - new Date(f.timestamp).getTime()) / 3600000;
+        const op = Math.max(0.35, 1 - age * 0.04).toFixed(2);
+        const badge = isMil ? '🎖️' : isAmb ? '🚁' : isNight ? '🌙' : '✈️';
+        const tip = `${badge} ${f.callsign}|${f.aircraft_model||'Unknown'}|${f.origin||'?'} → ${f.destination||'?'}|${f.altitude ? Math.round(f.altitude).toLocaleString()+'ft' : '—'}|${minutesAgo(f.timestamp)}`;
+        const ax = (pos.x + Math.cos(rad) * 10).toFixed(1);
+        const ay = (pos.y + Math.sin(rad) * 10).toFixed(1);
 
-        const marker = L.circleMarker([lat, lng], {
-          radius: 6,
-          fillColor: color,
-          color: '#1a2e1a',
-          weight: 1.5,
-          opacity: 1,
-          fillOpacity: 0.85
-        }).addTo(flightMap);
+        html += `<g class="fdot" data-tip="${encodeURIComponent(tip)}" style="pointer-events:all;cursor:pointer">`;
+        html += `<circle cx="${pos.x.toFixed(1)}" cy="${pos.y.toFixed(1)}" r="8" fill="transparent"/>`;
+        html += `<circle cx="${pos.x.toFixed(1)}" cy="${pos.y.toFixed(1)}" r="5" fill="${color}" stroke="#0d1a0d" stroke-width="1.5" opacity="${op}"/>`;
+        html += `<line x1="${pos.x.toFixed(1)}" y1="${pos.y.toFixed(1)}" x2="${ax}" y2="${ay}" stroke="${color}" stroke-width="1.5" opacity="${op}"/>`;
+        html += `</g>`;
+      });
 
-        const badge = isMil ? '🎖️ Military' : isAmb ? '🚁 Air Ambulance' : isNight ? '🌙 Night' : '✈️ Commercial';
-        marker.bindPopup(
-          `<strong>${f.callsign}</strong> ${badge}<br>` +
-          `${f.aircraft_model || 'Unknown'}<br>` +
-          `${f.origin || '?'} → ${f.destination || '?'}<br>` +
-          `${f.altitude ? Math.round(f.altitude).toLocaleString() + 'ft' : '—'} · ${f.speed ? Math.round(f.speed) + 'mph' : '—'}<br>` +
-          `<span style="color:var(--cream-dim)">${minutesAgo(f.timestamp)}</span>`,
-          { maxWidth: 200 }
-        );
-        flightMarkers.push(marker);
+      svg.innerHTML = html;
+
+      // Enable pointer events on SVG for hover
+      svg.style.pointerEvents = 'all';
+
+      svg.querySelectorAll('.fdot').forEach(dot => {
+        dot.addEventListener('mouseenter', e => {
+          if (!tooltip) return;
+          const parts = decodeURIComponent(dot.dataset.tip).split('|');
+          tooltip.innerHTML = `<strong>${parts[0]}</strong><br>${parts[1]}<br>${parts[2]}<br>${parts[3]} · ${parts[4]}`;
+          tooltip.style.display = 'block';
+        });
+        dot.addEventListener('mousemove', e => {
+          if (!tooltip) return;
+          const rect = svg.getBoundingClientRect();
+          let x = e.clientX - rect.left + 12;
+          let y = e.clientY - rect.top - 10;
+          if (x + 180 > rect.width) x -= 195;
+          tooltip.style.left = x + 'px';
+          tooltip.style.top = y + 'px';
+        });
+        dot.addEventListener('mouseleave', () => {
+          if (tooltip) tooltip.style.display = 'none';
+        });
       });
     }
-
     // ── MQTT resilience ───────────────────────────────────────
     const CACHE_KEY = 'threlkeld_planes_cache';
 
