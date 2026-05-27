@@ -973,13 +973,24 @@
 
     document.getElementById('footerDate').textContent = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
 
+    // Known problematic species that match non-bird things
+    const BIRD_IMAGE_OVERRIDES = {
+      'Common Swift': 'Common_swift_(Apus_apus)',
+      'Swift': 'Common_swift_(Apus_apus)',
+      'Robin': 'European_Robin',
+      'Common Robin': 'European_Robin',
+    };
+
     function getBirdImageUrl(birdName) {
-      const name1 = birdName.replace(/ /g, '_');
+      const override = BIRD_IMAGE_OVERRIDES[birdName];
+      const name1 = override || birdName.replace(/ /g, '_');
       const parts = birdName.split(' ');
-      const name2 = parts[parts.length - 1];
+      const lastName = parts[parts.length - 1];
+      // Append _bird to fallback to avoid non-bird matches
+      const fallbackName = override || `${birdName.replace(/ /g, '_')}_bird`;
       return {
         primary: `https://en.wikipedia.org/w/index.php?title=Special:Redirect/file/${name1}.jpg&width=100`,
-        fallback: `https://en.wikipedia.org/w/index.php?title=Special:Redirect/file/${name2}.jpg&width=100`
+        fallback: `https://en.wikipedia.org/w/index.php?title=Special:Redirect/file/${fallbackName}.jpg&width=100`
       };
     }
 
