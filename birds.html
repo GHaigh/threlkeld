@@ -973,24 +973,27 @@
 
     document.getElementById('footerDate').textContent = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
 
-    // Known problematic species that match non-bird things
-    const BIRD_IMAGE_OVERRIDES = {
-      'Common Swift': 'Common_swift_(Apus_apus)',
-      'Swift': 'Common_swift_(Apus_apus)',
-      'Robin': 'European_Robin',
-      'Common Robin': 'European_Robin',
-    };
+    // Cache for iNaturalist photo URLs
+    const inatPhotoCache = {};
+
+    async function fetchInatPhoto(birdName) {
+      if (inatPhotoCache[birdName]) return inatPhotoCache[birdName];
+      try {
+        const res = await fetch(`https://api.inaturalist.org/v1/taxa?q=${encodeURIComponent(birdName)}&per_page=1&rank=species&iconic_taxa=Aves`);
+        const data = await res.json();
+        const url = data.results?.[0]?.default_photo?.square_url || null;
+        inatPhotoCache[birdName] = url;
+        return url;
+      } catch(e) { return null; }
+    }
 
     function getBirdImageUrl(birdName) {
-      const override = BIRD_IMAGE_OVERRIDES[birdName];
-      const name1 = override || birdName.replace(/ /g, '_');
-      const parts = birdName.split(' ');
-      const lastName = parts[parts.length - 1];
-      // Append _bird to fallback to avoid non-bird matches
-      const fallbackName = override || `${birdName.replace(/ /g, '_')}_bird`;
+      // Return placeholder — actual URL fetched async in renderDetectionsList
       return {
-        primary: `https://en.wikipedia.org/w/index.php?title=Special:Redirect/file/${name1}.jpg&width=100`,
-        fallback: `https://en.wikipedia.org/w/index.php?title=Special:Redirect/file/${fallbackName}.jpg&width=100`
+        primary: `https://api.inaturalist.org/v1/taxa?q=${encodeURIComponent(birdName)}&per_page=1&rank=species&iconic_taxa=Aves`,
+        fallback: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/ac/No_image_available.svg/100px-No_image_available.svg.png',
+        isInat: true,
+        name: birdName
       };
     }
 
@@ -1025,8 +1028,8 @@
           : d.bird;
         html += `
           <div class="detection-card" style="animation-delay:${i * 30}ms">
-            <img class="bird-photo" src="${imgs.primary}" alt="${d.bird}"
-                 onerror="this.src='${imgs.fallback}'; this.onerror=null"/>
+            <img class="bird-photo" id="birdimg_${i}" src="${imgs.fallback}" alt="${d.bird}"
+                 onerror="this.src='${imgs.fallback}';this.onerror=null;"/>
             <div class="bird-info">
               <div class="bird-name">${birdName}</div>
               <div class="bird-meta">${formatDate(d.date)} · ${d.time}</div>
@@ -1039,6 +1042,16 @@
           </div>`;
       }
       list.innerHTML = html || '<div class="loading">No results</div>';
+      // Async load iNaturalist photos
+      dets.slice(0, Math.min(dets.length, limit)).forEach((d, i) => {
+        if (!d || !d.bird) return;
+        fetchInatPhoto(d.bird).then(url => {
+          if (url) {
+            const img = document.getElementById(`birdimg_${i}`);
+            if (img) img.src = url;
+          }
+        });
+      });
     }
 
     function renderDetections(data) {
