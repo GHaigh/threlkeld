@@ -1230,7 +1230,7 @@
       const hottestIdx = temps.reduce((bi, b, i) => (b.max||0) > (temps[bi].max||0) ? i : bi, 0);
       const coldestIdx = temps.reduce((bi, b, i) => (b.min??99) < (temps[bi].min??99) ? i : bi, 0);
       const windiestIdx = winds.length ? winds.reduce((bi, b, i) => (b.max||0) > (winds[bi].max||0) ? i : bi, 0) : -1;
-      const wettestIdx = rain.length ? rain.reduce((bi, b, i) => (b._daily||0) > (rain[bi]._daily||0) ? i : bi, 0) : -1;
+      const wettestIdx = rain.length ? rain.reduce((bi, b, i) => (b.max||0) > (rain[bi].max||0) ? i : bi, 0) : -1;
       const highestPIdx = pressure.length ? pressure.reduce((bi, b, i) => (b.max||0) > (pressure[bi].max||0) ? i : bi, 0) : -1;
       const lowestPIdx = pressure.length ? pressure.reduce((bi, b, i) => (b.min??9999) < (pressure[bi].min??9999) ? i : bi, 0) : -1;
 
@@ -1262,7 +1262,7 @@
         <div class="record-card"><div class="record-icon">🌡️</div><div class="record-value">${fmt(hottest?.max)}°C</div><div class="record-label">Hottest Day</div><div class="record-date">${fd(hottestDate)}</div></div>
         <div class="record-card"><div class="record-icon">🥶</div><div class="record-value">${fmt(coldest?.min)}°C</div><div class="record-label">Coldest Night</div><div class="record-date">${fd(coldestDate)}</div></div>
         <div class="record-card"><div class="record-icon">💨</div><div class="record-value">${fmt(windiest?.max)} mph</div><div class="record-label">Strongest Gust</div><div class="record-date">${fd(windiestDate)}</div></div>
-        <div class="record-card"><div class="record-icon">🌧️</div><div class="record-value">${fmt(wettest?._daily)} mm</div><div class="record-label">Wettest Day</div><div class="record-date">${fd(wettestDate)}</div></div>
+        <div class="record-card"><div class="record-icon">🌧️</div><div class="record-value">${fmt(wettest?.max)} mm</div><div class="record-label">Wettest Day</div><div class="record-date">${fd(wettestDate)}</div></div>
         <div class="record-card"><div class="record-icon">⬆️</div><div class="record-value">${fmt(highestP?.max)} hPa</div><div class="record-label">Highest Pressure</div><div class="record-date">${fd(highestPDate)}</div></div>
         <div class="record-card"><div class="record-icon">⬇️</div><div class="record-value">${fmt(lowestP?.min)} hPa</div><div class="record-label">Lowest Pressure</div><div class="record-date">${fd(lowestPDate)}</div></div>`;
     }
@@ -1434,7 +1434,7 @@
       const days = t30.length;
       if (days === 0) return;
 
-      const rainyDays = r30.filter(d => (d._daily || 0) > 2).length;
+      const rainyDays = r30.filter(d => (d.max || 0) > 2).length;
       const dryDays = days - rainyDays;
       const windyDays = w30.filter(d => (d.mean || 0) >= 10).length;
       const calmDays = days - windyDays;
