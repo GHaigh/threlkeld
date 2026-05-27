@@ -1219,6 +1219,7 @@
       const temps = history.outdoor_temperature || [];
       const winds = history.wind_speed || [];
       const rain = history.daily_rain_rate_piezo || [];
+      if (rain.length > 0) console.log('Rain sample:', JSON.stringify(rain[rain.length-1]));
       const pressure = history.relative_pressure || [];
 
       if (!temps.length) return;
@@ -1226,20 +1227,45 @@
       const fmt = (v, dp=1) => v != null ? Number(v).toFixed(dp) : '—';
       const fmtDate = d => d ? new Date(d).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' }) : '';
 
-      const hottest = temps.reduce((a, b) => (b.max||0) > (a.max||0) ? b : a, temps[0]);
-      const coldest = temps.reduce((a, b) => (b.min??99) < (a.min??99) ? b : a, temps[0]);
-      const windiest = winds.length ? winds.reduce((a, b) => (b.max||0) > (a.max||0) ? b : a, winds[0]) : null;
-      const wettest = rain.length ? rain.reduce((a, b) => (b.sum||0) > (a.sum||0) ? b : a, rain[0]) : null;
-      const highestP = pressure.length ? pressure.reduce((a, b) => (b.max||0) > (a.max||0) ? b : a, pressure[0]) : null;
-      const lowestP = pressure.length ? pressure.reduce((a, b) => (b.min??9999) < (a.min??9999) ? b : a, pressure[0]) : null;
+      // Find record values and their indices so we can get dates
+      const hottestIdx = temps.reduce((bi, b, i) => (b.max||0) > (temps[bi].max||0) ? i : bi, 0);
+      const coldestIdx = temps.reduce((bi, b, i) => (b.min??99) < (temps[bi].min??99) ? i : bi, 0);
+      const windiestIdx = winds.length ? winds.reduce((bi, b, i) => (b.max||0) > (winds[bi].max||0) ? i : bi, 0) : -1;
+      const wettestIdx = rain.length ? rain.reduce((bi, b, i) => (b._daily||b.sum||0) > (rain[bi]._daily||rain[bi].sum||0) ? i : bi, 0) : -1;
+      const highestPIdx = pressure.length ? pressure.reduce((bi, b, i) => (b.max||0) > (pressure[bi].max||0) ? i : bi, 0) : -1;
+      const lowestPIdx = pressure.length ? pressure.reduce((bi, b, i) => (b.min??9999) < (pressure[bi].min??9999) ? i : bi, 0) : -1;
 
+      const hottest = temps[hottestIdx];
+      const coldest = temps[coldestIdx];
+      const windiest = windiestIdx >= 0 ? winds[windiestIdx] : null;
+      const wettest = wettestIdx >= 0 ? rain[wettestIdx] : null;
+      const highestP = highestPIdx >= 0 ? pressure[highestPIdx] : null;
+      const lowestP = lowestPIdx >= 0 ? pressure[lowestPIdx] : null;
+
+      // Estimate dates from index (history is in date order, newest last)
+      // Each entry is one day; work backwards from today
+      function idxToDate(arr, idx) {
+        if (arr[idx]?.date) return new Date(arr[idx].date);
+        const daysAgo = arr.length - 1 - idx;
+        const d = new Date();
+        d.setDate(d.getDate() - daysAgo);
+        return d;
+      }
+      const hottestDate = idxToDate(temps, hottestIdx);
+      const coldestDate = idxToDate(temps, coldestIdx);
+      const windiestDate = windiestIdx >= 0 ? idxToDate(winds, windiestIdx) : null;
+      const wettestDate = wettestIdx >= 0 ? idxToDate(rain, wettestIdx) : null;
+      const highestPDate = highestPIdx >= 0 ? idxToDate(pressure, highestPIdx) : null;
+      const lowestPDate = lowestPIdx >= 0 ? idxToDate(pressure, lowestPIdx) : null;
+
+      const fd = d => d ? d.toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' }) : '';
       document.getElementById('recordsGrid').innerHTML = `
-        <div class="record-card"><div class="record-icon">🌡️</div><div class="record-value">${fmt(hottest?.max)}°C</div><div class="record-label">Hottest Day</div><div class="record-date">${fmtDate(hottest?.date)}</div></div>
-        <div class="record-card"><div class="record-icon">🥶</div><div class="record-value">${fmt(coldest?.min)}°C</div><div class="record-label">Coldest Night</div><div class="record-date">${fmtDate(coldest?.date)}</div></div>
-        <div class="record-card"><div class="record-icon">💨</div><div class="record-value">${fmt(windiest?.max)} mph</div><div class="record-label">Strongest Gust</div><div class="record-date">${fmtDate(windiest?.date)}</div></div>
-        <div class="record-card"><div class="record-icon">🌧️</div><div class="record-value">${fmt(wettest?.sum)} mm</div><div class="record-label">Wettest Day</div><div class="record-date">${fmtDate(wettest?.date)}</div></div>
-        <div class="record-card"><div class="record-icon">⬆️</div><div class="record-value">${fmt(highestP?.max)} hPa</div><div class="record-label">Highest Pressure</div><div class="record-date">${fmtDate(highestP?.date)}</div></div>
-        <div class="record-card"><div class="record-icon">⬇️</div><div class="record-value">${fmt(lowestP?.min)} hPa</div><div class="record-label">Lowest Pressure</div><div class="record-date">${fmtDate(lowestP?.date)}</div></div>`;
+        <div class="record-card"><div class="record-icon">🌡️</div><div class="record-value">${fmt(hottest?.max)}°C</div><div class="record-label">Hottest Day</div><div class="record-date">${fd(hottestDate)}</div></div>
+        <div class="record-card"><div class="record-icon">🥶</div><div class="record-value">${fmt(coldest?.min)}°C</div><div class="record-label">Coldest Night</div><div class="record-date">${fd(coldestDate)}</div></div>
+        <div class="record-card"><div class="record-icon">💨</div><div class="record-value">${fmt(windiest?.max)} mph</div><div class="record-label">Strongest Gust</div><div class="record-date">${fd(windiestDate)}</div></div>
+        <div class="record-card"><div class="record-icon">🌧️</div><div class="record-value">${fmt(wettest?._daily ?? wettest?.sum)} mm</div><div class="record-label">Wettest Day</div><div class="record-date">${fd(wettestDate)}</div></div>
+        <div class="record-card"><div class="record-icon">⬆️</div><div class="record-value">${fmt(highestP?.max)} hPa</div><div class="record-label">Highest Pressure</div><div class="record-date">${fd(highestPDate)}</div></div>
+        <div class="record-card"><div class="record-icon">⬇️</div><div class="record-value">${fmt(lowestP?.min)} hPa</div><div class="record-label">Lowest Pressure</div><div class="record-date">${fd(lowestPDate)}</div></div>`;
     }
 
     // ── Growing Degree Days ──────────────────────────────────
@@ -1409,7 +1435,7 @@
       const days = t30.length;
       if (days === 0) return;
 
-      const rainyDays = r30.filter(d => (d.sum || 0) > 2).length;
+      const rainyDays = r30.filter(d => (d._daily || d.sum || 0) > 2).length;
       const dryDays = days - rainyDays;
       const windyDays = w30.filter(d => (d.mean || 0) >= 10).length;
       const calmDays = days - windyDays;
