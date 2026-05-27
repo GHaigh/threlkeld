@@ -1,0 +1,2 @@
+/birds.html
+  Content-Security-Policy: frame-ancestors 'self' homeassistant.local *.local http://homeassistant.local:8123 https://*.nabu.casa
