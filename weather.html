@@ -187,6 +187,33 @@
       margin-bottom: 40px;
     }
 
+    /* Forecast section */
+    .forecast-section { margin-bottom: 28px; }
+    .forecast-days { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; margin-bottom: 16px; }
+    @media (max-width: 700px) { .forecast-days { grid-template-columns: repeat(4, 1fr); } }
+    .forecast-day { background: var(--forest-dark); border: 1px solid var(--divider); border-radius: 8px; padding: 10px 6px; text-align: center; transition: border-color 0.2s; cursor: default; }
+    .forecast-day.today { border-color: var(--sage); background: linear-gradient(135deg, var(--forest-dark), rgba(122,184,122,0.06)); }
+    .forecast-day-name { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--sage); margin-bottom: 6px; }
+    .forecast-day-icon { font-size: 22px; margin-bottom: 6px; }
+    .forecast-day-temps { font-size: 13px; color: var(--cream); margin-bottom: 4px; }
+    .forecast-day-temps span { color: var(--cream-dim); font-size: 11px; }
+    .forecast-day-rain { font-size: 10px; color: #4a90a4; margin-bottom: 3px; }
+    .forecast-day-wind { font-size: 10px; color: var(--cream-dim); }
+    .forecast-day-prob { font-size: 10px; color: #4a90a4; }
+
+    .forecast-hourly { background: var(--forest-dark); border: 1px solid var(--divider); border-radius: 8px; padding: 14px 16px; overflow-x: auto; margin-bottom: 4px; }
+    .forecast-hourly-title { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--sage); margin-bottom: 12px; }
+    .hourly-row { display: flex; gap: 0; min-width: 640px; }
+    .hourly-cell { flex: 1; text-align: center; padding: 2px; border-right: 1px solid rgba(122,184,122,0.06); }
+    .hourly-cell:last-child { border-right: none; }
+    .hourly-time { font-size: 9px; color: var(--cream-dim); margin-bottom: 4px; }
+    .hourly-icon { font-size: 13px; margin-bottom: 3px; }
+    .hourly-temp { font-size: 11px; color: var(--cream); font-weight: 500; margin-bottom: 2px; }
+    .hourly-rain { font-size: 9px; color: #4a90a4; margin-bottom: 2px; }
+    .hourly-wind { font-size: 9px; color: var(--cream-dim); }
+    .hourly-bar-wrap { height: 28px; display: flex; align-items: flex-end; justify-content: center; margin: 4px 0; }
+    .hourly-bar { width: 8px; border-radius: 2px 2px 0 0; background: rgba(74,144,164,0.6); min-height: 1px; }
+
     .condition-panel {
       background: var(--forest-dark);
       border: 1px solid var(--divider);
@@ -1069,6 +1096,20 @@
 
     function renderCurrent(d) {
       const html = `
+        <!-- 7-Day Forecast -->
+        <div class="forecast-section">
+          <div class="section-header" style="margin-top:0">
+            <div class="section-title">7-Day Forecast</div>
+            <div class="section-sub">Open-Meteo · Threlkeld 180m</div>
+          </div>
+          <div class="forecast-days" id="forecastDays">
+            <div class="loading"><div class="loading-spinner"></div></div>
+          </div>
+          <div class="forecast-hourly" id="forecastHourly">
+            <div class="loading"><div class="loading-spinner"></div></div>
+          </div>
+        </div>
+
         <div class="conditions-grid">
           <div class="condition-panel">
             <div class="panel-header">🌡️ Temperature</div>
@@ -1213,6 +1254,116 @@
     }
 
     // MQTT
+    // ── Forecast ─────────────────────────────────────────────
+    function wmoIcon(code) {
+      if (code === 0) return '☀️';
+      if (code <= 2) return '🌤️';
+      if (code <= 3) return '☁️';
+      if (code <= 48) return '🌫️';
+      if (code <= 55) return '🌦️';
+      if (code <= 65) return '🌧️';
+      if (code <= 77) return '❄️';
+      if (code <= 82) return '🌨️';
+      return '⛈️';
+    }
+
+    function wmoDesc(code) {
+      if (code === 0) return 'Clear';
+      if (code <= 2) return 'Partly cloudy';
+      if (code <= 3) return 'Overcast';
+      if (code <= 48) return 'Foggy';
+      if (code <= 55) return 'Drizzle';
+      if (code <= 65) return 'Rain';
+      if (code <= 77) return 'Snow';
+      if (code <= 82) return 'Showers';
+      return 'Thunderstorm';
+    }
+
+    async function loadForecast() {
+      try {
+        const res = await fetch(
+          'https://api.open-meteo.com/v1/forecast?latitude=54.616&longitude=-3.056&elevation=180' +
+          '&daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max,windspeed_10m_max,windgusts_10m_max' +
+          '&hourly=temperature_2m,weathercode,precipitation_probability,precipitation,windspeed_10m,windgusts_10m' +
+          '&wind_speed_unit=mph&timezone=Europe%2FLondon&forecast_days=7'
+        );
+        const data = await res.json();
+
+        // ── 7-day cards ──
+        const daysEl = document.getElementById('forecastDays');
+        if (!daysEl) return;
+
+        const today = new Date().toDateString();
+        daysEl.innerHTML = data.daily.time.map((date, i) => {
+          const d = new Date(date);
+          const isToday = d.toDateString() === today;
+          const dayName = isToday ? 'Today' : d.toLocaleDateString('en-GB', { weekday: 'short' });
+          const dayNum = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+          const maxT = Math.round(data.daily.temperature_2m_max[i]);
+          const minT = Math.round(data.daily.temperature_2m_min[i]);
+          const precip = data.daily.precipitation_sum[i]?.toFixed(1) || '0';
+          const prob = data.daily.precipitation_probability_max[i] || 0;
+          const wind = Math.round(data.daily.windspeed_10m_max[i]);
+          const gusts = Math.round(data.daily.windgusts_10m_max[i]);
+          const wmo = data.daily.weathercode[i];
+
+          return `
+            <div class="forecast-day ${isToday ? 'today' : ''}">
+              <div class="forecast-day-name">${dayName}</div>
+              <div style="font-size:10px;color:var(--cream-dim);margin-bottom:4px">${dayNum}</div>
+              <div class="forecast-day-icon">${wmoIcon(wmo)}</div>
+              <div class="forecast-day-temps">${maxT}° <span>${minT}°</span></div>
+              <div class="forecast-day-rain">💧 ${precip}mm</div>
+              <div class="forecast-day-prob">${prob}% chance</div>
+              <div class="forecast-day-wind">💨 ${wind} mph</div>
+              <div class="forecast-day-wind">↑ ${gusts} mph gusts</div>
+            </div>`;
+        }).join('');
+
+        // ── Hourly for today ──
+        const hourlyEl = document.getElementById('forecastHourly');
+        if (!hourlyEl) return;
+
+        const now = new Date();
+        const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000);
+
+        const todayHours = data.hourly.time
+          .map((t, i) => ({ t: new Date(t), i }))
+          .filter(({ t }) => t >= startOfDay && t < endOfDay);
+
+        const maxPrecip = Math.max(...todayHours.map(({ i }) => data.hourly.precipitation[i] || 0), 1);
+
+        hourlyEl.innerHTML = `
+          <div class="forecast-hourly-title">Today · Hourly</div>
+          <div class="hourly-row">
+            ${todayHours.map(({ t, i }) => {
+              const hour = t.getHours();
+              const temp = Math.round(data.hourly.temperature_2m[i]);
+              const precip = data.hourly.precipitation[i] || 0;
+              const prob = data.hourly.precipitation_probability[i] || 0;
+              const wind = Math.round(data.hourly.windspeed_10m[i]);
+              const wmo = data.hourly.weathercode[i];
+              const barH = Math.max(1, Math.round((precip / maxPrecip) * 26));
+              const isPast = t < now;
+              return `
+                <div class="hourly-cell" style="opacity:${isPast ? 0.4 : 1}">
+                  <div class="hourly-time">${hour}:00</div>
+                  <div class="hourly-icon">${wmoIcon(wmo)}</div>
+                  <div class="hourly-temp">${temp}°</div>
+                  <div class="hourly-bar-wrap"><div class="hourly-bar" style="height:${barH}px"></div></div>
+                  <div class="hourly-rain">${precip > 0 ? precip.toFixed(1)+'mm' : '—'}</div>
+                  <div class="hourly-wind">${wind}mph</div>
+                </div>`;
+            }).join('')}
+          </div>`;
+
+      } catch(e) {
+        const el = document.getElementById('forecastDays');
+        if (el) el.innerHTML = '<div style="color:var(--cream-dim);font-style:italic">Forecast unavailable</div>';
+      }
+    }
+
     // ── Records ──────────────────────────────────────────────
     function renderRecords(history) {
       if (!history) return;
@@ -1281,7 +1432,7 @@
 
       // Calculate GDD for each day this year
       let totalGDD = 0;
-      const yearTemps = temps.filter(d => new Date(d.date) >= startOfYear);
+      const yearTemps = temps.filter(d => new Date(d.t || d.date) >= startOfYear);
       yearTemps.forEach(d => {
         const mean = d.mean ?? ((d.max + d.min) / 2);
         const gdd = Math.max(0, mean - BASE_TEMP);
@@ -1536,6 +1687,7 @@
           currentData = data;
           hideOfflineBanner(); saveCache({ current: data, history: historyData });
           renderStargazing(data);
+          loadForecast();
           renderCurrent(data);
         } else if (topic === HISTORY_TOPIC) {
           historyData = data;
