@@ -342,20 +342,37 @@
     .gdd-bar-fill { height: 100%; border-radius: 4px; background: var(--sage); transition: width 0.5s; }
     .gdd-bar-label { font-size: 11px; color: var(--cream-dim); }
 
-    /* Stargazing */
-    .stargazing-card { background: var(--forest-dark); border: 1px solid var(--divider); border-radius: 10px; padding: 20px; margin-bottom: 28px; display: grid; grid-template-columns: auto 1fr; gap: 20px; align-items: center; }
-    @media (max-width: 600px) { .stargazing-card { grid-template-columns: 1fr; } }
+    /* Stargazing + Aurora */
+    .stargazing-card { background: var(--forest-dark); border: 1px solid var(--divider); border-radius: 10px; padding: 20px; margin-bottom: 28px; display: grid; grid-template-columns: auto 1fr 1px 1fr; gap: 20px; align-items: start; }
+    @media (max-width: 800px) { .stargazing-card { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 500px) { .stargazing-card { grid-template-columns: 1fr; } }
+    .stargazing-divider { background: var(--divider); align-self: stretch; }
     .stargazing-rating { text-align: center; }
-    .stargazing-score { font-family: 'Playfair Display', serif; font-size: 56px; color: var(--cream); line-height: 1; }
+    .stargazing-score { font-family: 'Playfair Display', serif; font-size: 52px; color: var(--cream); line-height: 1; }
     .stargazing-label { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; margin-top: 4px; }
     .stargazing-label.excellent { color: #a8d4ff; }
     .stargazing-label.good { color: var(--sage); }
-    .stargazing-label.fair { color: var(--warning); }
+    .stargazing-label.fair { color: #c8a84a; }
     .stargazing-label.poor { color: var(--cream-dim); }
-    .stargazing-factors { display: flex; flex-direction: column; gap: 8px; }
-    .stargazing-factor { display: flex; justify-content: space-between; font-size: 13px; }
+    .stargazing-factors { display: flex; flex-direction: column; gap: 7px; }
+    .stargazing-factor { display: flex; justify-content: space-between; font-size: 12px; gap: 8px; }
     .stargazing-factor-label { color: var(--cream-dim); }
-    .stargazing-factor-value { color: var(--cream); }
+    .stargazing-factor-value { color: var(--cream); text-align: right; }
+    .aurora-panel { display: flex; flex-direction: column; gap: 7px; }
+    .aurora-title { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: #a0c4ff; margin-bottom: 6px; }
+    .aurora-kp { font-family: 'Playfair Display', serif; font-size: 42px; color: var(--cream); line-height: 1; margin-bottom: 2px; }
+    .aurora-kp-label { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: #a0c4ff; margin-bottom: 8px; }
+    .aurora-bar-wrap { height: 6px; background: var(--forest-mid); border-radius: 3px; overflow: hidden; margin-bottom: 8px; }
+    .aurora-bar { height: 100%; border-radius: 3px; }
+    .aurora-factor { display: flex; justify-content: space-between; font-size: 12px; gap: 8px; }
+    .aurora-factor-label { color: var(--cream-dim); }
+    .aurora-factor-value { color: var(--cream); text-align: right; }
+    .aurora-rating { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; margin-top: 6px; padding: 3px 10px; border-radius: 10px; display: inline-block; }
+    .aurora-rating.none { background: rgba(184,200,180,0.1); color: var(--cream-dim); }
+    .aurora-rating.slight { background: rgba(122,184,122,0.15); color: var(--sage); }
+    .aurora-rating.possible { background: rgba(160,196,255,0.15); color: #a0c4ff; }
+    .aurora-rating.likely { background: rgba(120,160,255,0.2); color: #90b4ff; }
+    .aurora-rating.storm { background: rgba(200,100,255,0.2); color: #d090ff; }
 
     /* Correlation */
     .correlation-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; margin-bottom: 28px; }
@@ -1110,6 +1127,11 @@
           </div>
         </div>
 
+        <!-- Current conditions header -->
+        <div class="section-header">
+          <div class="section-title">Current Conditions</div>
+          <div class="section-sub">Ecowitt GW2000A · Threlkeld garden · Live</div>
+        </div>
         <div class="conditions-grid">
           <div class="condition-panel">
             <div class="panel-header">🌡️ Temperature</div>
@@ -1501,21 +1523,25 @@
     async function renderStargazing(current) {
       try {
         const lat = 54.616, lon = -3.056;
-        const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=cloudcover,visibility&daily=sunrise,sunset&timezone=Europe%2FLondon&forecast_days=1`);
-        const data = await res.json();
 
-        // Get night hours (after sunset, before sunrise)
+        // Fetch weather + aurora data in parallel
+        const [weatherRes, auroraRes] = await Promise.all([
+          fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=cloudcover,visibility&daily=sunrise,sunset&timezone=Europe%2FLondon&forecast_days=1`),
+          fetch('https://services.swpc.noaa.gov/products/noaa-planetary-k-index-forecast.json')
+        ]);
+        const data = await weatherRes.json();
+        const kpData = await auroraRes.json();
+
+        // Weather
         const sunset = new Date(data.daily.sunset[0]);
         const now = new Date();
         const nightHour = Math.max(sunset.getHours(), now.getHours());
-        const idx = Math.min(nightHour, 23);
+        const hi = Math.min(nightHour, 23);
+        const cloud = data.hourly.cloudcover[hi] || 0;
+        const vis = (data.hourly.visibility[hi] || 0) / 1000;
 
-        const cloud = data.hourly.cloudcover[idx] || 0;
-        const vis = (data.hourly.visibility[idx] || 0) / 1000;
-
-        // Moon phase calculation
+        // Moon phase
         const moonAge = ((now - new Date('2000-01-06')) / 86400000) % 29.53;
-        const moonPct = Math.round(moonAge / 29.53 * 100);
         let moonPhase, moonIcon;
         if (moonAge < 1.85) { moonPhase = 'New Moon'; moonIcon = '🌑'; }
         else if (moonAge < 7.38) { moonPhase = 'Waxing Crescent'; moonIcon = '🌒'; }
@@ -1525,18 +1551,15 @@
         else if (moonAge < 22.15) { moonPhase = 'Waning Gibbous'; moonIcon = '🌖'; }
         else if (moonAge < 23.99) { moonPhase = 'Last Quarter'; moonIcon = '🌗'; }
         else { moonPhase = 'Waning Crescent'; moonIcon = '🌘'; }
-
-        // Darkness — Threlkeld is Bortle 3-4
         const moonBrightness = moonAge > 7 && moonAge < 22 ? Math.round(Math.sin((moonAge / 29.53) * Math.PI) * 100) : 0;
 
-        // Score 0-10
+        // Stargazing score
         let score = 10;
         score -= Math.round(cloud / 15);
         if (moonBrightness > 70) score -= 3;
         else if (moonBrightness > 40) score -= 1;
         if (vis < 10) score -= 1;
         score = Math.max(0, Math.min(10, score));
-
         let rating, ratingClass;
         if (score >= 8) { rating = 'Excellent'; ratingClass = 'excellent'; }
         else if (score >= 6) { rating = 'Good'; ratingClass = 'good'; }
@@ -1546,24 +1569,144 @@
         const sunsetTime = sunset.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
         const sunrise = new Date(data.daily.sunrise[0]).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 
+        // Kp index — find tonight's forecast
+        // kpData is array of [time, kp, observed/estimated/predicted]
+        let kpForecast = 0;
+        let kpTime = '';
+        if (Array.isArray(kpData) && kpData.length > 1) {
+          // Skip header row, find next forecast entry
+          const tonight = kpData.slice(1).find(row => {
+            const t = new Date(row[0]);
+            return t > now;
+          });
+          if (tonight) {
+            kpForecast = parseFloat(tonight[1]) || 0;
+            kpTime = new Date(tonight[0]).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+          }
+        }
+
+        // Aurora visibility from Threlkeld (54.6°N)
+        // Kp 4 = slight chance, Kp 5 = possible, Kp 6 = likely, Kp 7+ = storm
+        let auroraRating, auroraClass, auroraDesc;
+        if (kpForecast >= 7) { auroraRating = '🌌 Geomagnetic Storm'; auroraClass = 'storm'; auroraDesc = 'Overhead display likely — go outside now!'; }
+        else if (kpForecast >= 6) { auroraRating = '✅ Likely visible'; auroraClass = 'likely'; auroraDesc = 'Good chance from dark location'; }
+        else if (kpForecast >= 5) { auroraRating = '👀 Possible'; auroraClass = 'possible'; auroraDesc = 'Worth watching from a dark spot'; }
+        else if (kpForecast >= 4) { auroraRating = '🔭 Slight chance'; auroraClass = 'slight'; auroraDesc = 'Low on northern horizon only'; }
+        else { auroraRating = '✗ Unlikely'; auroraClass = 'none'; auroraDesc = 'Quiet geomagnetic conditions'; }
+
+        // Combined aurora score (clouds + Kp)
+        const kpPct = Math.min(100, Math.round((kpForecast / 9) * 100));
+        const cloudPenalty = cloud > 70 ? ' · Clouds blocking' : cloud > 40 ? ' · Partly cloudy' : '';
+        const auroraBarColor = kpForecast >= 6 ? '#d090ff' : kpForecast >= 4 ? '#a0c4ff' : 'rgba(100,120,160,0.5)';
+
         document.getElementById('stargazingCard').innerHTML = `
           <div class="stargazing-rating">
             <div class="stargazing-score">${score}/10</div>
-            <div class="stargazing-label ${ratingClass}">${rating}</div>
+            <div class="stargazing-label ${ratingClass}">Stargazing</div>
           </div>
           <div class="stargazing-factors">
             <div class="stargazing-factor"><span class="stargazing-factor-label">Cloud cover</span><span class="stargazing-factor-value">${cloud}%</span></div>
             <div class="stargazing-factor"><span class="stargazing-factor-label">Moon phase</span><span class="stargazing-factor-value">${moonIcon} ${moonPhase}</span></div>
             <div class="stargazing-factor"><span class="stargazing-factor-label">Moon brightness</span><span class="stargazing-factor-value">${moonBrightness}%</span></div>
             <div class="stargazing-factor"><span class="stargazing-factor-label">Visibility</span><span class="stargazing-factor-value">${vis.toFixed(0)}km</span></div>
-            <div class="stargazing-factor"><span class="stargazing-factor-label">Dark sky rating</span><span class="stargazing-factor-value">Bortle 3–4</span></div>
+            <div class="stargazing-factor"><span class="stargazing-factor-label">Dark sky</span><span class="stargazing-factor-value">Bortle 3–4</span></div>
             <div class="stargazing-factor"><span class="stargazing-factor-label">Sunset / Sunrise</span><span class="stargazing-factor-value">${sunsetTime} / ${sunrise}</span></div>
+          </div>
+          <div class="stargazing-divider"></div>
+          <div class="aurora-panel">
+            <div class="aurora-title">🌌 Northern Lights</div>
+            <div class="aurora-kp">${kpForecast.toFixed(1)}</div>
+            <div class="aurora-kp-label">Kp Index forecast</div>
+            <div class="aurora-bar-wrap">
+              <div class="aurora-bar" style="width:${kpPct}%;background:${auroraBarColor}"></div>
+            </div>
+            <div class="aurora-factor"><span class="aurora-factor-label">Visibility threshold</span><span class="aurora-factor-value">Kp 4+ from Threlkeld</span></div>
+            <div class="aurora-factor"><span class="aurora-factor-label">Cloud cover</span><span class="aurora-factor-value">${cloud}%${cloudPenalty}</span></div>
+            <div class="aurora-factor"><span class="aurora-factor-label">Next forecast</span><span class="aurora-factor-value">${kpTime || '—'}</span></div>
+            <div><span class="aurora-rating ${auroraClass}">${auroraRating}</span></div>
+            <div style="font-size:11px;color:var(--cream-dim);margin-top:4px">${auroraDesc}</div>
           </div>`;
+
       } catch(e) {
-        document.getElementById('stargazingCard').innerHTML = '<div style="color:var(--cream-dim);font-style:italic">Could not load stargazing data</div>';
+        document.getElementById('stargazingCard').innerHTML = '<div style="color:var(--cream-dim);font-style:italic">Could not load data</div>';
       }
     }
 
+
+    // ── Growing Degree Days ──────────────────────────────────
+    function renderGDD(history) {
+      const el = document.getElementById('gddCard');
+      if (!el || !history) return;
+
+      const temps = history.outdoor_temperature || [];
+      if (temps.length === 0) return;
+
+      const now = new Date();
+      const startOfYear = new Date(now.getFullYear(), 0, 1);
+      const BASE_TEMP = 5;
+
+      let totalGDD = 0;
+      const yearTemps = temps.filter(d => new Date(d.t || d.date) >= startOfYear);
+      yearTemps.forEach(d => {
+        const mean = d.mean ?? ((d.max + d.min) / 2);
+        const gdd = Math.max(0, mean - BASE_TEMP);
+        totalGDD += gdd;
+      });
+      totalGDD = Math.round(totalGDD);
+
+      const milestones = [
+        { gdd: 50,  label: 'Grass growing actively', icon: '🌱' },
+        { gdd: 100, label: 'Hawthorn in leaf',        icon: '🌿' },
+        { gdd: 200, label: 'Oak leaves emerging',     icon: '🍃' },
+        { gdd: 350, label: 'Peak wildflower season',  icon: '🌸' },
+        { gdd: 500, label: 'Swifts arrive',           icon: '🐦' },
+        { gdd: 700, label: 'Heather in bloom',        icon: '🟣' },
+        { gdd: 900, label: 'First frosts likely',     icon: '❄️' },
+      ];
+
+      const reached = milestones.filter(m => totalGDD >= m.gdd);
+      const next = milestones.find(m => totalGDD < m.gdd);
+      const last = reached[reached.length - 1];
+
+      const dayOfYear = Math.round((now - startOfYear) / (1000 * 60 * 60 * 24));
+      const annualTarget = 1000;
+      const pct = Math.min(100, Math.round((totalGDD / annualTarget) * 100));
+
+      el.innerHTML = `
+        <div class="gdd-score">
+          <div class="gdd-value">${totalGDD}</div>
+          <div class="gdd-unit">Degree Days</div>
+        </div>
+        <div class="gdd-facts">
+          <div class="gdd-fact">
+            <span class="gdd-fact-label">Base temperature</span>
+            <span class="gdd-fact-value">5°C (horticultural)</span>
+          </div>
+          <div class="gdd-fact">
+            <span class="gdd-fact-label">Days recorded</span>
+            <span class="gdd-fact-value">${yearTemps.length} of ${dayOfYear}</span>
+          </div>
+          <div class="gdd-fact">
+            <span class="gdd-fact-label">Latest milestone</span>
+            <span class="gdd-fact-value">${last ? last.icon + ' ' + last.label : 'Season starting'}</span>
+          </div>
+          <div class="gdd-fact">
+            <span class="gdd-fact-label">Next milestone</span>
+            <span class="gdd-fact-value">${next ? next.icon + ' ' + next.label + ' (' + next.gdd + ' GDD)' : '✅ All reached'}</span>
+          </div>
+        </div>
+        <div class="gdd-progress">
+          <div class="gdd-progress-label">Season progress</div>
+          ${milestones.map(m => `
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;font-size:11px">
+              <span>${m.icon}</span>
+              <div style="flex:1;height:4px;background:var(--forest-mid);border-radius:2px;overflow:hidden;width:80px">
+                <div style="height:100%;width:${totalGDD >= m.gdd ? 100 : 0}%;background:var(--sage);border-radius:2px"></div>
+              </div>
+              <span style="color:${totalGDD >= m.gdd ? 'var(--sage)' : 'var(--cream-dim)'};min-width:30px">${m.gdd}</span>
+            </div>`).join('')}
+        </div>`;
+    }
 
     // ── Bird/Weather Correlation ──────────────────────────────
     function renderCorrelation(history) {
@@ -1577,7 +1720,6 @@
 
       if (temps.length < 7) return;
 
-      // Use last 30 days only
       const t30 = temps.slice(-30);
       const r30 = rain.slice(-30);
       const w30 = winds.slice(-30);
@@ -1585,7 +1727,7 @@
       const days = t30.length;
       if (days === 0) return;
 
-      const rainyDays = r30.filter(d => (d._daily || 0) > 2).length;
+      const rainyDays = r30.filter(d => (d.max || 0) > 2).length;
       const dryDays = days - rainyDays;
       const windyDays = w30.filter(d => (d.mean || 0) >= 10).length;
       const calmDays = days - windyDays;
@@ -1595,7 +1737,7 @@
       const pressureDir = pressureTrend > 2 ? '📈 Rising — improving' : pressureTrend < -2 ? '📉 Falling — deteriorating' : '➡️ Stable';
 
       const idealCount = t30.filter((t, i) => {
-        const rv = r30[i]?.sum || 0;
+        const rv = r30[i]?.max || 0;
         const wv = w30[i]?.mean || 0;
         return rv < 1 && wv < 15 && (t.max || 0) > 8;
       }).length;
@@ -1624,7 +1766,6 @@
           <div class="correlation-desc">Days under 1mm rain, under 15mph wind, above 8°C in the last 30 days. Average daytime high: ${avgMaxTemp}°C.</div>
         </div>`;
     }
-
 
     // ── MQTT resilience ───────────────────────────────────────
     const CACHE_KEY = 'threlkeld_weather_cache';
@@ -1656,6 +1797,7 @@
       const el = document.getElementById('offlineBanner');
       if (el) el.style.display = 'none';
     }
+
     // Load cached data on startup
     const cached = loadCache();
     if (cached) { showOfflineBanner(cached.age); }
@@ -1663,7 +1805,7 @@
     const client = mqtt.connect(`wss://${MQTT_HOST}:${MQTT_PORT}/mqtt`);
 
     client.on('connect', () => {
-      document.getElementById('statusDot').className = 'dot connected';
+      document.getElementById('statusDot').className = 'dot live';
       document.getElementById('statusText').textContent = 'Live';
       client.subscribe(CURRENT_TOPIC);
       client.subscribe(HISTORY_TOPIC);
@@ -1674,9 +1816,16 @@
       document.getElementById('statusText').textContent = 'Connection error';
     });
 
-    client.on('offline', () => {
-      document.getElementById('statusDot').className = 'dot';
-      document.getElementById('statusText').textContent = 'Offline';
+    client.on('close', () => {
+      document.getElementById('statusDot').className = 'dot error';
+      document.getElementById('statusText').textContent = 'Disconnected — reconnecting...';
+      const c = loadCache();
+      if (c) showOfflineBanner(c.age);
+    });
+
+    client.on('reconnect', () => {
+      document.getElementById('statusDot').className = 'dot connecting';
+      document.getElementById('statusText').textContent = 'Reconnecting...';
     });
 
     client.on('message', (topic, message) => {
@@ -1689,7 +1838,9 @@
           renderStargazing(data);
           loadForecast();
           renderCurrent(data);
-        } else if (topic === HISTORY_TOPIC) {
+          if (historyData) renderMiniCharts();
+        }
+        if (topic === HISTORY_TOPIC) {
           historyData = data;
           if (currentData) renderMiniCharts();
           renderRecords(data);
@@ -1698,24 +1849,24 @@
         }
       } catch(e) { console.error('Parse error:', e); }
     });
-  
+
     // Mobile nav
     document.getElementById('navHamburger').addEventListener('click', function() {
       this.classList.toggle('open');
       document.querySelector('.nav-links').classList.toggle('open');
     });
-    // Close on link click
     document.querySelectorAll('.nav-link').forEach(l => {
       l.addEventListener('click', () => {
         document.getElementById('navHamburger').classList.remove('open');
         document.querySelector('.nav-links').classList.remove('open');
       });
     });
-  
+
     // Footer timestamp
-    document.getElementById('footerUpdated') && (document.getElementById('footerUpdated').textContent = 
-      'Updated ' + new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) + 
+    document.getElementById('footerUpdated') && (document.getElementById('footerUpdated').textContent =
+      'Updated ' + new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) +
       ' · ' + new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }));
+
   </script>
 </body>
 </html>
