@@ -343,30 +343,19 @@
     .gdd-bar-label { font-size: 11px; color: var(--cream-dim); }
 
     /* Stargazing + Aurora */
-    .stargazing-card { background: var(--forest-dark); border: 1px solid var(--divider); border-radius: 10px; padding: 20px; margin-bottom: 28px; display: grid; grid-template-columns: 1fr 1px 1fr; gap: 24px; align-items: start; }
-    @media (max-width: 600px) { .stargazing-card { grid-template-columns: 1fr; } }
-    .stargazing-divider { background: var(--divider); align-self: stretch; min-height: 100px; }
-    /* Stargazing panel */
-    .stargazing-rating { display: flex; flex-direction: column; }
-    .stargazing-score { font-family: 'Playfair Display', serif; font-size: 52px; color: var(--cream); line-height: 1; }
-    .stargazing-label { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; margin-top: 4px; margin-bottom: 0; }
-    .stargazing-label.excellent { color: #a8d4ff; }
-    .stargazing-label.good { color: var(--sage); }
-    .stargazing-label.fair { color: #c8a84a; }
-    .stargazing-label.poor { color: var(--cream-dim); }
-    .stargazing-factors { display: flex; flex-direction: column; gap: 6px; }
-    .stargazing-factor { display: flex; justify-content: space-between; font-size: 12px; gap: 8px; }
-    .stargazing-factor-label { color: var(--cream-dim); }
-    .stargazing-factor-value { color: var(--cream); text-align: right; }
-    /* Aurora panel — mirrors stargazing layout */
-    .aurora-panel { display: flex; flex-direction: column; }
-    .aurora-kp { font-family: 'Playfair Display', serif; font-size: 52px; color: var(--cream); line-height: 1; }
-    .aurora-kp-label { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: #a0c4ff; margin-top: 4px; }
-    .aurora-bar-wrap { height: 6px; background: var(--forest-mid); border-radius: 3px; overflow: hidden; }
-    .aurora-bar { height: 100%; border-radius: 3px; }
-    .aurora-factor { display: flex; justify-content: space-between; font-size: 12px; gap: 8px; }
-    .aurora-factor-label { color: var(--cream-dim); }
-    .aurora-factor-value { color: var(--cream); text-align: right; }
+    .sg-card { background: var(--forest-dark); border: 1px solid var(--divider); border-radius: 10px; padding: 20px 24px; display: flex; flex-direction: column; height: 100%; box-sizing: border-box; }
+    .sg-panel { display: flex; flex-direction: column; }
+    .sg-score { font-family: 'Playfair Display', serif; font-size: 48px; color: var(--cream); line-height: 1; }
+    .sg-label { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; margin-top: 4px; color: var(--cream-dim); }
+    .sg-label.excellent { color: #a8d4ff; }
+    .sg-label.good { color: var(--sage); }
+    .sg-label.fair { color: #c8a84a; }
+    .sg-label.poor { color: var(--cream-dim); }
+    .sg-facts { display: flex; flex-direction: column; gap: 6px; margin-top: 14px; }
+    .sg-fact { display: flex; justify-content: space-between; font-size: 12px; gap: 12px; border-bottom: 1px solid var(--divider); padding-bottom: 5px; }
+    .sg-fact:last-child { border-bottom: none; }
+    .sg-fact span:first-child { color: var(--cream-dim); }
+    .sg-fact span:last-child { color: var(--cream); text-align: right; }
     .aurora-rating { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; padding: 3px 10px; border-radius: 10px; display: inline-block; }
     .aurora-rating.none { background: rgba(184,200,180,0.1); color: var(--cream-dim); }
     .aurora-rating.slight { background: rgba(122,184,122,0.15); color: var(--sage); }
@@ -1222,13 +1211,26 @@
           <div class="loading"><div class="loading-spinner"></div></div>
         </div>
 
-        <!-- Stargazing -->
-        <div class="section-header">
-          <div class="section-title">Stargazing Conditions</div>
-          <div class="section-sub">Tonight · Threlkeld Dark Skies</div>
-        </div>
-        <div class="stargazing-card" id="stargazingCard">
-          <div class="loading"><div class="loading-spinner"></div></div>
+        <!-- Stargazing + Aurora -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:28px">
+          <div>
+            <div class="section-header" style="margin-top:0">
+              <div class="section-title">Stargazing Conditions</div>
+              <div class="section-sub">Tonight · Threlkeld Dark Skies</div>
+            </div>
+            <div class="sg-card" id="stargazingCard">
+              <div class="loading"><div class="loading-spinner"></div></div>
+            </div>
+          </div>
+          <div>
+            <div class="section-header" style="margin-top:0">
+              <div class="section-title">Northern Lights</div>
+              <div class="section-sub">NOAA Kp Index · Live forecast</div>
+            </div>
+            <div class="sg-card" id="auroraCard">
+              <div class="loading"><div class="loading-spinner"></div></div>
+            </div>
+          </div>
         </div>
 
         <!-- Bird/Weather Correlation -->
@@ -1600,36 +1602,31 @@
         const auroraBarColor = kpForecast >= 6 ? '#d090ff' : kpForecast >= 4 ? '#a0c4ff' : 'rgba(100,120,160,0.5)';
 
         document.getElementById('stargazingCard').innerHTML = `
-          <div class="stargazing-rating">
-            <div class="stargazing-score">${score}/10</div>
-            <div class="stargazing-label ${ratingClass}">Stargazing</div>
-            <div style="height:16px"></div>
-            <div class="stargazing-factors">
-              <div class="stargazing-factor"><span class="stargazing-factor-label">Cloud cover</span><span class="stargazing-factor-value">${cloud}%</span></div>
-              <div class="stargazing-factor"><span class="stargazing-factor-label">Moon phase</span><span class="stargazing-factor-value">${moonIcon} ${moonPhase}</span></div>
-              <div class="stargazing-factor"><span class="stargazing-factor-label">Moon brightness</span><span class="stargazing-factor-value">${moonBrightness}%</span></div>
-              <div class="stargazing-factor"><span class="stargazing-factor-label">Visibility</span><span class="stargazing-factor-value">${vis.toFixed(0)}km</span></div>
-              <div class="stargazing-factor"><span class="stargazing-factor-label">Dark sky</span><span class="stargazing-factor-value">Bortle 3–4</span></div>
-              <div class="stargazing-factor"><span class="stargazing-factor-label">Sunset / Sunrise</span><span class="stargazing-factor-value">${sunsetTime} / ${sunrise}</span></div>
-            </div>
-          </div>
-          <div class="stargazing-divider"></div>
-          <div class="aurora-panel">
-            <div class="aurora-kp">${kpForecast.toFixed(1)}</div>
-            <div class="aurora-kp-label">Kp Index</div>
-            <div><span class="aurora-rating ${auroraClass}" style="margin-top:6px">${auroraRating}</span></div>
-            <div style="height:12px"></div>
-            <div class="aurora-bar-wrap">
-              <div class="aurora-bar" style="width:${kpPct}%;background:${auroraBarColor}"></div>
-            </div>
-            <div class="aurora-factor"><span class="aurora-factor-label">Threshold</span><span class="aurora-factor-value">Kp 4+ from here</span></div>
-            <div class="aurora-factor"><span class="aurora-factor-label">Cloud cover</span><span class="aurora-factor-value">${cloud}%${cloudPenalty}</span></div>
-            <div class="aurora-factor"><span class="aurora-factor-label">Next forecast</span><span class="aurora-factor-value">${kpTime || '—'}</span></div>
-            <div style="font-size:11px;color:var(--cream-dim);margin-top:8px">${auroraDesc}</div>
+          <div class="sg-score">${score}/10</div>
+          <div class="sg-label ${ratingClass}">Stargazing</div>
+          <div class="sg-facts">
+            <div class="sg-fact"><span>Cloud cover</span><span>${cloud}%</span></div>
+            <div class="sg-fact"><span>Moon phase</span><span>${moonIcon} ${moonPhase}</span></div>
+            <div class="sg-fact"><span>Moon brightness</span><span>${moonBrightness}%</span></div>
+            <div class="sg-fact"><span>Visibility</span><span>${vis.toFixed(0)}km</span></div>
+            <div class="sg-fact"><span>Dark sky</span><span>Bortle 3–4</span></div>
+            <div class="sg-fact"><span>Sunset / Sunrise</span><span>${sunsetTime} / ${sunrise}</span></div>
+          </div>`;
+
+        document.getElementById('auroraCard').innerHTML = `
+          <div class="sg-score">${kpForecast.toFixed(1)}</div>
+          <div class="sg-label" style="color:#a0c4ff">Kp Index</div>
+          <div style="margin:8px 0"><span class="aurora-rating ${auroraClass}">${auroraRating}</span></div>
+          <div class="sg-facts">
+            <div class="sg-fact"><span>Threshold</span><span>Kp 4+ from Threlkeld</span></div>
+            <div class="sg-fact"><span>Cloud cover</span><span>${cloud}%${cloudPenalty}</span></div>
+            <div class="sg-fact"><span>Next forecast</span><span>${kpTime || '—'}</span></div>
+            <div class="sg-fact"><span style="color:var(--cream-dim);font-style:italic">${auroraDesc}</span><span></span></div>
           </div>`;
 
       } catch(e) {
         document.getElementById('stargazingCard').innerHTML = '<div style="color:var(--cream-dim);font-style:italic">Could not load data</div>';
+        document.getElementById('auroraCard').innerHTML = '<div style="color:var(--cream-dim);font-style:italic">Could not load data</div>';
       }
     }
 
