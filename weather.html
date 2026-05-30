@@ -1487,6 +1487,18 @@
       const annualTarget = 1000; // typical Cumbria
       const pct = Math.min(100, Math.round((totalGDD / annualTarget) * 100));
 
+      // Extra stats
+      const last7 = yearTemps.slice(-7);
+      const gddLast7 = last7.reduce((s, d) => s + Math.max(0, (d.mean ?? ((d.max+d.min)/2)) - 5), 0);
+      const gddPerDay = yearTemps.length > 0 ? totalGDD / yearTemps.length : 0;
+      const daysLeft = 365 - dayOfYear;
+      const projectedTotal = Math.round(totalGDD + (gddPerDay * daysLeft));
+      const avgTemp = yearTemps.length > 0
+        ? (yearTemps.reduce((s, d) => s + (d.mean ?? ((d.max+d.min)/2)), 0) / yearTemps.length).toFixed(1)
+        : '—';
+      const warmestDay = yearTemps.reduce((a, b) => (b.max||0) > (a.max||0) ? b : a, yearTemps[0]);
+      const warmestTemp = warmestDay ? warmestDay.max + '°C' : '—';
+
       el.innerHTML = `
         <div class="gdd-score">
           <div class="gdd-value">${totalGDD}</div>
@@ -1508,6 +1520,22 @@
           <div class="gdd-fact">
             <span class="gdd-fact-label">Next milestone</span>
             <span class="gdd-fact-value">${next ? next.icon + ' ' + next.label + ' (' + next.gdd + ' GDD)' : '✅ All reached'}</span>
+          </div>
+          <div class="gdd-fact">
+            <span class="gdd-fact-label">Last 7 days</span>
+            <span class="gdd-fact-value">${gddLast7.toFixed(1)} GDD</span>
+          </div>
+          <div class="gdd-fact">
+            <span class="gdd-fact-label">Projected year total</span>
+            <span class="gdd-fact-value">${projectedTotal} GDD</span>
+          </div>
+          <div class="gdd-fact">
+            <span class="gdd-fact-label">Mean temp this year</span>
+            <span class="gdd-fact-value">${avgTemp}°C</span>
+          </div>
+          <div class="gdd-fact">
+            <span class="gdd-fact-label">Warmest day</span>
+            <span class="gdd-fact-value">${warmestTemp}°C</span>
           </div>
         </div>
         <div class="gdd-progress">
