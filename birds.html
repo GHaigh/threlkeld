@@ -882,9 +882,10 @@
       </div>
     </div>
 
-    <div id="speciesBadge" style="display:none" class="species-badge">
+    <div id="speciesBadge" style="display:none" class="species-badge" onclick="document.getElementById('birdSearch').value='';document.getElementById('birdSearch').dispatchEvent(new Event('input'));document.getElementById('birdSearch').scrollIntoView({behavior:'smooth'});" style="cursor:pointer">
       <div class="species-badge-dot"></div>
       <span id="speciesBadgeText"></span>
+      <span style="font-size:10px;color:var(--sage);margin-left:6px">↓ view all</span>
     </div>
 
     <!-- Offline banner -->

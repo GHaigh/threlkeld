@@ -1102,6 +1102,12 @@
       if (e.key === 'Escape') closeModal();
     });
 
+    function windLabel(deg) {
+      if (deg === null || deg === undefined) return '';
+      const dirs = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+      return dirs[Math.round(deg / 22.5) % 16];
+    }
+
     function renderCurrent(d) {
       const html = `
         <!-- 7-Day Forecast -->
@@ -1153,7 +1159,7 @@
               </div>
               <div class="condition-row"><span class="condition-label">Gust</span><span class="condition-value">${fmt(d.wind_gust, 1)} km/h</span></div>
               <div class="condition-row"><span class="condition-label">Max Daily Gust</span><span class="condition-value">${fmt(d.wind_max_daily_gust, 1)} km/h</span></div>
-              <div class="condition-row"><span class="condition-label">Direction</span><span class="condition-value">${fmt(d.wind_dir, 0)}°</span></div>
+              <div class="condition-row"><span class="condition-label">Direction</span><span class="condition-value">${fmt(d.wind_dir, 0)}° ${windLabel(d.wind_dir)}</span></div>
             </div>
           </div>
 

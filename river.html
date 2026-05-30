@@ -681,7 +681,7 @@
         return `
           <div class="station-card ${st !== 'normal' ? st + '-state' : ''}">
             <div class="station-name">${s.name}</div>
-            <div class="station-river">${s.river}</div>
+            <div class="station-river">${s.river} · <span style="font-size:10px;color:var(--cream-dim)">${s.updated ? new Date(s.updated).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}) : ''}</span></div>
             <div class="station-level-row">
               <div class="station-level">${s.level.toFixed(2)}</div>
               <div class="station-unit">m</div>
