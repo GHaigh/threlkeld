@@ -332,9 +332,9 @@
     .gdd-score { text-align: left; }
     .gdd-value { font-family: 'Playfair Display', serif; font-size: 52px; color: var(--cream); line-height: 1; }
     .gdd-unit { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--sage); margin-top: 4px; }
-    .gdd-facts { display: flex; flex-direction: column; gap: 0; margin-top: 4px; max-width: 320px; }
+    .gdd-facts { display: grid; grid-template-columns: 1fr 1fr; gap: 0 24px; margin-top: 4px; }
     .gdd-fact { display: flex; justify-content: space-between; font-size: 12px; gap: 12px; border-bottom: 1px solid var(--divider); padding: 5px 0; }
-    .gdd-fact:last-child { border-bottom: none; }
+    .gdd-fact:nth-last-child(-n+2) { border-bottom: none; }
     .gdd-fact-label { color: var(--cream-dim); white-space: nowrap; }
     .gdd-fact-value { color: var(--cream); text-align: right; }
     .gdd-progress { text-align: right; }
@@ -1444,113 +1444,6 @@
         <div class="record-card"><div class="record-icon">⬇️</div><div class="record-value">${fmt(lowestP?.min)} hPa</div><div class="record-label">Lowest Pressure</div><div class="record-date">${fd(lowestPDate)}</div></div>`;
     }
 
-    // ── Growing Degree Days ──────────────────────────────────
-    function renderGDD(history) {
-      const el = document.getElementById('gddCard');
-      if (!el || !history) return;
-
-      const temps = history.outdoor_temperature || [];
-      if (temps.length === 0) return;
-
-      const now = new Date();
-      const startOfYear = new Date(now.getFullYear(), 0, 1);
-      const BASE_TEMP = 5; // °C — standard horticultural base
-
-      // Calculate GDD for each day this year
-      let totalGDD = 0;
-      const yearTemps = temps.filter(d => new Date(d.t || d.date) >= startOfYear);
-      yearTemps.forEach(d => {
-        const mean = d.mean ?? ((d.max + d.min) / 2);
-        const gdd = Math.max(0, mean - BASE_TEMP);
-        totalGDD += gdd;
-      });
-      totalGDD = Math.round(totalGDD);
-
-      // Typical Cumbria annual GDD ~800-1200 (base 5°C)
-      // Key milestones
-      const milestones = [
-        { gdd: 50,  label: 'Grass growing actively', icon: '🌱' },
-        { gdd: 100, label: 'Hawthorn in leaf',        icon: '🌿' },
-        { gdd: 200, label: 'Oak leaves emerging',     icon: '🍃' },
-        { gdd: 350, label: 'Peak wildflower season',  icon: '🌸' },
-        { gdd: 500, label: 'Swifts arrive',           icon: '🐦' },
-        { gdd: 700, label: 'Heather in bloom',        icon: '🟣' },
-        { gdd: 900, label: 'First frosts likely',     icon: '❄️' },
-      ];
-
-      const reached = milestones.filter(m => totalGDD >= m.gdd);
-      const next = milestones.find(m => totalGDD < m.gdd);
-      const last = reached[reached.length - 1];
-
-      // Day of year progress
-      const dayOfYear = Math.round((now - startOfYear) / (1000 * 60 * 60 * 24));
-      const annualTarget = 1000; // typical Cumbria
-      const pct = Math.min(100, Math.round((totalGDD / annualTarget) * 100));
-
-      // Extra stats
-      const last7 = yearTemps.slice(-7);
-      const gddLast7 = last7.reduce((s, d) => s + Math.max(0, (d.mean ?? ((d.max+d.min)/2)) - 5), 0);
-      const gddPerDay = yearTemps.length > 0 ? totalGDD / yearTemps.length : 0;
-      const daysLeft = 365 - dayOfYear;
-      const projectedTotal = Math.round(totalGDD + (gddPerDay * daysLeft));
-      const avgTemp = yearTemps.length > 0
-        ? (yearTemps.reduce((s, d) => s + (d.mean ?? ((d.max+d.min)/2)), 0) / yearTemps.length).toFixed(1)
-        : '—';
-      const warmestDay = yearTemps.reduce((a, b) => (b.max||0) > (a.max||0) ? b : a, yearTemps[0]);
-      const warmestTemp = warmestDay ? warmestDay.max + '°C' : '—';
-
-      el.innerHTML = `
-        <div class="gdd-score">
-          <div class="gdd-value">${totalGDD}</div>
-          <div class="gdd-unit">Degree Days</div>
-        </div>
-        <div class="gdd-facts">
-          <div class="gdd-fact">
-            <span class="gdd-fact-label">Base temperature</span>
-            <span class="gdd-fact-value">5°C (horticultural)</span>
-          </div>
-          <div class="gdd-fact">
-            <span class="gdd-fact-label">Days recorded</span>
-            <span class="gdd-fact-value">${yearTemps.length} of ${dayOfYear}</span>
-          </div>
-          <div class="gdd-fact">
-            <span class="gdd-fact-label">Latest milestone</span>
-            <span class="gdd-fact-value">${last ? last.icon + ' ' + last.label : 'Season starting'}</span>
-          </div>
-          <div class="gdd-fact">
-            <span class="gdd-fact-label">Next milestone</span>
-            <span class="gdd-fact-value">${next ? next.icon + ' ' + next.label + ' (' + next.gdd + ' GDD)' : '✅ All reached'}</span>
-          </div>
-          <div class="gdd-fact">
-            <span class="gdd-fact-label">Last 7 days</span>
-            <span class="gdd-fact-value">${gddLast7.toFixed(1)} GDD</span>
-          </div>
-          <div class="gdd-fact">
-            <span class="gdd-fact-label">Projected year total</span>
-            <span class="gdd-fact-value">${projectedTotal} GDD</span>
-          </div>
-          <div class="gdd-fact">
-            <span class="gdd-fact-label">Mean temp this year</span>
-            <span class="gdd-fact-value">${avgTemp}°C</span>
-          </div>
-          <div class="gdd-fact">
-            <span class="gdd-fact-label">Warmest day</span>
-            <span class="gdd-fact-value">${warmestTemp}°C</span>
-          </div>
-        </div>
-        <div class="gdd-progress">
-          <div class="gdd-progress-label">Season progress</div>
-          ${milestones.map(m => `
-            <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;font-size:11px">
-              <span>${m.icon}</span>
-              <div style="flex:1;height:4px;background:var(--forest-mid);border-radius:2px;overflow:hidden;width:80px">
-                <div style="height:100%;width:${totalGDD >= m.gdd ? 100 : 0}%;background:var(--sage);border-radius:2px"></div>
-              </div>
-              <span style="color:${totalGDD >= m.gdd ? 'var(--sage)' : 'var(--cream-dim)'};min-width:30px">${m.gdd}</span>
-            </div>`).join('')}
-        </div>`;
-    }
-
     // ── Stargazing ────────────────────────────────────────────
     async function renderStargazing(current) {
       try {
@@ -1699,7 +1592,17 @@
 
       const dayOfYear = Math.round((now - startOfYear) / (1000 * 60 * 60 * 24));
       const annualTarget = 1000;
-      const pct = Math.min(100, Math.round((totalGDD / annualTarget) * 100));
+
+      // Extra stats
+      const last7 = yearTemps.slice(-7);
+      const gddLast7 = Math.round(last7.reduce((s, d) => s + Math.max(0, (d.mean ?? ((d.max+d.min)/2)) - 5), 0) * 10) / 10;
+      const gddPerDay = yearTemps.length > 0 ? totalGDD / yearTemps.length : 0;
+      const projectedTotal = Math.round(totalGDD + (gddPerDay * (365 - dayOfYear)));
+      const avgTemp = yearTemps.length > 0
+        ? (yearTemps.reduce((s, d) => s + (d.mean ?? ((d.max+d.min)/2)), 0) / yearTemps.length).toFixed(1)
+        : '—';
+      const warmestDay = yearTemps.reduce((a, b) => (b.max||0) > (a.max||0) ? b : a, yearTemps[0]);
+      const warmestTemp = warmestDay ? warmestDay.max : '—';
 
       el.innerHTML = `
         <div class="gdd-score">
@@ -1707,22 +1610,14 @@
           <div class="gdd-unit">Degree Days</div>
         </div>
         <div class="gdd-facts">
-          <div class="gdd-fact">
-            <span class="gdd-fact-label">Base temperature</span>
-            <span class="gdd-fact-value">5°C (horticultural)</span>
-          </div>
-          <div class="gdd-fact">
-            <span class="gdd-fact-label">Days recorded</span>
-            <span class="gdd-fact-value">${yearTemps.length} of ${dayOfYear}</span>
-          </div>
-          <div class="gdd-fact">
-            <span class="gdd-fact-label">Latest milestone</span>
-            <span class="gdd-fact-value">${last ? last.icon + ' ' + last.label : 'Season starting'}</span>
-          </div>
-          <div class="gdd-fact">
-            <span class="gdd-fact-label">Next milestone</span>
-            <span class="gdd-fact-value">${next ? next.icon + ' ' + next.label + ' (' + next.gdd + ' GDD)' : '✅ All reached'}</span>
-          </div>
+          <div class="gdd-fact"><span class="gdd-fact-label">Base temperature</span><span class="gdd-fact-value">5°C</span></div>
+          <div class="gdd-fact"><span class="gdd-fact-label">Days recorded</span><span class="gdd-fact-value">${yearTemps.length} of ${dayOfYear}</span></div>
+          <div class="gdd-fact"><span class="gdd-fact-label">Last 7 days</span><span class="gdd-fact-value">${gddLast7} GDD</span></div>
+          <div class="gdd-fact"><span class="gdd-fact-label">Projected year total</span><span class="gdd-fact-value">${projectedTotal} GDD</span></div>
+          <div class="gdd-fact"><span class="gdd-fact-label">Mean temp this year</span><span class="gdd-fact-value">${avgTemp}°C</span></div>
+          <div class="gdd-fact"><span class="gdd-fact-label">Warmest day</span><span class="gdd-fact-value">${warmestTemp}°C</span></div>
+          <div class="gdd-fact"><span class="gdd-fact-label">Latest milestone</span><span class="gdd-fact-value">${last ? last.icon + ' ' + last.label : 'Season starting'}</span></div>
+          <div class="gdd-fact"><span class="gdd-fact-label">Next milestone</span><span class="gdd-fact-value">${next ? next.icon + ' ' + next.label + ' (' + next.gdd + ')' : '✅ All reached'}</span></div>
         </div>
         <div class="gdd-progress">
           <div class="gdd-progress-label">Season progress</div>
