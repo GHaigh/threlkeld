@@ -193,6 +193,13 @@
       margin-bottom: 40px;
     }
 
+    /* Info tooltips */
+    .info-tooltip { position: relative; display: inline-flex; align-items: center; margin-left: 8px; cursor: help; }
+    .info-tooltip .info-icon { width: 16px; height: 16px; border-radius: 50%; background: rgba(122,184,122,0.2); border: 1px solid rgba(122,184,122,0.4); color: var(--sage); font-size: 10px; font-style: normal; font-family: serif; display: flex; align-items: center; justify-content: center; line-height: 1; flex-shrink: 0; }
+    .info-tooltip .info-box { display: none; position: absolute; top: 24px; left: 0; width: 280px; background: #1a2e1a; border: 1px solid rgba(122,184,122,0.3); border-radius: 8px; padding: 10px 14px; font-size: 12px; color: var(--cream-dim); line-height: 1.7; z-index: 100; box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
+    .info-tooltip:hover .info-box { display: block; }
+    .info-box strong { color: var(--cream); font-weight: 500; }
+
     /* Forecast section */
     .forecast-section { margin-bottom: 28px; }
     .forecast-days { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; margin-bottom: 16px; }
@@ -1218,7 +1225,12 @@
 
         <!-- Growing Degree Days -->
         <div class="section-header">
-          <div class="section-title">Growing Degree Days</div>
+          <div class="section-title">Growing Degree Days
+            <span class="info-tooltip">
+              <i class="info-icon">i</i>
+              <span class="info-box"><strong>Growing Degree Days (GDD)</strong> measures accumulated warmth since 1 January. Each day contributes max(0, mean_temp − 5°C) to the total. Plants and insects respond to warmth not calendar dates — a warm April does more biological work than a cold one. Milestones show when key species typically arrive or events occur based on accumulated heat. A confirmed ✓ means BirdNET has actually detected that species this year.</span>
+            </span>
+          </div>
           <div class="section-sub">Accumulated heat units since 1 Jan · Base 5°C</div>
         </div>
         <div class="gdd-card" id="gddCard">
@@ -1229,7 +1241,8 @@
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:28px;align-items:start">
           <div>
             <div class="section-header" style="margin-top:0">
-              <div class="section-title">Stargazing Conditions</div>
+              <div class="section-title">Stargazing Conditions
+              <span class="info-tooltip"><i class="info-icon">i</i><span class="info-box"><strong>Stargazing score</strong> is calculated from tonight's cloud cover (Open-Meteo), moon phase and brightness, and visibility. Threlkeld sits in a Bortle 3–4 dark sky zone — one of the darkest in Northern England. Score of 8–10 is excellent, 6–7 good, 4–5 fair, below 4 poor. A full moon reduces the score significantly even on a clear night.</span></span></div>
               <div class="section-sub">Tonight · Threlkeld Dark Skies</div>
             </div>
             <div class="sg-card" id="stargazingCard">
@@ -1238,7 +1251,8 @@
           </div>
           <div>
             <div class="section-header" style="margin-top:0">
-              <div class="section-title">Northern Lights</div>
+              <div class="section-title">Northern Lights
+              <span class="info-tooltip"><i class="info-icon">i</i><span class="info-box"><strong>Kp index</strong> measures global geomagnetic activity on a scale of 0–9. From Threlkeld at 54.6°N, aurora becomes visible at Kp 4+, good displays at Kp 5+, overhead at Kp 7+. We're at Solar Cycle 25 peak (2025–26) so activity is elevated. Data is live from NOAA Space Weather. Cloud cover is shown as it affects visibility even when aurora is active.</span></span></div>
               <div class="section-sub">NOAA Kp Index · Live forecast</div>
             </div>
             <div class="sg-card" id="auroraCard">
