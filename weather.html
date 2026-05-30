@@ -1589,17 +1589,48 @@
       totalGDD = Math.round(totalGDD);
 
       const milestones = [
-        { gdd: 50,  label: 'Grass growing actively', icon: '🌱' },
-        { gdd: 100, label: 'Hawthorn in leaf',        icon: '🌿' },
-        { gdd: 200, label: 'Oak leaves emerging',     icon: '🍃' },
-        { gdd: 350, label: 'Peak wildflower season',  icon: '🌸' },
-        { gdd: 500, label: 'Swifts arrive',           icon: '🐦' },
-        { gdd: 700, label: 'Heather in bloom',        icon: '🟣' },
-        { gdd: 900, label: 'First frosts likely',     icon: '❄️' },
+        { gdd: 50,  label: 'Grass growing', icon: '🌱', species: ['Meadow Pipit', 'Skylark', 'Pied Wagtail'] },
+        { gdd: 100, label: 'Chiffchaff arrives', icon: '🌿', species: ['Common Chiffchaff', 'Chiffchaff'] },
+        { gdd: 200, label: 'Swallows arrive', icon: '🍃', species: ['Barn Swallow', 'Swallow', 'House Martin', 'Sand Martin'] },
+        { gdd: 350, label: 'Peak dawn chorus', icon: '🌸', species: ['Common Cuckoo', 'Cuckoo', 'Spotted Flycatcher'] },
+        { gdd: 500, label: 'Swifts arrive', icon: '🐦', species: ['Common Swift', 'Swift', 'Alpine Swift'] },
+        { gdd: 700, label: 'Heather in bloom', icon: '🟣', species: ['Ring Ouzel', 'Wheatear', 'Common Wheatear'] },
+        { gdd: 900, label: 'Redwings arrive', icon: '❄️', species: ['Redwing', 'Fieldfare', 'Brambling'], months: [9,10,11,0,1,2] },
       ];
 
-      const reached = milestones.filter(m => totalGDD >= m.gdd);
-      const next = milestones.find(m => totalGDD < m.gdd);
+      // Cross-check milestones against actual bird detections
+      // Get bird detections from localStorage cache (saved by birds.html)
+      let detections = [];
+      try {
+        const c = localStorage.getItem('threlkeld_birds_cache');
+        if (c) {
+          const raw = JSON.parse(c).data;
+          // raw is indexed object {0:{...}, 1:{...}, count:N}
+          if (Array.isArray(raw)) {
+            detections = raw;
+          } else if (raw && raw.count) {
+            for (let i = 0; i < raw.count; i++) { if (raw[i]) detections.push(raw[i]); }
+          }
+        }
+      } catch(e) {}
+      const detectedSpecies = new Set(detections.map(d => d.bird).filter(Boolean));
+
+      const currentMonth = now.getMonth();
+      const milestonesConfirmed = milestones.map(m => ({
+        ...m,
+        confirmed: m.species
+          ? m.species.some(s => detectedSpecies.has(s)) &&
+            (!m.months || m.months.includes(currentMonth))
+          : false
+      }));
+
+      // If a milestone is confirmed by detection, treat effective GDD as at least that milestone's value
+      const effectiveGDD = milestonesConfirmed.reduce((gdd, m) => {
+        return m.confirmed && m.gdd > gdd ? m.gdd : gdd;
+      }, totalGDD);
+
+      const reached = milestonesConfirmed.filter(m => effectiveGDD >= m.gdd || m.confirmed);
+      const next = milestonesConfirmed.find(m => effectiveGDD < m.gdd && !m.confirmed);
       const last = reached[reached.length - 1];
 
       const dayOfYear = Math.round((now - startOfYear) / (1000 * 60 * 60 * 24));
@@ -1628,8 +1659,8 @@
           <div class="gdd-fact"><span class="gdd-fact-label">Projected year total</span><span class="gdd-fact-value">${projectedTotal} GDD</span></div>
           <div class="gdd-fact"><span class="gdd-fact-label">Mean temp this year</span><span class="gdd-fact-value">${avgTemp}°C</span></div>
           <div class="gdd-fact"><span class="gdd-fact-label">Warmest day</span><span class="gdd-fact-value">${warmestTemp}°C</span></div>
-          <div class="gdd-fact"><span class="gdd-fact-label">Latest milestone</span><span class="gdd-fact-value">${last ? last.icon + ' ' + last.label : 'Season starting'}</span></div>
-          <div class="gdd-fact"><span class="gdd-fact-label">Next milestone</span><span class="gdd-fact-value">${next ? next.icon + ' ' + next.label + ' (' + next.gdd + ')' : '✅ All reached'}</span></div>
+          <div class="gdd-fact"><span class="gdd-fact-label">Latest milestone</span><span class="gdd-fact-value">${last ? last.icon + ' ' + last.label + (last.confirmed && totalGDD < last.gdd ? ' ✓ detected' : '') : 'Season starting'}</span></div>
+          <div class="gdd-fact"><span class="gdd-fact-label">Next milestone</span><span class="gdd-fact-value">${next ? next.icon + ' ' + next.label + ' (' + next.gdd + ' GDD)' : '✅ All reached'}</span></div>
         </div>
         <div class="gdd-progress">
           <div class="gdd-progress-label">Season progress</div>
@@ -1637,9 +1668,9 @@
             <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;font-size:11px">
               <span>${m.icon}</span>
               <div style="flex:1;height:4px;background:var(--forest-mid);border-radius:2px;overflow:hidden;width:80px">
-                <div style="height:100%;width:${totalGDD >= m.gdd ? 100 : 0}%;background:var(--sage);border-radius:2px"></div>
+                <div style="height:100%;width:${(effectiveGDD >= m.gdd || m.confirmed) ? 100 : 0}%;background:${m.confirmed && totalGDD < m.gdd ? '#c8a84a' : 'var(--sage)'};border-radius:2px"></div>
               </div>
-              <span style="color:${totalGDD >= m.gdd ? 'var(--sage)' : 'var(--cream-dim)'};min-width:30px">${m.gdd}</span>
+              <span style="color:${(totalGDD >= m.gdd || m.confirmed) ? 'var(--sage)' : 'var(--cream-dim)'};min-width:30px">${m.confirmed && totalGDD < m.gdd ? '✓' : m.gdd}</span>
             </div>`).join('')}
         </div>`;
     }
