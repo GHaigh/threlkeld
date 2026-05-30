@@ -326,15 +326,16 @@
       display: grid;
       grid-template-columns: auto 1fr auto;
       gap: 24px;
-      align-items: center;
+      align-items: start;
     }
     @media (max-width: 600px) { .gdd-card { grid-template-columns: 1fr; } }
-    .gdd-score { text-align: center; }
+    .gdd-score { text-align: left; }
     .gdd-value { font-family: 'Playfair Display', serif; font-size: 52px; color: var(--cream); line-height: 1; }
     .gdd-unit { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--sage); margin-top: 4px; }
-    .gdd-facts { display: flex; flex-direction: column; gap: 8px; }
-    .gdd-fact { display: flex; justify-content: space-between; font-size: 13px; gap: 16px; }
-    .gdd-fact-label { color: var(--cream-dim); }
+    .gdd-facts { display: flex; flex-direction: column; gap: 0; margin-top: 4px; max-width: 320px; }
+    .gdd-fact { display: flex; justify-content: space-between; font-size: 12px; gap: 12px; border-bottom: 1px solid var(--divider); padding: 5px 0; }
+    .gdd-fact:last-child { border-bottom: none; }
+    .gdd-fact-label { color: var(--cream-dim); white-space: nowrap; }
     .gdd-fact-value { color: var(--cream); text-align: right; }
     .gdd-progress { text-align: right; }
     .gdd-progress-label { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--sage); margin-bottom: 8px; }
@@ -351,10 +352,10 @@
     .sg-label.good { color: var(--sage); }
     .sg-label.fair { color: #c8a84a; }
     .sg-label.poor { color: var(--cream-dim); }
-    .sg-facts { display: flex; flex-direction: column; gap: 6px; margin-top: 14px; }
-    .sg-fact { display: flex; justify-content: space-between; font-size: 12px; gap: 12px; border-bottom: 1px solid var(--divider); padding-bottom: 5px; }
+    .sg-facts { display: flex; flex-direction: column; gap: 0; margin-top: 14px; max-width: 320px; }
+    .sg-fact { display: flex; justify-content: space-between; font-size: 12px; gap: 12px; border-bottom: 1px solid var(--divider); padding: 5px 0; }
     .sg-fact:last-child { border-bottom: none; }
-    .sg-fact span:first-child { color: var(--cream-dim); }
+    .sg-fact span:first-child { color: var(--cream-dim); white-space: nowrap; }
     .sg-fact span:last-child { color: var(--cream); text-align: right; }
     .aurora-rating { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; padding: 3px 10px; border-radius: 10px; display: inline-block; }
     .aurora-rating.none { background: rgba(184,200,180,0.1); color: var(--cream-dim); }
@@ -1616,13 +1617,14 @@
 
         document.getElementById('auroraCard').innerHTML = `
           <div class="sg-score">${kpForecast.toFixed(1)}</div>
-          <div class="sg-label" style="color:#a0c4ff">Kp Index</div>
-          <div style="margin:8px 0"><span class="aurora-rating ${auroraClass}">${auroraRating}</span></div>
+          <div class="sg-label" style="color:#a0c4ff">Kp Index · Northern Lights</div>
           <div class="sg-facts">
+            <div class="sg-fact"><span>Likelihood</span><span><span class="aurora-rating ${auroraClass}">${auroraRating}</span></span></div>
             <div class="sg-fact"><span>Threshold</span><span>Kp 4+ from Threlkeld</span></div>
+            <div class="sg-fact"><span>Solar cycle</span><span>Cycle 25 · Peak 2025–26</span></div>
             <div class="sg-fact"><span>Cloud cover</span><span>${cloud}%${cloudPenalty}</span></div>
             <div class="sg-fact"><span>Next forecast</span><span>${kpTime || '—'}</span></div>
-            <div class="sg-fact"><span style="color:var(--cream-dim);font-style:italic">${auroraDesc}</span><span></span></div>
+            <div class="sg-fact"><span>Conditions</span><span style="color:var(--cream-dim)">${auroraDesc}</span></div>
           </div>`;
 
       } catch(e) {
