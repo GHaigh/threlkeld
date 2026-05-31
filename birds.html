@@ -888,6 +888,9 @@
       </div>
     </div>
 
+    <div style="font-size:11px;color:var(--cream-dim);margin-bottom:12px">
+      Total detections logged: <strong id="totalDetections" style="color:var(--cream)">—</strong>
+    </div>
     <div id="speciesBadge" style="display:none" class="species-badge" onclick="document.getElementById('birdSearch').value='';document.getElementById('birdSearch').dispatchEvent(new Event('input'));document.getElementById('birdSearch').scrollIntoView({behavior:'smooth'});" style="cursor:pointer">
       <div class="species-badge-dot"></div>
       <span id="speciesBadgeText"></span>
@@ -1062,14 +1065,19 @@
     }
 
     function renderDetections(data) {
-      const total = data.count || 0;
-      const cutoff = Date.now() - 365 * 24 * 60 * 60 * 1000; // All data for search
+      // data.count = recent 200, data.total = full history size
+      const recent = data.count || 0;
+      const fullTotal = data.total || recent;
       allDetectionsStore = [];
-      for (let i = 0; i < total; i++) {
+      for (let i = 0; i < recent; i++) {
         if (data[i] && data[i].bird) allDetectionsStore.push(data[i]);
       }
 
-      // Default: show last 24 hours
+      // Update total species badge with full history size
+      const totalEl = document.getElementById('totalDetections');
+      if (totalEl) totalEl.textContent = fullTotal.toLocaleString();
+
+      // Default: show last 24 hours from recent 200
       const dayAgo = Date.now() - 24 * 60 * 60 * 1000;
       const todayDets = allDetectionsStore.filter(d => new Date(d.timestamp).getTime() > dayAgo);
       const count = todayDets.length;
