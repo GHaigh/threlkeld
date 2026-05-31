@@ -390,8 +390,6 @@
       });
     }
 
-    loadPhenology();
-
     // Mobile nav
     document.getElementById('navHamburger').addEventListener('click', function() {
       this.classList.toggle('open');
@@ -403,6 +401,6 @@
       'Updated ' + new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) +
       ' · ' + new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) + ' · ');
   </script>
-  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js" onload="loadPhenology()"></script>
 </body>
 </html>
