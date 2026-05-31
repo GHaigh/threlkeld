@@ -465,6 +465,17 @@
     </header>
 
     <!-- Flood alert -->
+    <!-- EA Flood Alerts Banner -->
+    <div id="eaFloodAlert" style="display:none;border-radius:10px;padding:16px 20px;margin-bottom:16px;border:1px solid;align-items:flex-start;gap:14px">
+      <div id="eaFloodIcon" style="font-size:26px;flex-shrink:0">⚠️</div>
+      <div style="flex:1">
+        <div id="eaFloodTitle" style="font-size:15px;font-weight:500;color:var(--cream);margin-bottom:4px"></div>
+        <div id="eaFloodDesc" style="font-size:13px;color:var(--cream-dim);line-height:1.6"></div>
+        <div id="eaFloodMeta" style="font-size:11px;color:var(--cream-dim);margin-top:6px"></div>
+        <a href="https://check-for-flooding.service.gov.uk/alerts-and-warnings/cumbria" target="_blank" style="font-size:11px;color:var(--sage);text-decoration:none;margin-top:4px;display:inline-block">View all Cumbria flood alerts ↗</a>
+      </div>
+    </div>
+
     <div class="flood-banner" id="floodBanner">
       <div class="flood-banner-icon">⚠️</div>
       <div id="floodBannerText"></div>
@@ -969,6 +980,62 @@
 
     // MQTT
 
+    // ── EA Flood Alerts ──────────────────────────────────────
+    async function loadFloodAlerts() {
+      try {
+        // Fetch active flood warnings/alerts for our specific flood areas
+        // 011WAFGB = Rivers Greta, St Johns Beck and Bassenthwaite (includes Glenderamackin/Threlkeld)
+        const FLOOD_AREAS = ['011WAFGB', '011FWFNC6GP', '011FWFNC6KC'];
+        const res = await fetch('https://environment.data.gov.uk/flood-monitoring/id/floods?county=Cumbria&_limit=50');
+        const data = await res.json();
+
+        const relevant = (data.items || []).filter(f => {
+          const notation = f.floodArea?.notation || f.notation || '';
+          return FLOOD_AREAS.some(a => notation.includes(a)) ||
+                 (f.description || '').toLowerCase().includes('glenderamackin') ||
+                 (f.description || '').toLowerCase().includes('greta') ||
+                 (f.description || '').toLowerCase().includes('threlkeld') ||
+                 (f.description || '').toLowerCase().includes('keswick');
+        });
+
+        const el = document.getElementById('eaFloodAlert');
+        if (!el) return;
+
+        if (relevant.length === 0) {
+          el.style.display = 'none';
+          return;
+        }
+
+        // Show the most severe active alert
+        const severity = relevant[0].severity || 3;
+        const severityMap = {
+          1: { icon: '🚨', label: 'Severe Flood Warning', color: 'rgba(220,50,50,0.3)', border: 'rgba(220,50,50,0.6)' },
+          2: { icon: '⚠️', label: 'Flood Warning', color: 'rgba(255,140,0,0.15)', border: 'rgba(255,140,0,0.5)' },
+          3: { icon: '💧', label: 'Flood Alert', color: 'rgba(255,200,0,0.1)', border: 'rgba(255,200,0,0.4)' },
+          4: { icon: 'ℹ️', label: 'Warning No Longer in Force', color: 'rgba(122,184,122,0.1)', border: 'rgba(122,184,122,0.3)' }
+        };
+
+        const sev = severityMap[severity] || severityMap[3];
+        el.style.display = 'flex';
+        el.style.background = sev.color;
+        el.style.borderColor = sev.border;
+
+        document.getElementById('eaFloodIcon').textContent = sev.icon;
+        document.getElementById('eaFloodTitle').textContent = `${sev.label} — ${relevant[0].description || 'Local area'}`;
+        document.getElementById('eaFloodDesc').textContent = relevant[0].message || 'Flooding is possible in the local area. Check the latest information.';
+
+        const raised = relevant[0].timeRaised ? new Date(relevant[0].timeRaised).toLocaleString('en-GB', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' }) : '';
+        document.getElementById('eaFloodMeta').textContent = raised ? `Issued: ${raised}` : '';
+
+        if (relevant.length > 1) {
+          document.getElementById('eaFloodMeta').textContent += ` · ${relevant.length} active alerts in area`;
+        }
+
+      } catch(e) {
+        console.warn('Flood alert fetch failed:', e);
+      }
+    }
+
     // ── MQTT resilience ───────────────────────────────────────
     const CACHE_KEY = 'threlkeld_river_cache';
 
@@ -999,6 +1066,7 @@
       const el = document.getElementById('offlineBanner');
       if (el) el.style.display = 'none';
     }
+    loadFloodAlerts();
     // Load cached data on startup
     const cached = loadCache();
     if (cached) { showOfflineBanner(cached.age); }
