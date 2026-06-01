@@ -1171,7 +1171,7 @@
         btn.classList.add('active');
         currentFilter = btn.dataset.filter;
         renderHistory(allFlights);
-        renderStats(allFlights);
+        renderStats(allFlights, allFlights.length);
         renderCurrent(allFlights);
         renderRoutes(allFlights);
       });
