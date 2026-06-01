@@ -416,6 +416,21 @@
       <div class="header-updated" id="headerUpdated">Loading...</div>
     </header>
 
+    <!-- Fell Cam -->
+    <div class="fellcam-section">
+      <div class="section-header" style="margin-top:0">
+        <div class="section-title">Fell &amp; Weather Cam</div>
+        <div class="section-subtitle" id="fellcamSub">Live view · Updated every 5 minutes · Daylight hours only</div>
+      </div>
+      <div class="fellcam-card">
+        <img class="fellcam-img" id="fellcamImg" src="https://rlpzmepeautd1v5pgoumz9aa2qhd92xd.ui.nabu.casa/local/fellcam.jpg" alt="Fell and Weather Camera">
+        <div class="fellcam-footer">
+          <span>📷 Threlkeld garden · Reolink WiFi camera</span>
+          <span class="fellcam-updated" id="fellcamUpdated">—</span>
+        </div>
+      </div>
+    </div>
+
     <!-- Named Walks -->
     <div class="section-header">
       <div class="section-title">Walk Suitability</div>
@@ -960,6 +975,19 @@
     document.getElementById('footerUpdated') && (document.getElementById('footerUpdated').textContent = 
       'Updated ' + new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) + 
       ' · ' + new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }));
+
+    // Fell cam refresh every 5 minutes
+    function refreshFellCam() {
+      const img = document.getElementById('fellcamImg');
+      const sub = document.getElementById('fellcamUpdated');
+      if (!img) return;
+      img.src = 'https://rlpzmepeautd1v5pgoumz9aa2qhd92xd.ui.nabu.casa/local/fellcam.jpg?t=' + Date.now();
+      const now = new Date();
+      if (sub) sub.textContent = 'Updated ' + now.toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'});
+    }
+    refreshFellCam();
+    setInterval(refreshFellCam, 5 * 60 * 1000);
+
   </script>
 </body>
 </html>

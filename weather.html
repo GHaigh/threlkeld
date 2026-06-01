@@ -200,6 +200,33 @@
     .info-tooltip:hover .info-box { display: block; }
     .info-box strong { color: var(--cream); font-weight: 500; }
 
+
+    /* Fell cam */
+    .fellcam-card {
+      background: var(--forest-dark);
+      border: 1px solid var(--divider);
+      border-radius: 10px;
+      overflow: hidden;
+      margin-bottom: 28px;
+    }
+    .fellcam-img {
+      width: 100%;
+      height: auto;
+      display: block;
+      min-height: 200px;
+      object-fit: cover;
+      background: var(--forest-mid);
+    }
+    .fellcam-footer {
+      padding: 10px 16px;
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--cream-dim);
+      border-top: 1px solid var(--divider);
+    }
+    .fellcam-updated { color: var(--sage); }
+
     /* Forecast section */
     .forecast-section { margin-bottom: 28px; }
     .forecast-days { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; margin-bottom: 16px; }
@@ -1138,6 +1165,19 @@
           </div>
         </div>
 
+        <!-- Fell Cam -->
+        <div class="section-header">
+          <div class="section-title">Fell &amp; Weather Cam</div>
+          <div class="section-sub">Live view · Updated every 5 minutes · Daylight hours only</div>
+        </div>
+        <div class="fellcam-card">
+          <img class="fellcam-img" id="fellcamImg" src="https://rlpzmepeautd1v5pgoumz9aa2qhd92xd.ui.nabu.casa/local/fellcam.jpg" alt="Fell and Weather Camera">
+          <div class="fellcam-footer">
+            <span>📷 Threlkeld garden · Reolink WiFi camera</span>
+            <span class="fellcam-updated" id="fellcamUpdated">—</span>
+          </div>
+        </div>
+
         <!-- Current conditions header -->
         <div class="section-header">
           <div class="section-title">Current Conditions <span style="font-size:13px;color:var(--sage);font-family:'Source Sans 3',sans-serif;font-weight:300">· Live measured data</span></div>
@@ -1838,6 +1878,18 @@
         }
       } catch(e) { console.error('Parse error:', e); }
     });
+
+    // Fell cam refresh every 5 minutes
+    function refreshFellCam() {
+      const img = document.getElementById('fellcamImg');
+      const sub = document.getElementById('fellcamUpdated');
+      if (!img) return;
+      img.src = 'https://rlpzmepeautd1v5pgoumz9aa2qhd92xd.ui.nabu.casa/local/fellcam.jpg?t=' + Date.now();
+      const now = new Date();
+      if (sub) sub.textContent = 'Updated ' + now.toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'});
+    }
+    refreshFellCam();
+    setInterval(refreshFellCam, 5 * 60 * 1000);
 
     // Mobile nav
     document.getElementById('navHamburger').addEventListener('click', function() {
