@@ -836,7 +836,7 @@
       return hour >= 0 && hour < 6;
     }
 
-    function renderStats(flights) {
+    function renderStats(flights, total) {
       const today = flights.filter(f => isToday(f.timestamp));
       const military = flights.filter(f => f.military);
       const militaryToday = military.filter(f => isToday(f.timestamp));
@@ -1000,7 +1000,7 @@
 
     function render(flights, total) {
       allFlights = flights;
-      renderStats(flights);
+      renderStats(flights, total);
       renderCurrent(flights);
       renderChart(flights);
       renderHistory(flights);
