@@ -1273,7 +1273,7 @@
         if (!raw) return null;
         const { data, total, ts } = JSON.parse(raw);
         const age = Math.round((Date.now() - ts) / 60000);
-        return { data, age };
+        return { data, total, age };
       } catch(e) { return null; }
     }
 
