@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <meta name="theme-color" content="#0d1a0d">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Threlkeld">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Bat Detections · Threlkeld">
+  <meta property="og:description" content="Live bat detections from an AudioMoth + BatDetect2 at Threlkeld in the Northern Lake District.">
+  <meta property="og:url" content="https://threlkeld.info/bats.html">
+  <meta property="og:image" content="https://threlkeld.info/favicon.svg">
+  <meta property="og:site_name" content="Threlkeld Projects">
+  <meta name="description" content="Live bat detections from an AudioMoth + BatDetect2 at Threlkeld in the Northern Lake District.">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bat Detections · Threlkeld</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Source+Sans+3:wght@300;400;500&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/5.3.4/mqtt.min.js"></script>
+  <style>
+    :root {
+      --forest-deep: #0d1a0d;
+      --forest-dark: #1a2e1a;
+      --forest-mid: #243022;
+      --sage: #7ab87a;
+      --cream: #e8f0e4;
+      --cream-dim: rgba(232,240,228,0.55);
+      --divider: rgba(122,184,122,0.15);
+      --bat: #9b72cf;
+      --bat-dim: rgba(155,114,207,0.2);
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: var(--forest-deep); color: var(--cream); font-family: 'Source Sans 3', sans-serif; font-weight: 300; min-height: 100vh; }
+    .page { max-width: 1100px; margin: 0 auto; padding: 0 24px; overflow-x: hidden; }
+    nav { display: flex; align-items: center; gap: 12px; padding: 16px 0; border-bottom: 1px solid var(--divider); position: relative; }
+    .nav-home { font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--cream-dim); text-decoration: none; transition: color 0.2s; }
+    .nav-home:hover { color: var(--cream); }
+    .nav-divider { color: var(--divider); font-size: 12px; }
+    .nav-links { display: flex; gap: 20px; margin-left: auto; }
+    .nav-link { font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--cream-dim); text-decoration: none; transition: color 0.2s; }
+    .nav-link:hover { color: var(--cream); }
+    .nav-link.active { color: var(--bat); }
+    .nav-hamburger { display: none; flex-direction: column; gap: 5px; background: none; border: none; cursor: pointer; padding: 4px; margin-left: auto; }
+    .nav-hamburger span { display: block; width: 22px; height: 2px; background: var(--cream-dim); transition: all 0.3s; }
+    @media (max-width: 700px) {
+      .nav-links { display: none; flex-direction: column; gap: 12px; position: absolute; top: 100%; left: 0; right: 0; background: var(--forest-dark); padding: 16px 20px; z-index: 100; border-bottom: 1px solid var(--divider); }
+      .nav-links.open { display: flex; }
+      .nav-hamburger { display: flex; }
+      .nav-divider { display: none; }
+    }
+    header { padding: 20px 0 28px; border-bottom: 1px solid var(--divider); margin-bottom: 28px; display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 16px; }
+    .header-eyebrow { font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--bat); margin-bottom: 8px; }
+    h1 { font-family: 'Playfair Display', serif; font-size: clamp(28px, 5vw, 42px); font-weight: 400; line-height: 1.1; color: var(--cream); }
+    h1 em { font-style: italic; color: var(--bat); }
+    .status-dot { display: flex; align-items: center; gap: 8px; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--cream-dim); }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--cream-dim); }
+    .dot.live { background: var(--bat); box-shadow: 0 0 6px var(--bat); animation: pulse 2s infinite; }
+    .dot.error { background: #e05555; }
+    .dot.connecting { background: #c8a84a; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+    .last-update { font-size: 11px; color: var(--cream-dim); }
+    .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 28px; }
+    @media (max-width: 600px) { .stats-row { grid-template-columns: repeat(2, 1fr); } }
+    .stat-card { background: var(--forest-dark); border: 1px solid var(--divider); border-radius: 8px; padding: 16px; text-align: center; }
+    .stat-value { font-family: 'Playfair Display', serif; font-size: 32px; color: var(--cream); line-height: 1; margin-bottom: 4px; }
+    .stat-label { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--cream-dim); }
+    .tonight-card { background: var(--forest-dark); border: 1px solid var(--divider); border-radius: 10px; padding: 20px 24px; margin-bottom: 28px; }
+    .tonight-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; }
+    .tonight-species { background: var(--bat-dim); border: 1px solid rgba(155,114,207,0.3); border-radius: 6px; padding: 8px 12px; }
+    .tonight-species-name { font-size: 13px; font-weight: 500; color: var(--cream); margin-bottom: 2px; }
+    .tonight-species-count { font-size: 11px; color: var(--cream-dim); }
+    .section-header { display: flex; align-items: baseline; gap: 10px; margin-bottom: 16px; margin-top: 32px; }
+    .section-title { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 400; color: var(--cream); }
+    .section-sub { font-size: 11px; color: var(--cream-dim); }
+    .detection-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 40px; }
+    .detection-card { background: var(--forest-dark); border: 1px solid var(--divider); border-radius: 8px; padding: 14px 18px; display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: center; transition: border-color 0.2s; }
+    .detection-card:hover { border-color: rgba(155,114,207,0.4); }
+    .detection-species { font-size: 15px; font-weight: 500; color: var(--cream); margin-bottom: 3px; }
+    .detection-species em { font-style: italic; color: var(--cream-dim); font-size: 13px; font-weight: 300; margin-left: 6px; }
+    .detection-meta { font-size: 11px; color: var(--cream-dim); display: flex; gap: 12px; flex-wrap: wrap; }
+    .detection-right { text-align: right; }
+    .confidence-bar { width: 80px; height: 4px; background: var(--forest-mid); border-radius: 2px; overflow: hidden; margin-bottom: 4px; margin-left: auto; }
+    .confidence-fill { height: 100%; border-radius: 2px; }
+    .confidence-text { font-size: 11px; color: var(--cream-dim); }
+    .empty-state { text-align: center; padding: 60px 20px; color: var(--cream-dim); }
+    .empty-icon { font-size: 48px; margin-bottom: 16px; }
+    .empty-title { font-family: 'Playfair Display', serif; font-size: 20px; color: var(--cream); margin-bottom: 8px; }
+    .empty-sub { font-size: 13px; line-height: 1.6; }
+    .offline-banner { display: none; background: rgba(200,168,74,0.15); border: 1px solid rgba(200,168,74,0.3); border-radius: 8px; padding: 10px 16px; font-size: 12px; color: #c8a84a; margin-bottom: 20px; align-items: center; gap: 8px; }
+    .loading { display: flex; align-items: center; gap: 10px; color: var(--cream-dim); font-size: 13px; padding: 40px 0; }
+    .loading-spinner { width: 16px; height: 16px; border: 2px solid var(--divider); border-top-color: var(--bat); border-radius: 50%; animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    footer { border-top: 1px solid var(--divider); padding: 24px 0; margin-top: 40px; font-size: 11px; color: var(--cream-dim); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <nav>
+      <a href="index.html" class="nav-home">← Threlkeld Projects</a>
+      <span class="nav-divider">|</span>
+      <div class="nav-links" id="navLinks">
+        <a href="birds.html" class="nav-link">🐦 Birds</a>
+        <a href="bats.html" class="nav-link active">🦇 Bats</a>
+        <a href="fells.html" class="nav-link">🏔️ Fells</a>
+        <a href="planes.html" class="nav-link">✈️ Planes</a>
+        <a href="river.html" class="nav-link">🌊 Rivers</a>
+        <a href="weather.html" class="nav-link">🌤️ Weather</a>
+        <a href="wildlife.html" class="nav-link">🦔 Wildlife</a>
+        <a href="about.html" class="nav-link">ℹ️ About</a>
+      </div>
+      <button class="nav-hamburger" id="navHamburger" aria-label="Menu">
+        <span></span><span></span><span></span>
+      </button>
+    </nav>
+
+    <header>
+      <div class="header-left">
+        <div class="header-eyebrow">Live Bat Detection · Threlkeld, Cumbria</div>
+        <h1>Threlkeld Garden <em>Bat Watch</em></h1>
+      </div>
+      <div class="header-right">
+        <div class="status-dot">
+          <div class="dot connecting" id="statusDot"></div>
+          <span id="statusText">Connecting...</span>
+        </div>
+        <div class="last-update" id="lastUpdate"></div>
+      </div>
+    </header>
+
+    <div class="offline-banner" id="offlineBanner">
+      ⚠️ Showing cached data from <span id="offlineAge">a while</span> ago
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-value" id="statTonight">—</div>
+        <div class="stat-label">Tonight</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="statSpeciesTonight">—</div>
+        <div class="stat-label">Species Tonight</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="statTotal">—</div>
+        <div class="stat-label">All Time</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="statSpeciesTotal">—</div>
+        <div class="stat-label">Species Recorded</div>
+      </div>
+    </div>
+
+    <div id="tonightCard" style="display:none">
+      <div class="section-header">
+        <div class="section-title">Tonight's Species</div>
+        <div class="section-sub">Active detections this session</div>
+      </div>
+      <div class="tonight-card">
+        <div class="tonight-grid" id="tonightGrid"></div>
+      </div>
+    </div>
+
+    <div class="section-header">
+      <div class="section-title">Recent Detections</div>
+      <div class="section-sub" id="detectionsSub">AudioMoth + BatDetect2 · Active dusk–dawn</div>
+    </div>
+
+    <div class="detection-list" id="detectionList">
+      <div class="loading"><div class="loading-spinner"></div> Waiting for detections...</div>
+    </div>
+
+    <footer>
+      <span>🦇 Bat detection via AudioMoth + BatDetect2 · Threlkeld, Cumbria</span>
+      <span id="footerUpdated"></span>
+    </footer>
+  </div>
+
+  <script>
+    const MQTT_HOST = 'broker.hivemq.com';
+    const MQTT_PORT = 8884;
+    const BAT_TOPIC = 'birdnetpi/greg2026/bats';
+    const CACHE_KEY = 'threlkeld_bats_cache';
+    let allDetections = [];
+
+    const BAT_NAMES = {
+      'Pipistrellus pipistrellus': 'Common Pipistrelle',
+      'Pipistrellus pygmaeus': 'Soprano Pipistrelle',
+      'Pipistrellus nathusii': "Nathusius' Pipistrelle",
+      'Nyctalus noctula': 'Noctule',
+      'Nyctalus leisleri': "Leisler's Bat",
+      'Eptesicus serotinus': 'Serotine',
+      'Myotis daubentonii': "Daubenton's Bat",
+      'Myotis nattereri': "Natterer's Bat",
+      'Myotis mystacinus': 'Whiskered Bat',
+      'Myotis brandtii': "Brandt's Bat",
+      'Plecotus auritus': 'Brown Long-eared Bat',
+      'Plecotus austriacus': 'Grey Long-eared Bat',
+      'Rhinolophus ferrumequinum': 'Greater Horseshoe Bat',
+      'Rhinolophus hipposideros': 'Lesser Horseshoe Bat',
+      'Barbastella barbastellus': 'Barbastelle',
+    };
+
+    function getCommonName(s) { return BAT_NAMES[s] || s; }
+    function formatTime(ts) { try { return new Date(ts).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }); } catch(e) { return ts; } }
+    function formatDate(ts) { try { return new Date(ts).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }); } catch(e) { return ''; } }
+
+    function isTonight(ts) {
+      const d = new Date(ts);
+      const now = new Date();
+      const yesterday = new Date(now); yesterday.setDate(now.getDate() - 1); yesterday.setHours(12,0,0,0);
+      return d >= yesterday;
+    }
+
+    function renderStats() {
+      const tonight = allDetections.filter(d => isTonight(d.timestamp));
+      const tonightSpecies = new Set(tonight.map(d => d.species));
+      const allSpecies = new Set(allDetections.map(d => d.species));
+      document.getElementById('statTonight').textContent = tonight.length;
+      document.getElementById('statSpeciesTonight').textContent = tonightSpecies.size || '—';
+      document.getElementById('statTotal').textContent = allDetections.length;
+      document.getElementById('statSpeciesTotal').textContent = allSpecies.size || '—';
+
+      if (tonightSpecies.size > 0) {
+        document.getElementById('tonightCard').style.display = 'block';
+        const counts = {};
+        tonight.forEach(d => { counts[d.species] = (counts[d.species] || 0) + 1; });
+        document.getElementById('tonightGrid').innerHTML = Object.entries(counts)
+          .sort((a,b) => b[1]-a[1])
+          .map(([sp, cnt]) => `
+            <div class="tonight-species">
+              <div class="tonight-species-name">${getCommonName(sp)}</div>
+              <div class="tonight-species-count">${sp} · ${cnt} detection${cnt>1?'s':''}</div>
+            </div>`).join('');
+      }
+    }
+
+    function renderDetections() {
+      const list = document.getElementById('detectionList');
+      if (allDetections.length === 0) {
+        list.innerHTML = `<div class="empty-state"><div class="empty-icon">🦇</div><div class="empty-title">No detections yet</div><div class="empty-sub">The bat detector is active between dusk and dawn.<br>Detections will appear here as bats are recorded.</div></div>`;
+        return;
+      }
+      list.innerHTML = allDetections.slice(0, 50).map(d => {
+        const conf = Math.round((d.confidence || 0) * 100);
+        const color = conf >= 70 ? 'var(--bat)' : conf >= 50 ? '#c8a84a' : 'var(--cream-dim)';
+        return `<div class="detection-card">
+          <div>
+            <div class="detection-species">${getCommonName(d.species)}<em>${d.species}</em></div>
+            <div class="detection-meta"><span>🕐 ${formatTime(d.timestamp)}</span><span>📅 ${formatDate(d.timestamp)}</span></div>
+          </div>
+          <div class="detection-right">
+            <div class="confidence-bar"><div class="confidence-fill" style="width:${conf}%;background:${color}"></div></div>
+            <div class="confidence-text">${conf}%</div>
+          </div>
+        </div>`;
+      }).join('');
+      document.getElementById('detectionsSub').textContent = `Last ${Math.min(50,allDetections.length)} of ${allDetections.length} · AudioMoth + BatDetect2`;
+    }
+
+    function parseAcoupiMessage(payload) {
+      try {
+        const data = typeof payload === 'string' ? JSON.parse(payload) : payload;
+        const results = [];
+        if (data.detections && Array.isArray(data.detections)) {
+          data.detections.forEach(det => {
+            if (det.tags) det.tags.forEach(t => {
+              if (t.tag && t.tag.key === 'species') {
+                results.push({ species: t.tag.value, confidence: t.confidence_score || 0, timestamp: data.recording?.created_on || new Date().toISOString() });
+              }
+            });
+          });
+        }
+        return results;
+      } catch(e) { return []; }
+    }
+
+    function saveCache() { try { localStorage.setItem(CACHE_KEY, JSON.stringify({ data: allDetections, ts: Date.now() })); } catch(e) {} }
+
+    const cached = (() => { try { const r = localStorage.getItem(CACHE_KEY); if (!r) return null; const {data,ts} = JSON.parse(r); return {data, age: Math.round((Date.now()-ts)/60000)}; } catch(e) { return null; } })();
+    if (cached && cached.data.length > 0) {
+      allDetections = cached.data;
+      renderStats(); renderDetections();
+      document.getElementById('offlineBanner').style.display = 'flex';
+      document.getElementById('offlineAge').textContent = cached.age < 60 ? `${cached.age} mins ago` : `${Math.round(cached.age/60)} hours ago`;
+    }
+
+    const client = mqtt.connect(`wss://${MQTT_HOST}:${MQTT_PORT}/mqtt`);
+    client.on('connect', () => { document.getElementById('statusDot').className='dot live'; document.getElementById('statusText').textContent='Live'; document.getElementById('offlineBanner').style.display='none'; client.subscribe(BAT_TOPIC); });
+    client.on('error', () => { document.getElementById('statusDot').className='dot error'; document.getElementById('statusText').textContent='Connection error'; });
+    client.on('close', () => { document.getElementById('statusDot').className='dot error'; document.getElementById('statusText').textContent='Disconnected'; });
+    client.on('reconnect', () => { document.getElementById('statusDot').className='dot connecting'; document.getElementById('statusText').textContent='Reconnecting...'; });
+
+    client.on('message', (topic, message) => {
+      try {
+        const detections = parseAcoupiMessage(message.toString());
+        detections.forEach(d => allDetections.unshift(d));
+        allDetections = allDetections.slice(0, 1000);
+        saveCache();
+        document.getElementById('lastUpdate').textContent = `Updated ${new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}`;
+        renderStats(); renderDetections();
+      } catch(e) { console.error(e); }
+    });
+
+    document.getElementById('navHamburger').addEventListener('click', function() {
+      this.classList.toggle('open');
+      document.getElementById('navLinks').classList.toggle('open');
+    });
+
+    document.getElementById('footerUpdated').textContent = 'Updated ' + new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}) + ' · ' + new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+  </script>
+</body>
+</html>
