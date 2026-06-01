@@ -1317,11 +1317,9 @@
     client.on('message', (topic, message) => {
       try {
         const data = JSON.parse(message.toString());
-        if (Array.isArray(data)) {
-          render(data); hideOfflineBanner(); saveCache(data);
-        } else if (data.flights) {
-          render(data.flights, data.total); hideOfflineBanner(); saveCache(data.flights, data.total);
-        }
+        const flights = Array.isArray(data) ? data : (data.flights || []);
+        const total = data.total || flights.length;
+        render(flights, total); hideOfflineBanner(); saveCache(flights, total);
       } catch(e) { console.error('Parse error:', e); }
     });
   
