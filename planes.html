@@ -844,7 +844,7 @@
       const airAmbToday = airAmb.filter(f => isToday(f.timestamp));
       const highest = flights.reduce((max, f) => Math.max(max, f.altitude || 0), 0);
       document.getElementById('statToday').textContent = today.length;
-      document.getElementById('statTotal').textContent = flights.length;
+      document.getElementById('statTotal').textContent = (total || flights.length).toLocaleString();
       document.getElementById('statMilitary').textContent = military.length;
       document.getElementById('statMilitaryToday').textContent = militaryToday.length;
       document.getElementById('statAirAmb').textContent = airAmb.length;
@@ -852,6 +852,9 @@
       document.getElementById('statHighest').textContent = highest > 0 ? Math.round(highest).toLocaleString() : '—';
       const uniqueTypes = new Set(flights.map(f => f.aircraft_model).filter(m => m && m !== 'Unknown')).size;
       document.getElementById('statAircraft').textContent = uniqueTypes || '—';
+      const nightFlights = flights.filter(f => isNightFlight(f.timestamp));
+      const nightEl = document.getElementById('statNightAll');
+      if (nightEl) nightEl.textContent = nightFlights.length || '—';
     }
 
     function minutesAgo(ts) {
@@ -995,7 +998,7 @@
         </tr>`).join('');
     }
 
-    function render(flights) {
+    function render(flights, total) {
       allFlights = flights;
       renderStats(flights);
       renderCurrent(flights);
@@ -1307,8 +1310,12 @@
 
     client.on('message', (topic, message) => {
       try {
-        const flights = JSON.parse(message.toString());
-        if (Array.isArray(flights)) { render(flights); hideOfflineBanner(); saveCache(flights); }
+        const data = JSON.parse(message.toString());
+        if (Array.isArray(data)) {
+          render(data); hideOfflineBanner(); saveCache(data);
+        } else if (data.flights) {
+          render(data.flights, data.total); hideOfflineBanner(); saveCache(data.flights, data.total);
+        }
       } catch(e) { console.error('Parse error:', e); }
     });
   
