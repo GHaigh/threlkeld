@@ -185,20 +185,20 @@
     <!-- Stats -->
     <div class="stats-row">
       <div class="stat-card">
-        <div class="stat-value" id="statTonight">—</div>
-        <div class="stat-label" id="labelTonight">Tonight</div>
+        <div class="stat-value" id="statSession">—</div>
+        <div class="stat-label" id="labelSession">Last Night</div>
       </div>
       <div class="stat-card">
-        <div class="stat-value" id="statSpeciesTonight">—</div>
-        <div class="stat-label" id="labelSpeciesTonight">Species Tonight</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value" id="statLastNight">—</div>
-        <div class="stat-label">Last Night</div>
+        <div class="stat-value" id="statSpeciesSession">—</div>
+        <div class="stat-label" id="labelSpeciesSession">Species Last Night</div>
       </div>
       <div class="stat-card">
         <div class="stat-value" id="statTotal">—</div>
         <div class="stat-label">All Time</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="statSpeciesTotal">—</div>
+        <div class="stat-label">Species Recorded</div>
       </div>
     </div>
 
@@ -359,11 +359,10 @@
     function getInatPhoto(scientific, callback) {
       const id = INAT_IDS[scientific];
       if (!id) { callback(null); return; }
-      // Search for observations with photos to get a real bat photo
-      fetch(`https://api.inaturalist.org/v1/observations?taxon_id=${id}&photos=true&quality_grade=research&order_by=votes&per_page=1`)
+      fetch(`https://api.inaturalist.org/v1/taxa/${id}`)
         .then(r => r.json())
         .then(d => {
-          const photo = d.results?.[0]?.photos?.[0]?.url?.replace('square', 'medium') || null;
+          const photo = d.results?.[0]?.default_photo?.medium_url || null;
           callback(photo);
         })
         .catch(() => callback(null));
@@ -516,21 +515,17 @@
     function renderStats() {
       const { sunrise } = getSunTimes();
       const currentHour = new Date().getHours() + new Date().getMinutes() / 60;
-      const afterDawn = currentHour > sunrise + 0.5;
-      const tonight = allDetections.filter(d => isTonight(d.timestamp));
-      const lastNight = allDetections.filter(d => isLastNight(d.timestamp));
-      const tonightSpecies = new Set(tonight.map(d => d.species));
-      const lastNightSpecies = new Set(lastNight.map(d => d.species));
+      const isDaytime = currentHour > sunrise + 0.5;
+      const session = allDetections.filter(d => isTonight(d.timestamp));
+      const sessionSpecies = new Set(session.map(d => d.species));
       const allSpecies = new Set(allDetections.map(d => d.species));
 
-      const tonightLabel = afterDawn ? 'Last Night' : 'Tonight So Far';
-      const speciesLabel = afterDawn ? 'Species Last Night' : 'Species Tonight';
-      document.getElementById('labelTonight').textContent = tonightLabel;
-      document.getElementById('labelSpeciesTonight').textContent = speciesLabel;
-      document.getElementById('statTonight').textContent = tonight.length || '—';
-      document.getElementById('statSpeciesTonight').textContent = tonightSpecies.size || '—';
-      document.getElementById('statLastNight').textContent = lastNight.length || '—';
+      document.getElementById('labelSession').textContent = isDaytime ? 'Last Night' : 'Tonight So Far';
+      document.getElementById('labelSpeciesSession').textContent = isDaytime ? 'Species Last Night' : 'Species Tonight';
+      document.getElementById('statSession').textContent = session.length || '—';
+      document.getElementById('statSpeciesSession').textContent = sessionSpecies.size || '—';
       document.getElementById('statTotal').textContent = allDetections.length || '—';
+      document.getElementById('statSpeciesTotal').textContent = allSpecies.size || '—';
     }
 
     function renderDetections() {
