@@ -1066,6 +1066,8 @@
       document.getElementById('statusText').textContent = 'Live';
       document.getElementById('offlineBanner').style.display = 'none';
       client.subscribe(BAT_TOPIC);
+      // Render with whatever we have (may be empty on first visit)
+      if (allDetections.length === 0) renderAll();
     });
     client.on('error', () => { document.getElementById('statusDot').className='dot error'; document.getElementById('statusText').textContent='Connection error'; });
     client.on('close', () => { document.getElementById('statusDot').className='dot error'; document.getElementById('statusText').textContent='Disconnected'; });
