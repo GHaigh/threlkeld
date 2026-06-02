@@ -1125,7 +1125,7 @@
     function tlPlay() {
       if (!tlFiles.length) return;
       tlPlaying = true;
-      document.getElementById('tlPlayBtn').textContent = '⏸ Pause';
+      document.getElementById('tlPlayBtn').textContent = '⏸ Pause'; document.getElementById('tlPlayBtn').classList.add('playing');
       tlInterval = setInterval(() => {
         if (tlIndex >= tlFiles.length - 1) {
           tlIndex = 0;
