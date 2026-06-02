@@ -834,7 +834,7 @@
         const avgConf = Math.round(confs[sp].reduce((a,b) => a+b, 0) / confs[sp].length * 100);
         const inatId = INAT_IDS[sp];
         const isActive = activeFilter === sp;
-        const photoUrl = BAT_PHOTOS[sp] || '';
+        const photoUrl = null; // loaded async below
         return `<div class="species-card ${isActive ? 'highlight' : ''}" onclick="filterSpecies('${sp}')">
           <img class="species-img" src="${photoUrl}" onerror="this.style.display='none'" alt="${getCommonName(sp)}" ${!photoUrl ? 'style="display:none"' : ''}>
           <div class="species-body">
