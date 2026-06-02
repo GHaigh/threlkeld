@@ -616,35 +616,34 @@
       return currentHour >= nightEnd && currentHour < nightStart;
     }
 
-    // Wikimedia Commons filenames — verified correct
-    const BAT_WIKI_FILES = {
-      'Pipistrellus pipistrellus': 'Pipistrellus_pipistrellus_001.jpg',
-      'Pipistrellus pygmaeus': 'Pipistrellus_pipistrellus_001.jpg',
-      'Pipistrellus nathusii': 'Pipistrellus_nathusii01.jpg',
-      'Nyctalus noctula': 'Nyctalus_noctula_mod.jpg',
-      'Nyctalus leisleri': 'Nyctalus_leisleri.jpg',
-      'Eptesicus serotinus': 'Eptesicus_serotinus01.jpg',
-      'Myotis daubentonii': 'Myotis_daubentonii.jpg',
-      'Myotis nattereri': 'Myotis_nattereri.jpg',
-      'Myotis mystacinus': 'Myotis_mystacinus.jpg',
-      'Myotis brandtii': 'Myotis_brandtii_1.jpg',
-      'Plecotus auritus': 'Plecotus_auritus_2.jpg',
-      'Plecotus austriacus': 'Plecotus_austriacus_01.jpg',
-      'Rhinolophus ferrumequinum': 'Rhinolophus_ferrumequinum.jpg',
-      'Rhinolophus hipposideros': 'Rhinolophus_hipposideros.jpg',
-      'Barbastella barbastellus': 'Barbastella_barbastellus_01.jpg',
+    // Wikipedia common name article titles for REST API thumbnail lookup
+    const BAT_WIKI_ARTICLES = {
+      'Pipistrellus pipistrellus': 'Common_pipistrelle',
+      'Pipistrellus pygmaeus': 'Soprano_pipistrelle',
+      'Pipistrellus nathusii': "Nathusius%27s_pipistrelle",
+      'Nyctalus noctula': 'Common_noctule',
+      'Nyctalus leisleri': "Leisler%27s_bat",
+      'Eptesicus serotinus': 'Serotine_bat',
+      'Myotis daubentonii': "Daubenton%27s_bat",
+      'Myotis nattereri': "Natterer%27s_bat",
+      'Myotis mystacinus': 'Whiskered_bat',
+      'Myotis brandtii': "Brandt%27s_bat",
+      'Plecotus auritus': 'Brown_long-eared_bat',
+      'Plecotus austriacus': 'Grey_long-eared_bat',
+      'Rhinolophus ferrumequinum': 'Greater_horseshoe_bat',
+      'Rhinolophus hipposideros': 'Lesser_horseshoe_bat',
+      'Barbastella barbastellus': 'Western_barbastelle',
     };
 
-    // Use Wikimedia Commons API to get the real thumb URL from filename
     const _batPhotoCache = {};
     function getInatPhoto(scientific, callback) {
       if (_batPhotoCache[scientific] !== undefined) { callback(_batPhotoCache[scientific]); return; }
-      const file = BAT_WIKI_FILES[scientific];
-      if (!file) { _batPhotoCache[scientific] = null; callback(null); return; }
-      fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${scientific.replace(/ /g,'_')}`)
+      const article = BAT_WIKI_ARTICLES[scientific];
+      if (!article) { _batPhotoCache[scientific] = null; callback(null); return; }
+      fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${article}`)
         .then(r => r.json())
         .then(d => {
-          const url = d.thumbnail?.source || d.originalimage?.source || null;
+          const url = d.thumbnail?.source || null;
           _batPhotoCache[scientific] = url;
           callback(url);
         })
