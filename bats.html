@@ -94,6 +94,25 @@
     .botd-fact span:last-child { color: var(--cream); text-align: right; }
     .botd-inat { display: inline-block; margin-top: 12px; font-size: 11px; color: var(--bat); text-decoration: none; letter-spacing: 0.05em; }
     .botd-inat:hover { text-decoration: underline; }
+    .timelapse-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: var(--bat); color: var(--forest-deep);
+      font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase;
+      border: none; padding: 7px 14px; border-radius: 6px;
+      cursor: pointer; white-space: nowrap; transition: background 0.2s;
+      font-family: 'Source Sans 3', sans-serif;
+    }
+    .timelapse-btn:hover { opacity: 0.85; }
+    .tl-days { display: flex; flex-wrap: wrap; gap: 8px; padding: 4px 0 8px; }
+    .tl-day-btn {
+      background: rgba(168,130,200,0.12); border: 1px solid rgba(168,130,200,0.3);
+      color: var(--bat); font-size: 11px; font-weight: 500; letter-spacing: 0.06em;
+      padding: 5px 12px; border-radius: 20px; cursor: pointer;
+      transition: background 0.2s, border-color 0.2s, color 0.2s;
+      font-family: 'Source Sans 3', sans-serif;
+    }
+    .tl-day-btn:hover { background: rgba(168,130,200,0.22); border-color: rgba(168,130,200,0.5); }
+    .tl-day-btn.active { background: var(--bat); color: var(--forest-deep); border-color: var(--bat); }
 
     /* Section header */
     .section-header { display: flex; align-items: baseline; gap: 10px; margin-bottom: 16px; margin-top: 32px; }
@@ -300,6 +319,11 @@
     <div class="section-header" style="margin-top:0">
       <div class="section-title">Bat of the Night</div>
       <div class="section-sub" id="botdSub">Most detected species</div>
+      <button class="timelapse-btn" id="botdHistoryBtn" onclick="toggleBotdHistory()" style="margin-top:0;margin-left:auto">📅 Previous nights</button>
+    </div>
+    <!-- Night history picker -->
+    <div id="botdHistoryPanel" style="display:none;margin-bottom:12px">
+      <div class="tl-days" id="botdNightButtons">Loading...</div>
     </div>
     <div class="bat-of-day" id="botdCard">
       <div class="loading"><div class="loading-spinner"></div> Waiting for detections...</div>
@@ -490,8 +514,12 @@
       const cosDec = Math.cos(Math.asin(sinDec));
       const cosH = (Math.cos(90.833 * Math.PI / 180) - sinDec * Math.sin(lat * Math.PI / 180)) / (cosDec * Math.cos(lat * Math.PI / 180));
       const H = Math.acos(Math.max(-1, Math.min(1, cosH))) * 180 / Math.PI;
-      const sunriseHour = (360 - H - (0.06571 * n) - 6.622 + lon / 15 + 24) % 24;
-      const sunsetHour = (H - (0.06571 * n) - 6.622 + lon / 15 + 24) % 24;
+      // Calculate in UTC then convert to local time using timezone offset
+      const tzOffsetHours = -now.getTimezoneOffset() / 60;
+      const sunriseUTC = (360 - H - (0.06571 * n) - 6.622 + lon / 15 + 24) % 24;
+      const sunsetUTC = (H - (0.06571 * n) - 6.622 + lon / 15 + 24) % 24;
+      const sunriseHour = (sunriseUTC + tzOffsetHours + 24) % 24;
+      const sunsetHour = (sunsetUTC + tzOffsetHours + 24) % 24;
       return { sunrise: sunriseHour, sunset: sunsetHour };
     }
 
@@ -531,8 +559,58 @@
         .catch(() => callback(null));
     }
 
+    // ── Bat of Night history ─────────────────────────────────
+    let botdHistoryOpen = false;
+    let selectedNight = null; // null = tonight/last night
+
+    function getNightDates() {
+      // Return list of unique nights from allDetections (date strings YYYY-MM-DD, most recent first)
+      const dates = new Set();
+      allDetections.forEach(d => {
+        const ts = new Date(d.timestamp);
+        // A bat detection belongs to the night of the date it started (sunset onwards)
+        // For simplicity use calendar date
+        dates.add(ts.toISOString().split('T')[0]);
+      });
+      return [...dates].sort().reverse().slice(0, 14); // last 14 days
+    }
+
+    function toggleBotdHistory() {
+      botdHistoryOpen = !botdHistoryOpen;
+      const panel = document.getElementById('botdHistoryPanel');
+      const btn = document.getElementById('botdHistoryBtn');
+      panel.style.display = botdHistoryOpen ? 'block' : 'none';
+      btn.textContent = botdHistoryOpen ? '✕ Close' : '📅 Previous nights';
+      if (botdHistoryOpen) buildNightButtons();
+    }
+
+    function buildNightButtons() {
+      const dates = getNightDates();
+      const el = document.getElementById('botdNightButtons');
+      if (!dates.length) { el.innerHTML = '<span style="color:var(--cream-dim);font-size:12px">No history yet</span>'; return; }
+      el.innerHTML = dates.map((date, i) => {
+        const d = new Date(date);
+        const label = i === 0 ? 'Tonight / Last night' : d.toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short' });
+        const isActive = (selectedNight === null && i === 0) || selectedNight === date;
+        return `<button class="tl-day-btn ${isActive ? 'active' : ''}" onclick="selectNight('${date}', ${i}, this)">${label}</button>`;
+      }).join('');
+    }
+
+    function selectNight(date, idx, btn) {
+      document.querySelectorAll('#botdNightButtons .tl-day-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      selectedNight = idx === 0 ? null : date;
+      renderBotd();
+    }
+
+    function getDetectionsForNight(date) {
+      if (!date) return allDetections.filter(d => isTonight(d.timestamp));
+      // Return all detections on that calendar date
+      return allDetections.filter(d => d.timestamp && d.timestamp.startsWith(date));
+    }
+
     function renderBotd() {
-      const tonight = allDetections.filter(d => isTonight(d.timestamp));
+      const tonight = getDetectionsForNight(selectedNight);
       const source = tonight.length > 0 ? tonight : allDetections;
       if (source.length === 0) {
         document.getElementById('botdCard').innerHTML = '<div class="loading">Waiting for detections...</div>';
@@ -547,7 +625,10 @@
       const avgConf = Math.round(source.filter(d => d.species === species).reduce((s,d) => s + d.confidence, 0) / count * 100);
       const inatId = INAT_IDS[species];
 
-      document.getElementById('botdSub').textContent = tonight.length > 0 ? 'Most detected species tonight' : 'Most detected species all time';
+      const subText = selectedNight
+        ? new Date(selectedNight).toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long' })
+        : (tonight.length > 0 ? 'Most detected species tonight' : 'Most detected species last night');
+      document.getElementById('botdSub').textContent = subText;
 
       getInatPhoto(species, (photo) => {
         document.getElementById('botdCard').innerHTML = `
