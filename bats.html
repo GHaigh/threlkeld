@@ -906,33 +906,52 @@
         currentSource.stop();
         currentSource = null;
         document.querySelectorAll('.play-btn').forEach(b => { b.classList.remove('playing'); b.textContent = '▶'; });
-        if (btn.dataset.file === filename && !btn.classList.contains('playing')) return;
+        if (btn.dataset.file === filename) return;
       }
       try {
         btn.textContent = '⏳';
         if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        const resp = await fetch(BATS_URL + filename);
-        const buffer = await resp.arrayBuffer();
-        const decoded = await audioCtx.decodeAudioData(buffer);
 
-        // Time expansion: play at 1/10th speed by creating a new buffer at 1/10th sample rate
-        const expandedRate = decoded.sampleRate / 10;
-        const offlineCtx = new OfflineAudioContext(decoded.numberOfChannels, decoded.length, expandedRate);
-        const source = offlineCtx.createBufferSource();
-        source.buffer = decoded;
-        source.connect(offlineCtx.destination);
-        source.start();
-        const rendered = await offlineCtx.startRendering();
+        const resp = await fetch(BATS_URL + filename);
+        const arrayBuf = await resp.arrayBuffer();
+        const bytes = new Uint8Array(arrayBuf);
+
+        // Parse WAV header to get actual sample rate and data
+        const view = new DataView(arrayBuf);
+        const sampleRate = view.getUint32(24, true);    // e.g. 384000
+        const numChannels = view.getUint16(22, true);
+        const bitsPerSample = view.getUint16(34, true);
+        const dataOffset = 44; // standard WAV header
+
+        // Read raw PCM samples
+        const numSamples = (bytes.length - dataOffset) / (bitsPerSample / 8);
+        
+        // Create buffer at 1/10th the sample rate so audio is time-expanded 10x
+        // This shifts 40kHz bat calls down to 4kHz — audible!
+        const playbackRate = Math.round(sampleRate / 10); // ~38400 Hz
+        const audioBuffer = audioCtx.createBuffer(1, numSamples, playbackRate);
+        const channelData = audioBuffer.getChannelData(0);
+
+        if (bitsPerSample === 16) {
+          for (let i = 0; i < numSamples; i++) {
+            const sample = view.getInt16(dataOffset + i * 2, true);
+            channelData[i] = sample / 32768.0;
+          }
+        } else if (bitsPerSample === 8) {
+          for (let i = 0; i < numSamples; i++) {
+            channelData[i] = (bytes[dataOffset + i] - 128) / 128.0;
+          }
+        }
 
         currentSource = audioCtx.createBufferSource();
-        currentSource.buffer = rendered;
+        currentSource.buffer = audioBuffer;
         currentSource.connect(audioCtx.destination);
         currentSource.start();
         btn.classList.add('playing');
         btn.dataset.file = filename;
         btn.textContent = '⏹';
 
-        const duration = rendered.duration;
+        const duration = audioBuffer.duration;
         const startTime = audioCtx.currentTime;
         const interval = setInterval(() => {
           const elapsed = audioCtx.currentTime - startTime;
@@ -955,8 +974,9 @@
           currentSource = null;
         };
       } catch(e) {
-        btn.textContent = '▶';
+        btn.textContent = '❌';
         console.error('Playback error:', e);
+        setTimeout(() => btn.textContent = '▶', 2000);
       }
     }
 
