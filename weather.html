@@ -1370,7 +1370,7 @@
           <div>
             <div class="section-header" style="margin-top:0">
               <div class="section-title" style="font-size:18px">📷 Fell Cam</div>
-              <div class="section-sub">Reolink · 5 min refresh</div>
+              <div class="section-sub" id="fellcamWeatherSub">Reolink · 5 min refresh</div>
             </div>
             <div class="sg-card">
               <div id="fellcamLive">
@@ -1992,10 +1992,18 @@
     function refreshFellCam() {
       const img = document.getElementById('fellcamImg');
       const sub = document.getElementById('fellcamUpdated');
+      const headerSub = document.getElementById('fellcamWeatherSub');
       if (!img) return;
       img.src = 'https://rlpzmepeautd1v5pgoumz9aa2qhd92xd.ui.nabu.casa/local/fellcam.jpg?t=' + Date.now();
       const now = new Date();
       if (sub) sub.textContent = 'Updated ' + now.toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'});
+      if (headerSub) {
+        const hour = now.getHours();
+        // Approximate daylight hours for Threlkeld — use sun cache if available
+        const sunriseH = 4.5, sunsetH = 21.5;
+        const isDaylight = hour >= Math.floor(sunriseH) && hour < Math.ceil(sunsetH);
+        headerSub.textContent = isDaylight ? 'Reolink · Updated ' + now.toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'}) : 'Reolink · Daylight hours only';
+      }
     }
     refreshFellCam();
     setInterval(refreshFellCam, 5 * 60 * 1000);

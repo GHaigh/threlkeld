@@ -385,7 +385,7 @@
 
     <!-- Activity chart -->
     <div class="section-header">
-      <div class="section-title">Tonight's Activity</div>
+      <div class="section-title" id="activityTitle">Tonight's Activity</div>
       <div class="section-sub">Detections per hour · Last 24 hours</div>
     </div>
     <div class="chart-card">
@@ -914,6 +914,8 @@
       const allSpecies = new Set(allDetections.map(d => d.species));
 
       document.getElementById('labelSession').textContent = _isDaytime ? 'Last Night' : 'Tonight So Far';
+      const actTitle = document.getElementById('activityTitle');
+      if (actTitle) actTitle.textContent = _isDaytime ? "Last Night's Activity" : "Tonight's Activity";
       document.getElementById('labelSpeciesSession').textContent = _isDaytime ? 'Species Last Night' : 'Species Tonight';
       document.getElementById('statSession').textContent = session.length || '—';
       document.getElementById('statSpeciesSession').textContent = sessionSpecies.size || '—';
