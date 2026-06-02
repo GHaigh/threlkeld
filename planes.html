@@ -654,7 +654,7 @@
               </div>
             </div>
           </div>
-          <div class="stat-box clickable" data-filter="night" title="Show night flights"><div class="stat-value" id="statNightAll">—</div><div class="stat-label">🌙 Night Flights</div></div>
+          <div class="stat-box clickable" data-filter="night" title="Show night flights"><div class="stat-value" id="statNightAll">—</div><div class="stat-label" data-label="night">🌙 Night Flights</div></div>
           <div class="stat-box clickable" data-filter="highest" title="Show highest flight"><div class="stat-value" id="statHighest">—</div><div class="stat-label">Highest (ft)</div></div>
           <div class="stat-box clickable" data-filter="aircraft" title="Show aircraft types"><div class="stat-value" id="statAircraft">—</div><div class="stat-label">Aircraft Types</div></div>
           <div class="stat-box stat-box-split">
@@ -833,7 +833,21 @@
 
     function isNightFlight(timestamp) {
       const hour = new Date(timestamp).getHours();
-      return hour >= 0 && hour < 6;
+      return hour >= 21 || hour < 6;
+    }
+
+    function isLast24Hours(ts) {
+      return Date.now() - new Date(ts).getTime() < 24 * 60 * 60 * 1000;
+    }
+
+    function isLastNight(ts) {
+      // Between yesterday 19:00 and this morning 07:00
+      const now = new Date();
+      const d = new Date(ts);
+      const hour = d.getHours();
+      const isYesterday = d.toDateString() === new Date(now - 86400000).toDateString();
+      const isTonight = d.toDateString() === now.toDateString();
+      return (isYesterday && hour >= 19) || (isTonight && hour < 7);
     }
 
     function renderStats(flights, total) {
@@ -852,9 +866,14 @@
       document.getElementById('statHighest').textContent = highest > 0 ? Math.round(highest).toLocaleString() : '—';
       const uniqueTypes = new Set(flights.map(f => f.aircraft_model).filter(m => m && m !== 'Unknown')).size;
       document.getElementById('statAircraft').textContent = uniqueTypes || '—';
-      const nightFlights = flights.filter(f => isNightFlight(f.timestamp));
+      const now = new Date();
+      const isAfterNoon = now.getHours() >= 12;
+      const nightFlights24 = flights.filter(f => isNightFlight(f.timestamp) && isLast24Hours(f.timestamp));
+      const nightLabel = isAfterNoon ? "🌙 Last Night" : "🌙 Tonight So Far";
       const nightEl = document.getElementById('statNightAll');
-      if (nightEl) nightEl.textContent = nightFlights.length || '—';
+      const nightLabelEl = document.querySelector('[data-label="night"]');
+      if (nightEl) nightEl.textContent = nightFlights24.length || '0';
+      if (nightLabelEl) nightLabelEl.textContent = nightLabel;
     }
 
     function minutesAgo(ts) {
