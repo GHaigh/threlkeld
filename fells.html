@@ -452,12 +452,43 @@
         <div class="section-title">Fell &amp; Weather Cam</div>
         <div class="section-subtitle" id="fellcamSub">Live view · Updated every 5 minutes · Daylight hours only</div>
       </div>
-      <div class="fellcam-card">
-        <img class="fellcam-img" id="fellcamImg" src="" alt="Fell and Weather Camera">
-        <div class="fellcam-footer">
-          <span>📷 Threlkeld garden · Reolink WiFi camera</span>
-          <span class="fellcam-updated" id="fellcamUpdated">—</span>
+
+      <!-- Live cam (shown during daylight) -->
+      <div id="fellcamLive">
+        <div class="fellcam-card">
+          <img class="fellcam-img" id="fellcamImg" src="" alt="Fell and Weather Camera">
+          <div class="fellcam-footer">
+            <span>📷 Threlkeld garden · Reolink WiFi camera</span>
+            <span class="fellcam-updated" id="fellcamUpdated">—</span>
+          </div>
         </div>
+        <button class="timelapse-btn" id="showTimelapse" onclick="toggleTimelapse()">📽️ View time-lapse</button>
+      </div>
+
+      <!-- Time-lapse viewer -->
+      <div id="fellcamTimelapse" style="display:none">
+        <div class="fellcam-card" style="position:relative">
+          <img class="fellcam-img" id="tlImg" src="" alt="Time-lapse" style="min-height:200px">
+          <div class="tl-overlay" id="tlOverlay">
+            <span id="tlTime">—</span>
+          </div>
+        </div>
+        <div class="tl-controls">
+          <button class="tl-btn" id="tlPlayBtn" onclick="tlTogglePlay()">▶ Play</button>
+          <div class="tl-progress-wrap">
+            <div class="tl-progress-bar">
+              <div class="tl-progress-fill" id="tlProgressFill"></div>
+            </div>
+            <span class="tl-counter" id="tlCounter">0 / 0</span>
+          </div>
+          <select class="tl-speed" id="tlSpeed" onchange="tlSetSpeed(this.value)">
+            <option value="200">Slow</option>
+            <option value="100" selected>Normal</option>
+            <option value="50">Fast</option>
+          </select>
+        </div>
+        <div class="tl-days" id="tlDays">Loading...</div>
+        <button class="timelapse-btn" onclick="toggleTimelapse()">📷 Back to live cam</button>
       </div>
     </div>
 
@@ -988,6 +1019,160 @@
     loadWalks().catch(console.error);
     initFellMap();
   
+    // ── Fell Cam + Time-lapse ──────────────────────────────
+    const FELLCAM_BASE = 'https://rlpzmepeautd1v5pgoumz9aa2qhd92xd.ui.nabu.casa/local/fellcam/';
+    const FELLCAM_INDEX = FELLCAM_BASE + 'index.json';
+    let tlFiles = [];
+    let tlIndex = 0;
+    let tlPlaying = false;
+    let tlInterval = null;
+    let tlSpeed = 100;
+    let fellcamIndex = null;
+
+    function getSunElevation() {
+      // Simple sun elevation estimate for Threlkeld
+      const lat = 54.616 * Math.PI / 180;
+      const now = new Date();
+      const jd = now / 86400000 + 2440587.5;
+      const n = jd - 2451545.0;
+      const L = (280.46 + 0.9856474 * n) % 360;
+      const g = ((357.528 + 0.9856003 * n) % 360) * Math.PI / 180;
+      const lambda = (L + 1.915 * Math.sin(g) + 0.02 * Math.sin(2*g)) * Math.PI / 180;
+      const sinDec = Math.sin(23.439 * Math.PI / 180) * Math.sin(lambda);
+      const lon = -3.056;
+      const utHour = now.getUTCHours() + now.getUTCMinutes()/60;
+      const ha = ((utHour - 12) * 15 + lon) * Math.PI / 180;
+      const sinAlt = sinDec * Math.sin(lat) + Math.cos(Math.asin(sinDec)) * Math.cos(lat) * Math.cos(ha);
+      return Math.asin(sinAlt) * 180 / Math.PI;
+    }
+
+    function isDaylight() {
+      return getSunElevation() > -6;
+    }
+
+    async function loadFellcamIndex() {
+      try {
+        const r = await fetch(FELLCAM_INDEX + '?t=' + Date.now());
+        fellcamIndex = await r.json();
+        return fellcamIndex;
+      } catch(e) { return null; }
+    }
+
+    function toggleTimelapse() {
+      const live = document.getElementById('fellcamLive');
+      const tl = document.getElementById('fellcamTimelapse');
+      if (tl.style.display === 'none') {
+        tl.style.display = 'block';
+        live.style.display = 'none';
+        initTimelapse();
+      } else {
+        tl.style.display = 'none';
+        live.style.display = 'block';
+        tlStop();
+      }
+    }
+
+    async function initTimelapse() {
+      const idx = fellcamIndex || await loadFellcamIndex();
+      if (!idx || !idx.days || idx.days.length === 0) {
+        document.getElementById('tlDays').innerHTML = '<span style="color:var(--cream-dim);font-size:12px">No time-lapse available yet — check back after the first full day</span>';
+        return;
+      }
+
+      // Build day buttons
+      const daysEl = document.getElementById('tlDays');
+      daysEl.innerHTML = idx.days.map((d, i) => {
+        const label = i === 0 ? 'Today' : i === 1 ? 'Yesterday' : new Date(d.date).toLocaleDateString('en-GB', {day:'numeric',month:'short'});
+        return `<button class="tl-day-btn ${i===0?'active':''}" onclick="loadDay(${i})">${label} (${d.count})</button>`;
+      }).join('');
+
+      // Load most recent day
+      loadDay(0);
+    }
+
+    function loadDay(dayIdx) {
+      if (!fellcamIndex || !fellcamIndex.days[dayIdx]) return;
+      const day = fellcamIndex.days[dayIdx];
+      tlFiles = day.files.map(f => FELLCAM_BASE + f);
+      tlIndex = 0;
+      tlStop();
+      document.querySelectorAll('.tl-day-btn').forEach((b,i) => b.classList.toggle('active', i===dayIdx));
+      tlShowFrame(0);
+    }
+
+    function tlShowFrame(idx) {
+      if (!tlFiles.length) return;
+      idx = Math.max(0, Math.min(idx, tlFiles.length - 1));
+      tlIndex = idx;
+      const img = document.getElementById('tlImg');
+      img.src = tlFiles[idx] + '?t=' + Date.now();
+      
+      // Extract time from filename
+      const match = tlFiles[idx].match(/fellcam_(\d{4})(\d{2})(\d{2})_(\d{2})(\d{2})/);
+      if (match) {
+        document.getElementById('tlTime').textContent = `${match[4]}:${match[5]}`;
+      }
+      
+      const pct = tlFiles.length > 1 ? (idx / (tlFiles.length - 1)) * 100 : 0;
+      document.getElementById('tlProgressFill').style.width = pct + '%';
+      document.getElementById('tlCounter').textContent = `${idx+1} / ${tlFiles.length}`;
+    }
+
+    function tlTogglePlay() {
+      if (tlPlaying) { tlStop(); } else { tlPlay(); }
+    }
+
+    function tlPlay() {
+      if (!tlFiles.length) return;
+      tlPlaying = true;
+      document.getElementById('tlPlayBtn').textContent = '⏸ Pause';
+      tlInterval = setInterval(() => {
+        if (tlIndex >= tlFiles.length - 1) {
+          tlIndex = 0;
+        } else {
+          tlIndex++;
+        }
+        tlShowFrame(tlIndex);
+      }, tlSpeed);
+    }
+
+    function tlStop() {
+      tlPlaying = false;
+      if (tlInterval) { clearInterval(tlInterval); tlInterval = null; }
+      const btn = document.getElementById('tlPlayBtn');
+      if (btn) btn.textContent = '▶ Play';
+    }
+
+    function tlSetSpeed(val) {
+      tlSpeed = parseInt(val);
+      if (tlPlaying) { tlStop(); tlPlay(); }
+    }
+
+    async function initFellcam() {
+      await loadFellcamIndex();
+      const daytime = isDaylight();
+      const sub = document.getElementById('fellcamSub');
+      
+      if (daytime) {
+        // Show live cam
+        document.getElementById('fellcamLive').style.display = 'block';
+        document.getElementById('fellcamTimelapse').style.display = 'none';
+        refreshFellCam();
+        setInterval(refreshFellCam, 5 * 60 * 1000);
+        if (sub) sub.textContent = 'Live · Updated every 5 minutes';
+      } else {
+        // Show today\'s timelapse automatically
+        document.getElementById('fellcamLive').style.display = 'none';
+        document.getElementById('fellcamTimelapse').style.display = 'block';
+        if (sub) sub.textContent = 'Daylight hours only · Showing today\'s time-lapse';
+        initTimelapse();
+        // Auto-play
+        setTimeout(tlPlay, 500);
+      }
+    }
+
+    initFellcam();
+
     // Mobile nav
     document.getElementById('navHamburger').addEventListener('click', function() {
       this.classList.toggle('open');
