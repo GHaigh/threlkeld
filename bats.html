@@ -617,15 +617,23 @@
     }
 
     function getInatPhoto(scientific, callback) {
-      const id = INAT_IDS[scientific];
-      if (!id) { callback(null); return; }
-      fetch(`https://api.inaturalist.org/v1/taxa/${id}`)
-        .then(r => r.json())
-        .then(d => {
-          const photo = d.results?.[0]?.default_photo?.medium_url || null;
-          callback(photo);
-        })
-        .catch(() => callback(null));
+      // Use Wikipedia file redirect — reliable and fast
+      // e.g. Pipistrellus_pipistrellus.jpg
+      const wikiName = scientific.replace(/ /g, '_');
+      const url = `https://en.wikipedia.org/w/index.php?title=Special:Redirect/file/${wikiName}.jpg&width=400`;
+      // Test if it resolves to an actual image
+      const img = new Image();
+      img.onload = () => callback(url);
+      img.onerror = () => {
+        // Try genus only as fallback
+        const genus = scientific.split(' ')[0];
+        const fallback = `https://en.wikipedia.org/w/index.php?title=Special:Redirect/file/${genus}.jpg&width=400`;
+        const img2 = new Image();
+        img2.onload = () => callback(fallback);
+        img2.onerror = () => callback(null);
+        img2.src = fallback;
+      };
+      img.src = url;
     }
 
     // ── Bat of Night history ─────────────────────────────────
@@ -809,9 +817,11 @@
         const avgConf = Math.round(confs[sp].reduce((a,b) => a+b, 0) / confs[sp].length * 100);
         const inatId = INAT_IDS[sp];
         const isActive = activeFilter === sp;
+        const wikiName = sp.replace(/ /g, '_');
+        const wikiUrl = `https://en.wikipedia.org/w/index.php?title=Special:Redirect/file/${wikiName}.jpg&width=300`;
         return `<div class="species-card ${isActive ? 'highlight' : ''}" onclick="filterSpecies('${sp}')">
-          <img class="species-img" src="https://api.inaturalist.org/v1/taxa/${inatId || 0}/photos?page=1&per_page=1" 
-               onerror="this.style.display='none'" alt="${getCommonName(sp)}">
+          <img class="species-img" src="${wikiUrl}"
+               onerror="this.src='https://en.wikipedia.org/w/index.php?title=Special:Redirect/file/${sp.split(' ')[0]}.jpg&width=300'" alt="${getCommonName(sp)}">
           <div class="species-body">
             <div class="species-name">${getCommonName(sp)}</div>
             <div class="species-latin">${sp}</div>
@@ -822,18 +832,7 @@
         </div>`;
       }).join('');
 
-      // Load iNat photos properly
-      sorted.forEach(([sp]) => {
-        const inatId = INAT_IDS[sp];
-        if (!inatId) return;
-        getInatPhoto(sp, (photo) => {
-          if (!photo) return;
-          const imgs = grid.querySelectorAll('.species-img');
-          imgs.forEach(img => {
-            if (img.alt === getCommonName(sp)) img.src = photo;
-          });
-        });
-      });
+
     }
 
     function filterSpecies(species) {
