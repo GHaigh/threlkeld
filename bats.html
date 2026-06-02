@@ -414,6 +414,7 @@
     const MQTT_HOST = 'broker.hivemq.com';
     const MQTT_PORT = 8884;
     const BAT_TOPIC = 'birdnetpi/greg2026/bats';
+    const BAT_HISTORY_TOPIC = 'birdnetpi/greg2026/bats/history';
     const CACHE_KEY = 'threlkeld_bats_cache';
     let allDetections = [];
     let activeFilter = null;
@@ -1066,6 +1067,7 @@
       document.getElementById('statusText').textContent = 'Live';
       document.getElementById('offlineBanner').style.display = 'none';
       client.subscribe(BAT_TOPIC);
+      client.subscribe(BAT_HISTORY_TOPIC);
       // Render with whatever we have (may be empty on first visit)
       if (allDetections.length === 0) renderAll();
     });
@@ -1075,12 +1077,27 @@
 
     client.on('message', (topic, message) => {
       try {
-        const detections = parseAcoupiMessage(message.toString());
-        detections.forEach(d => allDetections.unshift(d));
-        allDetections = allDetections.slice(0, 1000);
-        saveCache();
-        document.getElementById('lastUpdate').textContent = `Updated ${new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}`;
-        renderAll();
+        if (topic === BAT_HISTORY_TOPIC) {
+          // Retained history — load all previous detections
+          const history = JSON.parse(message.toString());
+          if (Array.isArray(history) && history.length > 0) {
+            // Merge with existing, deduplicate by timestamp+species
+            const existing = new Set(allDetections.map(d => d.timestamp + d.species));
+            history.forEach(d => { if (!existing.has(d.timestamp + d.species)) allDetections.push(d); });
+            allDetections.sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
+            allDetections = allDetections.slice(0, 1000);
+            saveCache();
+            renderAll();
+          }
+        } else {
+          // Live detection from acoupi
+          const detections = parseAcoupiMessage(message.toString());
+          detections.forEach(d => allDetections.unshift(d));
+          allDetections = allDetections.slice(0, 1000);
+          saveCache();
+          document.getElementById('lastUpdate').textContent = `Updated ${new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}`;
+          renderAll();
+        }
       } catch(e) { console.error(e); }
     });
 
