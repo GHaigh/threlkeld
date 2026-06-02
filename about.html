@@ -85,6 +85,36 @@
       nav { position: relative; }
     }
   </style>
+
+  <style>
+    .install-banner {
+      display: none;
+      position: fixed;
+      bottom: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #1a2e1a;
+      border: 1px solid rgba(122,184,122,0.3);
+      border-radius: 12px;
+      padding: 12px 18px;
+      z-index: 999;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+      max-width: 360px;
+      width: calc(100% - 32px);
+      font-family: 'Source Sans 3', sans-serif;
+      animation: slideUp 0.3s ease;
+    }
+    @keyframes slideUp { from { opacity:0; transform: translateX(-50%) translateY(20px); } to { opacity:1; transform: translateX(-50%) translateY(0); } }
+    .install-banner-inner { display: flex; align-items: center; gap: 12px; }
+    .install-banner-icon { font-size: 24px; flex-shrink: 0; }
+    .install-banner-text { flex: 1; }
+    .install-banner-title { font-size: 13px; font-weight: 500; color: #e8f0e4; margin-bottom: 2px; }
+    .install-banner-sub { font-size: 11px; color: rgba(232,240,228,0.6); line-height: 1.4; }
+    .install-banner-actions { display: flex; gap: 8px; margin-top: 10px; }
+    .install-btn { background: rgba(122,184,122,0.2); border: 1px solid rgba(122,184,122,0.4); color: #7ab87a; font-size: 12px; padding: 6px 14px; border-radius: 20px; cursor: pointer; font-family: inherit; }
+    .install-btn:hover { background: rgba(122,184,122,0.3); }
+    .install-dismiss { background: none; border: none; color: rgba(232,240,228,0.4); font-size: 12px; cursor: pointer; font-family: inherit; padding: 6px 8px; }
+  </style>
 </head>
 <body>
   <div class="page">
@@ -295,6 +325,65 @@
     document.getElementById('footerUpdated') && (document.getElementById('footerUpdated').textContent =
       'Updated ' + new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) +
       ' · ' + new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) + ' · ');
+  </script>
+
+  <!-- PWA Install Banner -->
+  <div class="install-banner" id="installBanner">
+    <div class="install-banner-inner">
+      <div class="install-banner-icon">🏔️</div>
+      <div class="install-banner-text">
+        <div class="install-banner-title">Install Threlkeld Projects</div>
+        <div class="install-banner-sub" id="installBannerSub">Add to your home screen for quick access</div>
+      </div>
+    </div>
+    <div class="install-banner-actions">
+      <button class="install-btn" id="installBtn">Install</button>
+      <button class="install-dismiss" id="installDismiss">Not now</button>
+    </div>
+  </div>
+
+  <script>
+    // PWA Install prompt
+    (function() {
+      if (localStorage.getItem('pwa_dismissed')) return;
+      const banner = document.getElementById('installBanner');
+      const sub = document.getElementById('installBannerSub');
+      const installBtn = document.getElementById('installBtn');
+      const dismissBtn = document.getElementById('installDismiss');
+
+      function dismiss() {
+        banner.style.display = 'none';
+        localStorage.setItem('pwa_dismissed', '1');
+      }
+      dismissBtn.addEventListener('click', dismiss);
+
+      // Android/Chrome — intercept beforeinstallprompt
+      let deferredPrompt;
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        banner.style.display = 'block';
+        installBtn.addEventListener('click', async () => {
+          banner.style.display = 'none';
+          deferredPrompt.prompt();
+          const { outcome } = await deferredPrompt.userChoice;
+          if (outcome === 'accepted') localStorage.setItem('pwa_dismissed', '1');
+          deferredPrompt = null;
+        });
+      });
+
+      // iOS Safari — show manual instructions
+      const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+      const isInStandaloneMode = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+      if (isIOS && !isInStandaloneMode) {
+        setTimeout(() => {
+          sub.textContent = 'Tap the Share button ↑ then "Add to Home Screen"';
+          installBtn.textContent = 'Got it';
+          installBtn.addEventListener('click', dismiss);
+          banner.style.display = 'block';
+        }, 3000);
+      }
+    })();
   </script>
 </body>
 </html>
