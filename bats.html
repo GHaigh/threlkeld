@@ -272,21 +272,21 @@
     };
 
     const INAT_IDS = {
-      'Pipistrellus pipistrellus': 43639,
-      'Pipistrellus pygmaeus': 43640,
-      'Pipistrellus nathusii': 43641,
-      'Nyctalus noctula': 43644,
-      'Nyctalus leisleri': 43645,
-      'Eptesicus serotinus': 43651,
-      'Myotis daubentonii': 43629,
-      'Myotis nattereri': 43631,
-      'Myotis mystacinus': 43633,
-      'Myotis brandtii': 43634,
-      'Plecotus auritus': 43655,
-      'Plecotus austriacus': 43656,
-      'Rhinolophus ferrumequinum': 43620,
-      'Rhinolophus hipposideros': 43621,
-      'Barbastella barbastellus': 43659,
+      'Pipistrellus pipistrellus': 40364,
+      'Pipistrellus pygmaeus': 74908,
+      'Pipistrellus nathusii': 40391,
+      'Nyctalus noctula': 40572,
+      'Nyctalus leisleri': 40573,
+      'Eptesicus serotinus': 40414,
+      'Myotis daubentonii': 74702,
+      'Myotis nattereri': 40401,
+      'Myotis mystacinus': 40399,
+      'Myotis brandtii': 40400,
+      'Plecotus auritus': 40416,
+      'Plecotus austriacus': 40417,
+      'Rhinolophus ferrumequinum': 40360,
+      'Rhinolophus hipposideros': 40361,
+      'Barbastella barbastellus': 40419,
     };
 
     const BAT_INFO = {
@@ -333,20 +333,16 @@
       const now = new Date();
       const { sunrise, sunset } = getSunTimes();
       const currentHour = now.getHours() + now.getMinutes() / 60;
-      // Night session starts at sunset - 30 mins, ends at sunrise + 30 mins
       const nightStart = sunset - 0.5;
       const nightEnd = sunrise + 0.5;
-      const dHour = d.getHours() + d.getMinutes() / 60;
-      // If we're currently before sunrise + 30 mins, tonight = last night onward
-      if (currentHour < nightEnd) {
-        // We're in the early morning — tonight's session started yesterday at sunset
-        const yesterday = new Date(now); yesterday.setDate(now.getDate() - 1);
-        const sessionStart = new Date(yesterday);
+
+      if (currentHour >= sunset - 0.5) {
+        // It's evening/night — tonight started at sunset-30m today
+        const sessionStart = new Date(now);
         sessionStart.setHours(Math.floor(nightStart), Math.round((nightStart % 1) * 60), 0, 0);
         return d >= sessionStart;
       } else {
-        // We're in daytime — tonight's session started today at sunset (future) 
-        // or show last night = yesterday sunset to today sunrise
+        // It's daytime — show last night: yesterday sunset to today sunrise+30m
         const yesterday = new Date(now); yesterday.setDate(now.getDate() - 1);
         const sessionStart = new Date(yesterday);
         sessionStart.setHours(Math.floor(nightStart), Math.round((nightStart % 1) * 60), 0, 0);
