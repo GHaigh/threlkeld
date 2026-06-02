@@ -836,7 +836,7 @@
         const isActive = activeFilter === sp;
         const photoUrl = null; // loaded async below
         return `<div class="species-card ${isActive ? 'highlight' : ''}" onclick="filterSpecies('${sp}')">
-          <img class="species-img" src="${photoUrl}" onerror="this.style.display='none'" alt="${getCommonName(sp)}" ${!photoUrl ? 'style="display:none"' : ''}>
+          <img class="species-img" id="batimg-${sp.replace(/ /g, '-')}" src="" style="display:none" alt="${getCommonName(sp)}">
           <div class="species-body">
             <div class="species-name">${getCommonName(sp)}</div>
             <div class="species-latin">${sp}</div>
