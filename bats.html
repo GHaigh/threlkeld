@@ -1323,6 +1323,25 @@
       } catch(e) { console.error(e); }
     });
 
+    // Re-render at sunrise so "tonight so far" switches to "last night" automatically
+    function scheduleRerenderAtSunrise() {
+      if (!_sunCache) return;
+      const now = new Date();
+      const sunrise = _sunCache.sunrise;
+      const sunriseToday = new Date(now);
+      sunriseToday.setHours(Math.floor(sunrise), Math.round((sunrise % 1) * 60), 0, 0);
+      // If sunrise already passed today, schedule for tomorrow
+      if (sunriseToday <= now) sunriseToday.setDate(sunriseToday.getDate() + 1);
+      const msUntilSunrise = sunriseToday - now;
+      setTimeout(() => {
+        renderBotd();
+        renderStats();
+        renderSummary();
+        scheduleRerenderAtSunrise(); // reschedule for next day
+      }, msUntilSunrise);
+    }
+    scheduleRerenderAtSunrise();
+
     document.getElementById('navHamburger').addEventListener('click', function() {
       this.classList.toggle('open');
       document.getElementById('navLinks').classList.toggle('open');
