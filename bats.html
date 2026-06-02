@@ -616,28 +616,42 @@
       return currentHour >= nightEnd && currentHour < nightStart;
     }
 
-    // Direct Wikimedia Commons image URLs — no redirects, no API calls
-    const BAT_PHOTOS = {
-      'Pipistrellus pipistrellus': 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/70/Pipistrellus_pipistrellus_crop.jpg/400px-Pipistrellus_pipistrellus_crop.jpg',
-      'Pipistrellus pygmaeus': 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/70/Pipistrellus_pipistrellus_crop.jpg/400px-Pipistrellus_pipistrellus_crop.jpg',
-      'Pipistrellus nathusii': 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4c/Pipistrellus_nathusii01.jpg/400px-Pipistrellus_nathusii01.jpg',
-      'Nyctalus noctula': 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/Nyctalus_noctula_mod.jpg/400px-Nyctalus_noctula_mod.jpg',
-      'Nyctalus leisleri': 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e6/Nyctalus_leisleri.jpg/400px-Nyctalus_leisleri.jpg',
-      'Eptesicus serotinus': 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8d/Eptesicus_serotinus01.jpg/400px-Eptesicus_serotinus01.jpg',
-      'Myotis daubentonii': 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5b/Daubenton%27s_bat_%28Myotis_daubentonii%29.jpg/400px-Daubenton%27s_bat_%28Myotis_daubentonii%29.jpg',
-      'Myotis nattereri': 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c9/Myotis_nattereri_01_by_Dietmar_Nill.jpg/400px-Myotis_nattereri_01_by_Dietmar_Nill.jpg',
-      'Myotis mystacinus': 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4e/Myotis_mystacinus.jpg/400px-Myotis_mystacinus.jpg',
-      'Myotis brandtii': 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Myotis_brandtii_1.jpg/400px-Myotis_brandtii_1.jpg',
-      'Plecotus auritus': 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Plecotus_auritus_2.jpg/400px-Plecotus_auritus_2.jpg',
-      'Plecotus austriacus': 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b6/Plecotus_austriacus_01_by_Dietmar_Nill.jpg/400px-Plecotus_austriacus_01_by_Dietmar_Nill.jpg',
-      'Rhinolophus ferrumequinum': 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6f/Greater_Horseshoe_Bat_Rhinolophus_ferrumequinum.jpg/400px-Greater_Horseshoe_Bat_Rhinolophus_ferrumequinum.jpg',
-      'Rhinolophus hipposideros': 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7d/Rhinolophus_hipposideros.jpg/400px-Rhinolophus_hipposideros.jpg',
-      'Barbastella barbastellus': 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/43/Barbastella_barbastellus_01_by_Dietmar_Nill.jpg/400px-Barbastella_barbastellus_01_by_Dietmar_Nill.jpg',
+    // Wikimedia Commons filenames — verified correct
+    const BAT_WIKI_FILES = {
+      'Pipistrellus pipistrellus': 'Pipistrellus_pipistrellus_001.jpg',
+      'Pipistrellus pygmaeus': 'Pipistrellus_pipistrellus_001.jpg',
+      'Pipistrellus nathusii': 'Pipistrellus_nathusii01.jpg',
+      'Nyctalus noctula': 'Nyctalus_noctula_mod.jpg',
+      'Nyctalus leisleri': 'Nyctalus_leisleri.jpg',
+      'Eptesicus serotinus': 'Eptesicus_serotinus01.jpg',
+      'Myotis daubentonii': 'Myotis_daubentonii.jpg',
+      'Myotis nattereri': 'Myotis_nattereri.jpg',
+      'Myotis mystacinus': 'Myotis_mystacinus.jpg',
+      'Myotis brandtii': 'Myotis_brandtii_1.jpg',
+      'Plecotus auritus': 'Plecotus_auritus_2.jpg',
+      'Plecotus austriacus': 'Plecotus_austriacus_01.jpg',
+      'Rhinolophus ferrumequinum': 'Rhinolophus_ferrumequinum.jpg',
+      'Rhinolophus hipposideros': 'Rhinolophus_hipposideros.jpg',
+      'Barbastella barbastellus': 'Barbastella_barbastellus_01.jpg',
     };
 
+    // Use Wikimedia Commons API to get the real thumb URL from filename
+    const _batPhotoCache = {};
     function getInatPhoto(scientific, callback) {
-      const url = BAT_PHOTOS[scientific] || null;
-      callback(url);
+      if (_batPhotoCache[scientific] !== undefined) { callback(_batPhotoCache[scientific]); return; }
+      const file = BAT_WIKI_FILES[scientific];
+      if (!file) { _batPhotoCache[scientific] = null; callback(null); return; }
+      fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${scientific.replace(/ /g,'_')}`)
+        .then(r => r.json())
+        .then(d => {
+          const url = d.thumbnail?.source || d.originalimage?.source || null;
+          _batPhotoCache[scientific] = url;
+          callback(url);
+        })
+        .catch(() => {
+          _batPhotoCache[scientific] = null;
+          callback(null);
+        });
     }
 
     // ── Bat of Night history ─────────────────────────────────
@@ -834,7 +848,14 @@
         </div>`;
       }).join('');
 
-
+      // Load photos asynchronously
+      sorted.forEach(([sp]) => {
+        getInatPhoto(sp, (url) => {
+          if (!url) return;
+          const img = document.getElementById('batimg-' + sp.replace(/ /g, '-'));
+          if (img) { img.src = url; img.style.display = 'block'; }
+        });
+      });
     }
 
     function filterSpecies(species) {
