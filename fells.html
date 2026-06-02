@@ -347,6 +347,7 @@
     .tl-speed option { background: #1a2e1a; color: var(--cream); text-transform: uppercase; }
 
     /* Time-lapse layout */
+    .tl-wrap { display: inline-block; width: 100%; max-width: max-content; }
     .tl-controls {
       display: flex; align-items: center; gap: 12px;
       padding: 12px 0 8px; flex-wrap: wrap;
@@ -551,6 +552,7 @@
 
       <!-- Time-lapse viewer -->
       <div id="fellcamTimelapse" style="display:none">
+        <div class="tl-wrap">
         <div class="fellcam-card" style="position:relative">
           <img class="fellcam-img" id="tlImg" src="" alt="Time-lapse" style="min-height:200px">
           <div class="tl-overlay" id="tlOverlay">
@@ -573,6 +575,7 @@
         </div>
         <div class="tl-days" id="tlDays">Loading...</div>
         <button class="timelapse-btn" onclick="toggleTimelapse()">📷 Back to live cam</button>
+        </div><!-- /.tl-wrap -->
       </div>
     </div>
 
