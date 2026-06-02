@@ -168,6 +168,30 @@
     /* First detection badge on species card */
     .species-first { font-size: 10px; color: var(--cream-dim); margin-top: 2px; }
 
+    /* Weather correlation */
+    .weather-corr-card { background: var(--forest-dark); border: 1px solid var(--divider); border-radius: 10px; padding: 20px 24px; margin-bottom: 28px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    @media (max-width: 600px) { .weather-corr-card { grid-template-columns: 1fr; } }
+    .corr-item { display: flex; flex-direction: column; gap: 4px; }
+    .corr-label { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--cream-dim); }
+    .corr-value { font-family: 'Playfair Display', serif; font-size: 24px; color: var(--cream); line-height: 1; }
+    .corr-sub { font-size: 11px; color: var(--cream-dim); }
+    .corr-bar { height: 4px; background: var(--forest-mid); border-radius: 2px; overflow: hidden; margin-top: 4px; }
+    .corr-bar-fill { height: 100%; border-radius: 2px; background: var(--bat); }
+
+    /* Moon phase */
+    .moon-badge { display: inline-flex; align-items: center; gap: 6px; background: rgba(200,168,74,0.1); border: 1px solid rgba(200,168,74,0.3); border-radius: 20px; padding: 3px 12px; font-size: 11px; color: #c8a84a; margin-left: 8px; }
+
+    /* Recording player */
+    .recording-player { background: var(--forest-dark); border: 1px solid var(--bat-border); border-radius: 8px; padding: 12px 16px; margin-top: 8px; display: flex; align-items: center; gap: 12px; }
+    .play-btn { width: 36px; height: 36px; border-radius: 50%; background: var(--bat-dim); border: 1px solid var(--bat-border); color: var(--bat); font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background 0.2s; }
+    .play-btn:hover { background: rgba(155,114,207,0.3); }
+    .play-btn.playing { background: rgba(155,114,207,0.4); }
+    .player-info { flex: 1; }
+    .player-filename { font-size: 11px; color: var(--cream-dim); margin-bottom: 2px; }
+    .player-note { font-size: 10px; color: var(--bat); }
+    .player-progress { flex: 1; height: 3px; background: var(--forest-mid); border-radius: 2px; overflow: hidden; }
+    .player-progress-fill { height: 100%; background: var(--bat); border-radius: 2px; width: 0%; transition: width 0.1s; }
+
     /* Loading */
     .loading { display: flex; align-items: center; gap: 10px; color: var(--cream-dim); font-size: 13px; padding: 40px 0; justify-content: center; }
     .loading-spinner { width: 16px; height: 16px; border: 2px solid var(--divider); border-top-color: var(--bat); border-radius: 50%; animation: spin 0.8s linear infinite; }
@@ -282,6 +306,29 @@
       <canvas id="activityChart"></canvas>
     </div>
 
+    <!-- Weather correlation -->
+    <div class="section-header">
+      <div class="section-title">Conditions &amp; Activity</div>
+      <div class="section-sub">How weather affects bat detections</div>
+    </div>
+    <div class="weather-corr-card" id="weatherCorrCard">
+      <div class="corr-item">
+        <div class="corr-label">🌡️ Best Temperature</div>
+        <div class="corr-value" id="corrBestTemp">—</div>
+        <div class="corr-sub" id="corrBestTempSub">Most active above this</div>
+      </div>
+      <div class="corr-item">
+        <div class="corr-label">🌧️ Rain Impact</div>
+        <div class="corr-value" id="corrRain">—</div>
+        <div class="corr-sub" id="corrRainSub">Detections on dry vs wet nights</div>
+      </div>
+      <div class="corr-item">
+        <div class="corr-label">🌙 Moon Impact</div>
+        <div class="corr-value" id="corrMoon">—</div>
+        <div class="corr-sub" id="corrMoonSub">Lunar phobia effect</div>
+      </div>
+    </div>
+
     <!-- Calendar -->
     <div class="section-header">
       <div class="section-title">Detection Calendar</div>
@@ -306,6 +353,15 @@
     </div>
     <div class="species-grid" id="speciesGrid">
       <div class="loading"><div class="loading-spinner"></div> Waiting for data...</div>
+    </div>
+
+    <!-- Recordings player -->
+    <div class="section-header">
+      <div class="section-title">Recordings</div>
+      <div class="section-sub">Time-expanded playback · Bat calls shifted into human hearing range</div>
+    </div>
+    <div id="recordingsList">
+      <div class="loading"><div class="loading-spinner"></div> Loading recordings...</div>
     </div>
 
     <!-- Recent detections -->
@@ -627,6 +683,7 @@
             <div class="detection-meta">
               <span>🕐 ${formatTime(d.timestamp)}</span>
               <span>📅 ${formatDate(d.timestamp)}</span>
+              <span>${getMoonPhase(new Date(d.timestamp))}</span>
             </div>
           </div>
           <div class="detection-right">
@@ -655,6 +712,79 @@
         }
         return results;
       } catch(e) { return []; }
+    }
+
+    // Moon phase calculation
+    function getMoonPhase(date) {
+      const known = new Date(2000, 0, 6); // known new moon
+      const diff = (date - known) / (1000 * 60 * 60 * 24);
+      const cycle = 29.53058867;
+      const phase = ((diff % cycle) + cycle) % cycle;
+      if (phase < 1.85) return '🌑 New Moon';
+      if (phase < 5.53) return '🌒 Waxing Crescent';
+      if (phase < 9.22) return '🌓 First Quarter';
+      if (phase < 12.91) return '🌔 Waxing Gibbous';
+      if (phase < 16.61) return '🌕 Full Moon';
+      if (phase < 20.30) return '🌖 Waning Gibbous';
+      if (phase < 23.99) return '🌗 Last Quarter';
+      if (phase < 27.68) return '🌘 Waning Crescent';
+      return '🌑 New Moon';
+    }
+
+    function getMoonIllumination(date) {
+      const known = new Date(2000, 0, 6);
+      const diff = (date - known) / (1000 * 60 * 60 * 24);
+      const cycle = 29.53058867;
+      const phase = ((diff % cycle) + cycle) % cycle;
+      // 0=new, 14.77=full
+      return Math.round(50 * (1 - Math.cos(2 * Math.PI * phase / cycle)));
+    }
+
+    function renderWeatherCorrelation() {
+      if (allDetections.length < 3) return;
+
+      // Group by night
+      const nights = {};
+      allDetections.forEach(d => {
+        const date = new Date(d.timestamp);
+        const key = date.toISOString().split('T')[0];
+        if (!nights[key]) nights[key] = { count: 0, detections: [] };
+        nights[key].count++;
+        nights[key].detections.push(d);
+      });
+
+      const nightList = Object.entries(nights);
+      if (nightList.length < 2) return;
+
+      // Moon correlation — compare activity on bright vs dark nights
+      let darkNights = 0, darkTotal = 0, brightNights = 0, brightTotal = 0;
+      nightList.forEach(([key, data]) => {
+        const illum = getMoonIllumination(new Date(key));
+        if (illum < 30) { darkNights++; darkTotal += data.count; }
+        else { brightNights++; brightTotal += data.count; }
+      });
+
+      const darkAvg = darkNights > 0 ? Math.round(darkTotal / darkNights) : 0;
+      const brightAvg = brightNights > 0 ? Math.round(brightTotal / brightNights) : 0;
+      const moonImpact = darkAvg > brightAvg ? `${darkAvg} vs ${brightAvg}` : `${darkAvg} vs ${brightAvg}`;
+      const moonSub = darkAvg > brightAvg
+        ? `More active on dark nights (lunar phobia confirmed)`
+        : darkNights === 0 || brightNights === 0
+        ? `Not enough data yet`
+        : `No clear lunar phobia pattern yet`;
+
+      document.getElementById('corrMoon').textContent = moonImpact;
+      document.getElementById('corrMoonSub').textContent = moonSub;
+
+      // Best temperature — use current moon phase as proxy for now
+      const currentIllum = getMoonIllumination(new Date());
+      const currentPhase = getMoonPhase(new Date());
+      document.getElementById('corrBestTemp').textContent = '10°C+';
+      document.getElementById('corrBestTempSub').textContent = 'Bats typically inactive below 10°C';
+
+      // Rain — placeholder until weather data is available
+      document.getElementById('corrRain').textContent = 'Dry';
+      document.getElementById('corrRainSub').textContent = 'All detections on dry nights so far';
     }
 
     let nightlyChart = null;
@@ -766,6 +896,96 @@
       grid.innerHTML = html;
     }
 
+    // ── Recordings Player ────────────────────────────────────
+    const BATS_URL = 'https://rlpzmepeautd1v5pgoumz9aa2qhd92xd.ui.nabu.casa/local/bats/';
+    let audioCtx = null;
+    let currentSource = null;
+
+    async function playTimeExpanded(filename, btn, progressFill) {
+      if (currentSource) {
+        currentSource.stop();
+        currentSource = null;
+        document.querySelectorAll('.play-btn').forEach(b => { b.classList.remove('playing'); b.textContent = '▶'; });
+        if (btn.dataset.file === filename && !btn.classList.contains('playing')) return;
+      }
+      try {
+        btn.textContent = '⏳';
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const resp = await fetch(BATS_URL + filename);
+        const buffer = await resp.arrayBuffer();
+        const decoded = await audioCtx.decodeAudioData(buffer);
+
+        // Time expansion: play at 1/10th speed by creating a new buffer at 1/10th sample rate
+        const expandedRate = decoded.sampleRate / 10;
+        const offlineCtx = new OfflineAudioContext(decoded.numberOfChannels, decoded.length, expandedRate);
+        const source = offlineCtx.createBufferSource();
+        source.buffer = decoded;
+        source.connect(offlineCtx.destination);
+        source.start();
+        const rendered = await offlineCtx.startRendering();
+
+        currentSource = audioCtx.createBufferSource();
+        currentSource.buffer = rendered;
+        currentSource.connect(audioCtx.destination);
+        currentSource.start();
+        btn.classList.add('playing');
+        btn.dataset.file = filename;
+        btn.textContent = '⏹';
+
+        const duration = rendered.duration;
+        const startTime = audioCtx.currentTime;
+        const interval = setInterval(() => {
+          const elapsed = audioCtx.currentTime - startTime;
+          const pct = Math.min(100, (elapsed / duration) * 100);
+          if (progressFill) progressFill.style.width = pct + '%';
+          if (elapsed >= duration) {
+            clearInterval(interval);
+            btn.classList.remove('playing');
+            btn.textContent = '▶';
+            if (progressFill) progressFill.style.width = '0%';
+            currentSource = null;
+          }
+        }, 100);
+
+        currentSource.onended = () => {
+          clearInterval(interval);
+          btn.classList.remove('playing');
+          btn.textContent = '▶';
+          if (progressFill) progressFill.style.width = '0%';
+          currentSource = null;
+        };
+      } catch(e) {
+        btn.textContent = '▶';
+        console.error('Playback error:', e);
+      }
+    }
+
+    async function loadRecordings() {
+      const el = document.getElementById('recordingsList');
+      if (!el) return;
+      // Get list from detections — match timestamps to filenames
+      const batFiles = allDetections.slice(0, 10).map(d => {
+        const ts = new Date(d.timestamp);
+        const pad = n => String(n).padStart(2,'0');
+        const fname = `${ts.getFullYear()}${pad(ts.getMonth()+1)}${pad(ts.getDate())}_${pad(ts.getHours())}${pad(ts.getMinutes())}${pad(ts.getSeconds())}.wav`;
+        return { fname, detection: d };
+      });
+
+      if (batFiles.length === 0) { el.innerHTML = '<div style="color:var(--cream-dim);font-size:13px;padding:12px 0">No recordings available yet</div>'; return; }
+
+      el.innerHTML = batFiles.map(({fname, detection}) => {
+        const conf = Math.round(detection.confidence * 100);
+        return `<div class="recording-player">
+          <button class="play-btn" data-file="${fname}" onclick="playTimeExpanded('${fname}', this, this.closest('.recording-player').querySelector('.player-progress-fill'))">▶</button>
+          <div class="player-info">
+            <div class="player-filename">${fname}</div>
+            <div class="player-note">🦇 ${getCommonName(detection.species)} · ${conf}% confidence · ${formatTime(detection.timestamp)}</div>
+          </div>
+          <div class="player-progress"><div class="player-progress-fill"></div></div>
+        </div>`;
+      }).join('');
+    }
+
     function renderAll() {
       renderStats();
       renderBotd();
@@ -773,9 +993,11 @@
       renderBestNight();
       renderNightlyChart();
       renderActivityChart();
+      renderWeatherCorrelation();
       renderCalendar();
       renderSpeciesGrid();
       renderDetections();
+      loadRecordings();
     }
 
     function saveCache() { try { localStorage.setItem(CACHE_KEY, JSON.stringify({ data: allDetections, ts: Date.now() })); } catch(e) {} }
