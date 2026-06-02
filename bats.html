@@ -715,7 +715,7 @@
       // Render card immediately without waiting for photo
       document.getElementById('botdCard').innerHTML = `
         <div class="botd-card">
-          <img class="botd-image" id="botdPhoto" src="" alt="${common}" onerror="this.style.display='none'" style="background:var(--forest-mid)">
+          <img class="botd-image" id="botdPhoto" alt="${common}" style="background:var(--forest-mid);display:none">
           <div class="botd-info">
             <div class="botd-eyebrow">🦇 Bat of the Night</div>
             <div class="botd-name">${common}</div>
@@ -736,11 +736,16 @@
           </div>
         </div>`;
 
-      // Then fetch photo and just update the img src — no re-render
+      // Then fetch photo and update img src — no re-render
       getInatPhoto(species, (photo) => {
+        const img = document.getElementById('botdPhoto');
+        if (!img) return;
         if (photo) {
-          const img = document.getElementById('botdPhoto');
-          if (img) img.src = photo;
+          img.src = photo;
+          img.style.display = 'block';
+        } else {
+          // No photo — remove image element so grid uses full width
+          img.remove();
         }
       });
     }
