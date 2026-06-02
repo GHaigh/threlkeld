@@ -867,9 +867,22 @@
       const uniqueTypes = new Set(flights.map(f => f.aircraft_model).filter(m => m && m !== 'Unknown')).size;
       document.getElementById('statAircraft').textContent = uniqueTypes || '—';
       const now = new Date();
-      const isAfterNoon = now.getHours() >= 12;
+      // Calculate sunrise/sunset for Threlkeld
+      const lat = 54.616, lon = -3.056;
+      const jd = Math.floor(Date.now() / 86400000) + 2440587.5;
+      const n = jd - 2451545.0;
+      const L = (280.46 + 0.9856474 * n) % 360;
+      const g = ((357.528 + 0.9856003 * n) % 360) * Math.PI / 180;
+      const lambda = (L + 1.915 * Math.sin(g) + 0.02 * Math.sin(2*g)) * Math.PI / 180;
+      const sinDec = Math.sin(23.439 * Math.PI / 180) * Math.sin(lambda);
+      const cosDec = Math.cos(Math.asin(sinDec));
+      const cosH = (Math.cos(90.833 * Math.PI / 180) - sinDec * Math.sin(lat * Math.PI / 180)) / (cosDec * Math.cos(lat * Math.PI / 180));
+      const H = Math.acos(Math.max(-1, Math.min(1, cosH))) * 180 / Math.PI;
+      const sunriseHour = (360 - H - (0.06571 * n) - 6.622 + lon / 15 + 24) % 24;
+      const sunsetHour = (H - (0.06571 * n) - 6.622 + lon / 15 + 24) % 24;
+      const afterSunrise = now.getHours() + now.getMinutes()/60 > sunriseHour + 1;
       const nightFlights24 = flights.filter(f => isNightFlight(f.timestamp) && isLast24Hours(f.timestamp));
-      const nightLabel = isAfterNoon ? "🌙 Last Night" : "🌙 Tonight So Far";
+      const nightLabel = afterSunrise ? "🌙 Last Night" : "🌙 Tonight So Far";
       const nightEl = document.getElementById('statNightAll');
       const nightLabelEl = document.querySelector('[data-label="night"]');
       if (nightEl) nightEl.textContent = nightFlights24.length || '0';
