@@ -183,7 +183,7 @@
     </div>
 
     <!-- Stats -->
-    <div class="stats-row" style="grid-template-columns:repeat(3,1fr)">
+    <div class="stats-row">
       <div class="stat-card">
         <div class="stat-value" id="statTonight">—</div>
         <div class="stat-label" id="labelTonight">Tonight</div>
@@ -193,22 +193,12 @@
         <div class="stat-label" id="labelSpeciesTonight">Species Tonight</div>
       </div>
       <div class="stat-card">
-        <div class="stat-value" id="statTotal">—</div>
-        <div class="stat-label">All Time</div>
-      </div>
-    </div>
-    <div class="stats-row" style="grid-template-columns:repeat(3,1fr);margin-top:-4px">
-      <div class="stat-card">
         <div class="stat-value" id="statLastNight">—</div>
         <div class="stat-label">Last Night</div>
       </div>
       <div class="stat-card">
-        <div class="stat-value" id="statSpeciesLastNight">—</div>
-        <div class="stat-label">Species Last Night</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value" id="statSpeciesTotal">—</div>
-        <div class="stat-label">Species Recorded</div>
+        <div class="stat-value" id="statTotal">—</div>
+        <div class="stat-label">All Time</div>
       </div>
     </div>
 
@@ -369,15 +359,11 @@
     function getInatPhoto(scientific, callback) {
       const id = INAT_IDS[scientific];
       if (!id) { callback(null); return; }
-      fetch(`https://api.inaturalist.org/v1/taxa/${id}`)
+      // Search for observations with photos to get a real bat photo
+      fetch(`https://api.inaturalist.org/v1/observations?taxon_id=${id}&photos=true&quality_grade=research&order_by=votes&per_page=1`)
         .then(r => r.json())
         .then(d => {
-          const taxon = d.results?.[0];
-          // Try taxon photos first for better quality bat-specific images
-          const photos = taxon?.taxon_photos;
-          const photo = photos?.[0]?.photo?.medium_url 
-            || taxon?.default_photo?.medium_url 
-            || null;
+          const photo = d.results?.[0]?.photos?.[0]?.url?.replace('square', 'medium') || null;
           callback(photo);
         })
         .catch(() => callback(null));
@@ -546,7 +532,6 @@
       document.getElementById('statLastNight').textContent = lastNight.length || '—';
       document.getElementById('statSpeciesLastNight').textContent = lastNightSpecies.size || '—';
       document.getElementById('statTotal').textContent = allDetections.length || '—';
-      document.getElementById('statSpeciesTotal').textContent = allSpecies.size || '—';
     }
 
     function renderDetections() {
