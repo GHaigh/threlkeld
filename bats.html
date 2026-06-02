@@ -502,38 +502,40 @@
     function formatTime(ts) { try { return new Date(ts).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }); } catch(e) { return ts; } }
     function formatDate(ts) { try { return new Date(ts).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }); } catch(e) { return ''; } }
 
-    function getSunTimes() {
-      const lat = 54.616, lon = -3.056;
-      const now = new Date();
-      const jd = Math.floor(Date.now() / 86400000) + 2440587.5;
-      const n = jd - 2451545.0;
-      const L = (280.46 + 0.9856474 * n) % 360;
-      const g = ((357.528 + 0.9856003 * n) % 360) * Math.PI / 180;
-      const lambda = (L + 1.915 * Math.sin(g) + 0.02 * Math.sin(2*g)) * Math.PI / 180;
-      const sinDec = Math.sin(23.439 * Math.PI / 180) * Math.sin(lambda);
-      const cosDec = Math.cos(Math.asin(sinDec));
-      const cosH = (Math.cos(90.833 * Math.PI / 180) - sinDec * Math.sin(lat * Math.PI / 180)) / (cosDec * Math.cos(lat * Math.PI / 180));
-      const H = Math.acos(Math.max(-1, Math.min(1, cosH))) * 180 / Math.PI;
-      // Calculate in UTC then convert to local time using timezone offset
-      const tzOffsetHours = -now.getTimezoneOffset() / 60;
-      const sunriseUTC = (360 - H - (0.06571 * n) - 6.622 + lon / 15 + 24) % 24;
-      const sunsetUTC = (H - (0.06571 * n) - 6.622 + lon / 15 + 24) % 24;
-      const sunriseHour = (sunriseUTC + tzOffsetHours + 24) % 24;
-      const sunsetHour = (sunsetUTC + tzOffsetHours + 24) % 24;
-      return { sunrise: sunriseHour, sunset: sunsetHour };
+    // Cached sun times fetched from Open-Meteo
+    let _sunCache = null;
+
+    async function getSunTimes() {
+      if (_sunCache) return _sunCache;
+      try {
+        const r = await fetch('https://api.open-meteo.com/v1/forecast?latitude=54.616&longitude=-3.056&daily=sunrise,sunset&timezone=Europe%2FLondon&forecast_days=1');
+        const data = await r.json();
+        const sunrise = new Date(data.daily.sunrise[0]);
+        const sunset  = new Date(data.daily.sunset[0]);
+        _sunCache = {
+          sunrise: sunrise.getHours() + sunrise.getMinutes() / 60,
+          sunset:  sunset.getHours()  + sunset.getMinutes()  / 60
+        };
+      } catch(e) {
+        // Fallback: Threlkeld June approximate
+        _sunCache = { sunrise: 4.5, sunset: 21.5 };
+      }
+      return _sunCache;
     }
 
-    function isTonight(ts) {
+    async function isNightSession(ts) {
       const d = new Date(ts);
       const now = new Date();
-      const { sunrise, sunset } = getSunTimes();
+      const { sunrise, sunset } = await getSunTimes();
       const currentHour = now.getHours() + now.getMinutes() / 60;
       const nightStart = sunset - 0.5;
       const nightEnd = sunrise + 0.5;
 
-      if (currentHour >= sunset - 0.5) {
-        // It's evening/night — tonight started at sunset-30m today
-        const sessionStart = new Date(now);
+      if (currentHour >= nightStart || currentHour < nightEnd) {
+        // It's night — tonight started at sunset-30m today (or yesterday if past midnight)
+        const base = currentHour < nightEnd ? new Date(now) : new Date(now);
+        if (currentHour < nightEnd) base.setDate(base.getDate() - 1); // past midnight, session started yesterday
+        const sessionStart = new Date(base);
         sessionStart.setHours(Math.floor(nightStart), Math.round((nightStart % 1) * 60), 0, 0);
         return d >= sessionStart;
       } else {
@@ -545,6 +547,41 @@
         sessionEnd.setHours(Math.floor(nightEnd), Math.round((nightEnd % 1) * 60), 0, 0);
         return d >= sessionStart && d <= sessionEnd;
       }
+    }
+
+    // Sync wrapper using cached sun times (safe after first load)
+    function isTonight(ts) {
+      if (!_sunCache) return false;
+      const d = new Date(ts);
+      const now = new Date();
+      const { sunrise, sunset } = _sunCache;
+      const currentHour = now.getHours() + now.getMinutes() / 60;
+      const nightStart = sunset - 0.5;
+      const nightEnd = sunrise + 0.5;
+      if (currentHour >= nightStart || currentHour < nightEnd) {
+        const base = new Date(now);
+        if (currentHour < nightEnd) base.setDate(base.getDate() - 1);
+        const sessionStart = new Date(base);
+        sessionStart.setHours(Math.floor(nightStart), Math.round((nightStart % 1) * 60), 0, 0);
+        return d >= sessionStart;
+      } else {
+        const yesterday = new Date(now); yesterday.setDate(now.getDate() - 1);
+        const sessionStart = new Date(yesterday);
+        sessionStart.setHours(Math.floor(nightStart), Math.round((nightStart % 1) * 60), 0, 0);
+        const sessionEnd = new Date(now);
+        sessionEnd.setHours(Math.floor(nightEnd), Math.round((nightEnd % 1) * 60), 0, 0);
+        return d >= sessionStart && d <= sessionEnd;
+      }
+    }
+
+    // isDaytime based on cached sun times
+    function isDaytime() {
+      if (!_sunCache) return true;
+      const now = new Date();
+      const currentHour = now.getHours() + now.getMinutes() / 60;
+      const nightStart = _sunCache.sunset - 0.5;
+      const nightEnd = _sunCache.sunrise + 0.5;
+      return currentHour >= nightEnd && currentHour < nightStart;
     }
 
     function getInatPhoto(scientific, callback) {
@@ -747,7 +784,7 @@
     function isLastNight(ts) {
       const d = new Date(ts);
       const now = new Date();
-      const { sunrise, sunset } = getSunTimes();
+      const { sunrise, sunset } = _sunCache || { sunrise: 4.5, sunset: 21.5 };
       // Last night = sunset yesterday - 0.5h to sunrise today + 0.5h
       const yesterday = new Date(now); yesterday.setDate(now.getDate() - 1);
       const sessionStart = new Date(yesterday);
@@ -758,15 +795,14 @@
     }
 
     function renderStats() {
-      const { sunrise } = getSunTimes();
       const currentHour = new Date().getHours() + new Date().getMinutes() / 60;
-      const isDaytime = currentHour > sunrise + 0.5;
+      const _isDaytime = isDaytime();
       const session = allDetections.filter(d => isTonight(d.timestamp));
       const sessionSpecies = new Set(session.map(d => d.species));
       const allSpecies = new Set(allDetections.map(d => d.species));
 
-      document.getElementById('labelSession').textContent = isDaytime ? 'Last Night' : 'Tonight So Far';
-      document.getElementById('labelSpeciesSession').textContent = isDaytime ? 'Species Last Night' : 'Species Tonight';
+      document.getElementById('labelSession').textContent = _isDaytime ? 'Last Night' : 'Tonight So Far';
+      document.getElementById('labelSpeciesSession').textContent = _isDaytime ? 'Species Last Night' : 'Species Tonight';
       document.getElementById('statSession').textContent = session.length || '—';
       document.getElementById('statSpeciesSession').textContent = sessionSpecies.size || '—';
       document.getElementById('statTotal').textContent = allDetections.length || '—';
@@ -1141,6 +1177,9 @@
       document.getElementById('offlineBanner').style.display = 'flex';
       document.getElementById('offlineAge').textContent = cached.age < 60 ? `${cached.age} mins ago` : `${Math.round(cached.age/60)} hours ago`;
     }
+
+    // Fetch sun times early so isTonight() works correctly
+    getSunTimes();
 
     const client = mqtt.connect(`wss://${MQTT_HOST}:${MQTT_PORT}/mqtt`);
     client.on('connect', () => {
