@@ -207,21 +207,18 @@
       border: 1px solid var(--divider);
       border-radius: 10px;
       overflow: hidden;
-      margin-bottom: 28px;
+      max-width: 320px;
     }
     .fellcam-img {
       width: 100%;
-      height: auto;
+      height: 160px;
       display: block;
-      min-height: 200px;
       object-fit: cover;
       background: var(--forest-mid);
     }
     .fellcam-footer {
-      padding: 10px 16px;
-      display: flex;
-      justify-content: space-between;
-      font-size: 11px;
+      padding: 6px 12px;
+      font-size: 10px;
       color: var(--cream-dim);
       border-top: 1px solid var(--divider);
     }
@@ -794,16 +791,19 @@
       <span>⚠️</span>
       <span>Live data unavailable — showing cached data from <strong id="offlineAge">a moment ago</strong>. Reconnecting...</span>
     </div>
-    <!-- Fell Cam -->
-    <div class="section-header" style="margin-top:28px">
-      <div class="section-title">Fell &amp; Weather Cam</div>
-      <div class="section-sub">Live view · Updated every 5 minutes · Daylight hours only</div>
-    </div>
-    <div class="fellcam-card">
-      <img class="fellcam-img" id="fellcamImg" src="" alt="Fell and Weather Camera">
-      <div class="fellcam-footer">
-        <span>📷 Threlkeld garden · Reolink WiFi camera</span>
-        <span class="fellcam-updated" id="fellcamUpdated">—</span>
+    <!-- Fell Cam - compact, sits alongside page content -->
+    <div style="display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;margin-bottom:0">
+      <div style="flex:1;min-width:200px">
+        <div class="section-header" style="margin-top:28px">
+          <div class="section-title" style="font-size:16px">📷 Fell &amp; Weather Cam</div>
+          <div class="section-sub" id="fellcamUpdated">—</div>
+        </div>
+        <div class="fellcam-card" style="margin-bottom:0">
+          <img class="fellcam-img" id="fellcamImg" src="" alt="Fell and Weather Camera">
+          <div class="fellcam-footer">
+            <span>Reolink · Threlkeld garden · 5 min refresh</span>
+          </div>
+        </div>
       </div>
     </div>
 
