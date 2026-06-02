@@ -346,6 +346,41 @@
     .tl-speed:focus { outline: none; border-color: var(--sage); }
     .tl-speed option { background: #1a2e1a; color: var(--cream); text-transform: uppercase; }
 
+    /* Time-lapse layout */
+    .tl-controls {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 0 8px; flex-wrap: wrap;
+    }
+    .tl-progress-wrap {
+      flex: 1; min-width: 80px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .tl-progress-bar {
+      flex: 1; height: 4px;
+      background: rgba(122,184,122,0.15);
+      border-radius: 2px; overflow: hidden;
+    }
+    .tl-progress-fill {
+      height: 100%; width: 0%;
+      background: var(--sage); border-radius: 2px;
+      transition: width 0.2s;
+    }
+    .tl-counter {
+      font-size: 11px; color: var(--cream-dim);
+      white-space: nowrap; font-variant-numeric: tabular-nums;
+    }
+    .tl-days {
+      display: flex; flex-wrap: wrap; gap: 8px;
+      padding: 4px 0 12px;
+    }
+    .tl-overlay {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(0,0,0,0.3);
+      font-size: 13px; color: var(--cream-dim);
+      pointer-events: none;
+    }
+
     .loading { text-align: center; padding: 40px; color: var(--cream-dim); font-style: italic; }
     .spinner { width: 20px; height: 20px; border: 2px solid var(--divider); border-top-color: var(--sage); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 12px; }
     @keyframes spin { to { transform: rotate(360deg); } }
