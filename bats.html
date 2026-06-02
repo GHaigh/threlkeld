@@ -82,7 +82,7 @@
     /* Bat of the day */
     .botd-card { background: var(--forest-dark); border: 1px solid var(--bat-border); border-radius: 10px; padding: 0; margin-bottom: 28px; overflow: hidden; display: grid; grid-template-columns: 280px 1fr; }
     @media (max-width: 700px) { .botd-card { grid-template-columns: 1fr; } }
-    .botd-image { width: 100%; height: 220px; object-fit: cover; background: var(--forest-mid); display: block; }
+    .botd-image { width: 100%; height: 100%; min-height: 220px; object-fit: cover; object-position: center; background: var(--forest-mid); display: block; }
     .botd-info { padding: 24px; display: flex; flex-direction: column; justify-content: center; }
     .botd-eyebrow { font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--bat); margin-bottom: 8px; }
     .botd-name { font-family: 'Playfair Display', serif; font-size: 26px; color: var(--cream); margin-bottom: 4px; }
@@ -183,18 +183,28 @@
     </div>
 
     <!-- Stats -->
-    <div class="stats-row">
+    <div class="stats-row" style="grid-template-columns:repeat(3,1fr)">
       <div class="stat-card">
         <div class="stat-value" id="statTonight">—</div>
-        <div class="stat-label">Tonight</div>
+        <div class="stat-label" id="labelTonight">Tonight</div>
       </div>
       <div class="stat-card">
         <div class="stat-value" id="statSpeciesTonight">—</div>
-        <div class="stat-label">Species Tonight</div>
+        <div class="stat-label" id="labelSpeciesTonight">Species Tonight</div>
       </div>
       <div class="stat-card">
         <div class="stat-value" id="statTotal">—</div>
         <div class="stat-label">All Time</div>
+      </div>
+    </div>
+    <div class="stats-row" style="grid-template-columns:repeat(3,1fr);margin-top:-4px">
+      <div class="stat-card">
+        <div class="stat-value" id="statLastNight">—</div>
+        <div class="stat-label">Last Night</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="statSpeciesLastNight">—</div>
+        <div class="stat-label">Species Last Night</div>
       </div>
       <div class="stat-card">
         <div class="stat-value" id="statSpeciesTotal">—</div>
@@ -362,7 +372,12 @@
       fetch(`https://api.inaturalist.org/v1/taxa/${id}`)
         .then(r => r.json())
         .then(d => {
-          const photo = d.results?.[0]?.default_photo?.medium_url || null;
+          const taxon = d.results?.[0];
+          // Try taxon photos first for better quality bat-specific images
+          const photos = taxon?.taxon_photos;
+          const photo = photos?.[0]?.photo?.medium_url 
+            || taxon?.default_photo?.medium_url 
+            || null;
           callback(photo);
         })
         .catch(() => callback(null));
@@ -499,12 +514,37 @@
       renderDetections();
     }
 
+    function isLastNight(ts) {
+      const d = new Date(ts);
+      const now = new Date();
+      const { sunrise, sunset } = getSunTimes();
+      // Last night = sunset yesterday - 0.5h to sunrise today + 0.5h
+      const yesterday = new Date(now); yesterday.setDate(now.getDate() - 1);
+      const sessionStart = new Date(yesterday);
+      sessionStart.setHours(Math.floor(sunset - 0.5), Math.round(((sunset - 0.5) % 1) * 60), 0, 0);
+      const sessionEnd = new Date(now);
+      sessionEnd.setHours(Math.floor(sunrise + 0.5), Math.round(((sunrise + 0.5) % 1) * 60), 0, 0);
+      return d >= sessionStart && d <= sessionEnd;
+    }
+
     function renderStats() {
+      const { sunrise } = getSunTimes();
+      const currentHour = new Date().getHours() + new Date().getMinutes() / 60;
+      const afterDawn = currentHour > sunrise + 0.5;
       const tonight = allDetections.filter(d => isTonight(d.timestamp));
+      const lastNight = allDetections.filter(d => isLastNight(d.timestamp));
       const tonightSpecies = new Set(tonight.map(d => d.species));
+      const lastNightSpecies = new Set(lastNight.map(d => d.species));
       const allSpecies = new Set(allDetections.map(d => d.species));
+
+      const tonightLabel = afterDawn ? 'Last Night' : 'Tonight So Far';
+      const speciesLabel = afterDawn ? 'Species Last Night' : 'Species Tonight';
+      document.getElementById('labelTonight').textContent = tonightLabel;
+      document.getElementById('labelSpeciesTonight').textContent = speciesLabel;
       document.getElementById('statTonight').textContent = tonight.length || '—';
       document.getElementById('statSpeciesTonight').textContent = tonightSpecies.size || '—';
+      document.getElementById('statLastNight').textContent = lastNight.length || '—';
+      document.getElementById('statSpeciesLastNight').textContent = lastNightSpecies.size || '—';
       document.getElementById('statTotal').textContent = allDetections.length || '—';
       document.getElementById('statSpeciesTotal').textContent = allSpecies.size || '—';
     }
