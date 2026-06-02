@@ -616,32 +616,28 @@
       return currentHour >= nightEnd && currentHour < nightStart;
     }
 
-    // Wikipedia common name lookup for bat photos
-    const BAT_WIKI_NAMES = {
-      'Pipistrellus pipistrellus': 'Common_pipistrelle',
-      'Pipistrellus pygmaeus': 'Soprano_pipistrelle',
-      'Pipistrellus nathusii': "Nathusius's_pipistrelle",
-      'Nyctalus noctula': 'Common_noctule',
-      'Nyctalus leisleri': "Leisler's_bat",
-      'Eptesicus serotinus': 'Serotine_bat',
-      'Myotis daubentonii': "Daubenton's_bat",
-      'Myotis nattereri': "Natterer's_bat",
-      'Myotis mystacinus': 'Whiskered_bat',
-      'Myotis brandtii': "Brandt's_bat",
-      'Plecotus auritus': 'Brown_long-eared_bat',
-      'Plecotus austriacus': 'Grey_long-eared_bat',
-      'Rhinolophus ferrumequinum': 'Greater_horseshoe_bat',
-      'Rhinolophus hipposideros': 'Lesser_horseshoe_bat',
-      'Barbastella barbastellus': 'Western_barbastelle',
+    // Direct Wikimedia Commons image URLs — no redirects, no API calls
+    const BAT_PHOTOS = {
+      'Pipistrellus pipistrellus': 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/70/Pipistrellus_pipistrellus_crop.jpg/400px-Pipistrellus_pipistrellus_crop.jpg',
+      'Pipistrellus pygmaeus': 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/70/Pipistrellus_pipistrellus_crop.jpg/400px-Pipistrellus_pipistrellus_crop.jpg',
+      'Pipistrellus nathusii': 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4c/Pipistrellus_nathusii01.jpg/400px-Pipistrellus_nathusii01.jpg',
+      'Nyctalus noctula': 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/Nyctalus_noctula_mod.jpg/400px-Nyctalus_noctula_mod.jpg',
+      'Nyctalus leisleri': 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e6/Nyctalus_leisleri.jpg/400px-Nyctalus_leisleri.jpg',
+      'Eptesicus serotinus': 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8d/Eptesicus_serotinus01.jpg/400px-Eptesicus_serotinus01.jpg',
+      'Myotis daubentonii': 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5b/Daubenton%27s_bat_%28Myotis_daubentonii%29.jpg/400px-Daubenton%27s_bat_%28Myotis_daubentonii%29.jpg',
+      'Myotis nattereri': 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c9/Myotis_nattereri_01_by_Dietmar_Nill.jpg/400px-Myotis_nattereri_01_by_Dietmar_Nill.jpg',
+      'Myotis mystacinus': 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4e/Myotis_mystacinus.jpg/400px-Myotis_mystacinus.jpg',
+      'Myotis brandtii': 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Myotis_brandtii_1.jpg/400px-Myotis_brandtii_1.jpg',
+      'Plecotus auritus': 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Plecotus_auritus_2.jpg/400px-Plecotus_auritus_2.jpg',
+      'Plecotus austriacus': 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b6/Plecotus_austriacus_01_by_Dietmar_Nill.jpg/400px-Plecotus_austriacus_01_by_Dietmar_Nill.jpg',
+      'Rhinolophus ferrumequinum': 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6f/Greater_Horseshoe_Bat_Rhinolophus_ferrumequinum.jpg/400px-Greater_Horseshoe_Bat_Rhinolophus_ferrumequinum.jpg',
+      'Rhinolophus hipposideros': 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7d/Rhinolophus_hipposideros.jpg/400px-Rhinolophus_hipposideros.jpg',
+      'Barbastella barbastellus': 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/43/Barbastella_barbastellus_01_by_Dietmar_Nill.jpg/400px-Barbastella_barbastellus_01_by_Dietmar_Nill.jpg',
     };
 
     function getInatPhoto(scientific, callback) {
-      const wikiName = BAT_WIKI_NAMES[scientific] || scientific.replace(/ /g, '_');
-      const url = `https://en.wikipedia.org/w/index.php?title=Special:Redirect/file/${wikiName}.jpg&width=400`;
-      const img = new Image();
-      img.onload = () => callback(url);
-      img.onerror = () => callback(null);
-      img.src = url;
+      const url = BAT_PHOTOS[scientific] || null;
+      callback(url);
     }
 
     // ── Bat of Night history ─────────────────────────────────
@@ -825,10 +821,9 @@
         const avgConf = Math.round(confs[sp].reduce((a,b) => a+b, 0) / confs[sp].length * 100);
         const inatId = INAT_IDS[sp];
         const isActive = activeFilter === sp;
-        const wikiName = BAT_WIKI_NAMES[sp] || sp.replace(/ /g, '_');
-        const wikiUrl = `https://en.wikipedia.org/w/index.php?title=Special:Redirect/file/${wikiName}.jpg&width=300`;
+        const photoUrl = BAT_PHOTOS[sp] || '';
         return `<div class="species-card ${isActive ? 'highlight' : ''}" onclick="filterSpecies('${sp}')">
-          <img class="species-img" src="${wikiUrl}" onerror="this.style.display='none'" alt="${getCommonName(sp)}">
+          <img class="species-img" src="${photoUrl}" onerror="this.style.display='none'" alt="${getCommonName(sp)}" ${!photoUrl ? 'style="display:none"' : ''}>
           <div class="species-body">
             <div class="species-name">${getCommonName(sp)}</div>
             <div class="species-latin">${sp}</div>
