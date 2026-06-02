@@ -20,6 +20,7 @@
   <title>Bat Detections · Threlkeld</title>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Source+Sans+3:wght@300;400;500&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/5.3.4/mqtt.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
   <style>
     :root {
       --forest-deep: #0d1a0d;
@@ -30,11 +31,14 @@
       --cream-dim: rgba(232,240,228,0.55);
       --divider: rgba(122,184,122,0.15);
       --bat: #9b72cf;
-      --bat-dim: rgba(155,114,207,0.2);
+      --bat-dim: rgba(155,114,207,0.15);
+      --bat-border: rgba(155,114,207,0.3);
     }
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { background: var(--forest-deep); color: var(--cream); font-family: 'Source Sans 3', sans-serif; font-weight: 300; min-height: 100vh; }
-    .page { max-width: 1100px; margin: 0 auto; padding: 0 24px; overflow-x: hidden; }
+    body { background: var(--forest-deep); color: var(--cream); font-family: 'Source Sans 3', sans-serif; font-weight: 300; min-height: 100vh; overflow-x: hidden; }
+    .page { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+
+    /* Nav */
     nav { display: flex; align-items: center; gap: 12px; padding: 16px 0; border-bottom: 1px solid var(--divider); position: relative; }
     .nav-home { font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--cream-dim); text-decoration: none; transition: color 0.2s; }
     .nav-home:hover { color: var(--cream); }
@@ -51,48 +55,92 @@
       .nav-hamburger { display: flex; }
       .nav-divider { display: none; }
     }
+
+    /* Header */
     header { padding: 20px 0 28px; border-bottom: 1px solid var(--divider); margin-bottom: 28px; display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 16px; }
     .header-eyebrow { font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--bat); margin-bottom: 8px; }
     h1 { font-family: 'Playfair Display', serif; font-size: clamp(28px, 5vw, 42px); font-weight: 400; line-height: 1.1; color: var(--cream); }
     h1 em { font-style: italic; color: var(--bat); }
-    .status-dot { display: flex; align-items: center; gap: 8px; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--cream-dim); }
+    .status-pill { display: flex; align-items: center; gap: 8px; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--cream-dim); }
     .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--cream-dim); }
     .dot.live { background: var(--bat); box-shadow: 0 0 6px var(--bat); animation: pulse 2s infinite; }
     .dot.error { background: #e05555; }
     .dot.connecting { background: #c8a84a; }
-    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-    .last-update { font-size: 11px; color: var(--cream-dim); }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+    .last-update { font-size: 11px; color: var(--cream-dim); margin-top: 4px; }
+
+    /* Offline banner */
+    .offline-banner { display: none; background: rgba(200,168,74,0.15); border: 1px solid rgba(200,168,74,0.3); border-radius: 8px; padding: 10px 16px; font-size: 12px; color: #c8a84a; margin-bottom: 20px; align-items: center; gap: 8px; }
+
+    /* Stat cards */
     .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 28px; }
     @media (max-width: 600px) { .stats-row { grid-template-columns: repeat(2, 1fr); } }
     .stat-card { background: var(--forest-dark); border: 1px solid var(--divider); border-radius: 8px; padding: 16px; text-align: center; }
     .stat-value { font-family: 'Playfair Display', serif; font-size: 32px; color: var(--cream); line-height: 1; margin-bottom: 4px; }
     .stat-label { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--cream-dim); }
-    .tonight-card { background: var(--forest-dark); border: 1px solid var(--divider); border-radius: 10px; padding: 20px 24px; margin-bottom: 28px; }
-    .tonight-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; }
-    .tonight-species { background: var(--bat-dim); border: 1px solid rgba(155,114,207,0.3); border-radius: 6px; padding: 8px 12px; }
-    .tonight-species-name { font-size: 13px; font-weight: 500; color: var(--cream); margin-bottom: 2px; }
-    .tonight-species-count { font-size: 11px; color: var(--cream-dim); }
+
+    /* Bat of the day */
+    .botd-card { background: var(--forest-dark); border: 1px solid var(--bat-border); border-radius: 10px; padding: 0; margin-bottom: 28px; overflow: hidden; display: grid; grid-template-columns: 280px 1fr; }
+    @media (max-width: 700px) { .botd-card { grid-template-columns: 1fr; } }
+    .botd-image { width: 100%; height: 220px; object-fit: cover; background: var(--forest-mid); display: block; }
+    .botd-info { padding: 24px; display: flex; flex-direction: column; justify-content: center; }
+    .botd-eyebrow { font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--bat); margin-bottom: 8px; }
+    .botd-name { font-family: 'Playfair Display', serif; font-size: 26px; color: var(--cream); margin-bottom: 4px; }
+    .botd-latin { font-style: italic; color: var(--cream-dim); font-size: 14px; margin-bottom: 16px; }
+    .botd-facts { display: flex; flex-direction: column; gap: 6px; }
+    .botd-fact { display: flex; justify-content: space-between; font-size: 12px; border-bottom: 1px solid var(--divider); padding-bottom: 5px; }
+    .botd-fact:last-child { border-bottom: none; }
+    .botd-fact span:first-child { color: var(--cream-dim); }
+    .botd-fact span:last-child { color: var(--cream); text-align: right; }
+    .botd-inat { display: inline-block; margin-top: 12px; font-size: 11px; color: var(--bat); text-decoration: none; letter-spacing: 0.05em; }
+    .botd-inat:hover { text-decoration: underline; }
+
+    /* Section header */
     .section-header { display: flex; align-items: baseline; gap: 10px; margin-bottom: 16px; margin-top: 32px; }
     .section-title { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 400; color: var(--cream); }
     .section-sub { font-size: 11px; color: var(--cream-dim); }
+
+    /* Activity chart */
+    .chart-card { background: var(--forest-dark); border: 1px solid var(--divider); border-radius: 10px; padding: 20px; margin-bottom: 28px; height: 180px; }
+
+    /* Species grid */
+    .species-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; margin-bottom: 28px; }
+    .species-card { background: var(--forest-dark); border: 1px solid var(--divider); border-radius: 8px; overflow: hidden; cursor: pointer; transition: border-color 0.2s; }
+    .species-card:hover { border-color: var(--bat-border); }
+    .species-card.highlight { border-color: var(--bat-border); background: var(--bat-dim); }
+    .species-img { width: 100%; height: 100px; object-fit: cover; background: var(--forest-mid); display: block; }
+    .species-body { padding: 10px 12px; }
+    .species-name { font-size: 13px; font-weight: 500; color: var(--cream); margin-bottom: 2px; }
+    .species-latin { font-size: 11px; font-style: italic; color: var(--cream-dim); margin-bottom: 6px; }
+    .species-count { font-size: 11px; color: var(--bat); }
+    .species-conf { font-size: 10px; color: var(--cream-dim); }
+
+    /* Detection list */
     .detection-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 40px; }
     .detection-card { background: var(--forest-dark); border: 1px solid var(--divider); border-radius: 8px; padding: 14px 18px; display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: center; transition: border-color 0.2s; }
-    .detection-card:hover { border-color: rgba(155,114,207,0.4); }
+    .detection-card:hover { border-color: var(--bat-border); }
+    .detection-card.low-conf { opacity: 0.75; }
     .detection-species { font-size: 15px; font-weight: 500; color: var(--cream); margin-bottom: 3px; }
     .detection-species em { font-style: italic; color: var(--cream-dim); font-size: 13px; font-weight: 300; margin-left: 6px; }
+    .detection-possible { font-size: 10px; color: #c8a84a; letter-spacing: 0.08em; text-transform: uppercase; margin-left: 8px; }
     .detection-meta { font-size: 11px; color: var(--cream-dim); display: flex; gap: 12px; flex-wrap: wrap; }
     .detection-right { text-align: right; }
     .confidence-bar { width: 80px; height: 4px; background: var(--forest-mid); border-radius: 2px; overflow: hidden; margin-bottom: 4px; margin-left: auto; }
     .confidence-fill { height: 100%; border-radius: 2px; }
     .confidence-text { font-size: 11px; color: var(--cream-dim); }
+
+    /* Empty state */
     .empty-state { text-align: center; padding: 60px 20px; color: var(--cream-dim); }
     .empty-icon { font-size: 48px; margin-bottom: 16px; }
     .empty-title { font-family: 'Playfair Display', serif; font-size: 20px; color: var(--cream); margin-bottom: 8px; }
     .empty-sub { font-size: 13px; line-height: 1.6; }
-    .offline-banner { display: none; background: rgba(200,168,74,0.15); border: 1px solid rgba(200,168,74,0.3); border-radius: 8px; padding: 10px 16px; font-size: 12px; color: #c8a84a; margin-bottom: 20px; align-items: center; gap: 8px; }
-    .loading { display: flex; align-items: center; gap: 10px; color: var(--cream-dim); font-size: 13px; padding: 40px 0; }
+
+    /* Loading */
+    .loading { display: flex; align-items: center; gap: 10px; color: var(--cream-dim); font-size: 13px; padding: 40px 0; justify-content: center; }
     .loading-spinner { width: 16px; height: 16px; border: 2px solid var(--divider); border-top-color: var(--bat); border-radius: 50%; animation: spin 0.8s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Footer */
     footer { border-top: 1px solid var(--divider); padding: 24px 0; margin-top: 40px; font-size: 11px; color: var(--cream-dim); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
   </style>
 </head>
@@ -117,12 +165,12 @@
     </nav>
 
     <header>
-      <div class="header-left">
+      <div>
         <div class="header-eyebrow">Live Bat Detection · Threlkeld, Cumbria</div>
         <h1>Threlkeld Garden <em>Bat Watch</em></h1>
       </div>
-      <div class="header-right">
-        <div class="status-dot">
+      <div style="text-align:right">
+        <div class="status-pill">
           <div class="dot connecting" id="statusDot"></div>
           <span id="statusText">Connecting...</span>
         </div>
@@ -134,6 +182,7 @@
       ⚠️ Showing cached data from <span id="offlineAge">a while</span> ago
     </div>
 
+    <!-- Stats -->
     <div class="stats-row">
       <div class="stat-card">
         <div class="stat-value" id="statTonight">—</div>
@@ -153,21 +202,38 @@
       </div>
     </div>
 
-    <div id="tonightCard" style="display:none">
-      <div class="section-header">
-        <div class="section-title">Tonight's Species</div>
-        <div class="section-sub">Active detections this session</div>
-      </div>
-      <div class="tonight-card">
-        <div class="tonight-grid" id="tonightGrid"></div>
-      </div>
+    <!-- Bat of the Day -->
+    <div class="section-header" style="margin-top:0">
+      <div class="section-title">Bat of the Night</div>
+      <div class="section-sub" id="botdSub">Most detected species</div>
+    </div>
+    <div class="bat-of-day" id="botdCard">
+      <div class="loading"><div class="loading-spinner"></div> Waiting for detections...</div>
     </div>
 
+    <!-- Activity chart -->
+    <div class="section-header">
+      <div class="section-title">Activity</div>
+      <div class="section-sub">Detections per hour · Last 24 hours</div>
+    </div>
+    <div class="chart-card">
+      <canvas id="activityChart"></canvas>
+    </div>
+
+    <!-- Species detected -->
+    <div class="section-header">
+      <div class="section-title">Species Recorded</div>
+      <div class="section-sub" id="speciesSub">All time · Click to filter</div>
+    </div>
+    <div class="species-grid" id="speciesGrid">
+      <div class="loading"><div class="loading-spinner"></div> Waiting for data...</div>
+    </div>
+
+    <!-- Recent detections -->
     <div class="section-header">
       <div class="section-title">Recent Detections</div>
       <div class="section-sub" id="detectionsSub">AudioMoth + BatDetect2 · Active dusk–dawn</div>
     </div>
-
     <div class="detection-list" id="detectionList">
       <div class="loading"><div class="loading-spinner"></div> Waiting for detections...</div>
     </div>
@@ -184,6 +250,8 @@
     const BAT_TOPIC = 'birdnetpi/greg2026/bats';
     const CACHE_KEY = 'threlkeld_bats_cache';
     let allDetections = [];
+    let activeFilter = null;
+    let activityChart = null;
 
     const BAT_NAMES = {
       'Pipistrellus pipistrellus': 'Common Pipistrelle',
@@ -203,53 +271,264 @@
       'Barbastella barbastellus': 'Barbastelle',
     };
 
+    const INAT_IDS = {
+      'Pipistrellus pipistrellus': 43639,
+      'Pipistrellus pygmaeus': 43640,
+      'Pipistrellus nathusii': 43641,
+      'Nyctalus noctula': 43644,
+      'Nyctalus leisleri': 43645,
+      'Eptesicus serotinus': 43651,
+      'Myotis daubentonii': 43629,
+      'Myotis nattereri': 43631,
+      'Myotis mystacinus': 43633,
+      'Myotis brandtii': 43634,
+      'Plecotus auritus': 43655,
+      'Plecotus austriacus': 43656,
+      'Rhinolophus ferrumequinum': 43620,
+      'Rhinolophus hipposideros': 43621,
+      'Barbastella barbastellus': 43659,
+    };
+
+    const BAT_INFO = {
+      'Pipistrellus pipistrellus': { freq: '45kHz', size: '3–8g', habitat: 'Gardens, woodland edges', status: 'Common' },
+      'Pipistrellus pygmaeus': { freq: '55kHz', size: '3–8g', habitat: 'Riparian, wetland edges', status: 'Common' },
+      'Pipistrellus nathusii': { freq: '38kHz', size: '6–15g', habitat: 'Woodland, rivers', status: 'Uncommon' },
+      'Nyctalus noctula': { freq: '20kHz', size: '15–40g', habitat: 'Open country, trees', status: 'Uncommon' },
+      'Nyctalus leisleri': { freq: '25kHz', size: '11–20g', habitat: 'Woodland edges, open areas', status: 'Scarce' },
+      'Eptesicus serotinus': { freq: '30kHz', size: '15–35g', habitat: 'Farmland, villages', status: 'Uncommon' },
+      'Myotis daubentonii': { freq: '50kHz', size: '7–15g', habitat: 'Rivers, lakes', status: 'Common' },
+      'Myotis nattereri': { freq: '50kHz', size: '7–12g', habitat: 'Woodland, farmland', status: 'Uncommon' },
+      'Myotis mystacinus': { freq: '55kHz', size: '3–8g', habitat: 'Woodland, hedgerows', status: 'Uncommon' },
+      'Myotis brandtii': { freq: '55kHz', size: '4–9g', habitat: 'Woodland', status: 'Scarce' },
+      'Plecotus auritus': { freq: '40kHz', size: '6–12g', habitat: 'Woodland, gardens', status: 'Common' },
+      'Plecotus austriacus': { freq: '40kHz', size: '7–14g', habitat: 'Open farmland', status: 'Rare' },
+      'Rhinolophus ferrumequinum': { freq: '83kHz', size: '17–34g', habitat: 'Woodland, caves', status: 'Scarce' },
+      'Rhinolophus hipposideros': { freq: '110kHz', size: '4–9g', habitat: 'Limestone, woodland', status: 'Scarce' },
+      'Barbastella barbastellus': { freq: '35kHz', size: '6–13g', habitat: 'Mature woodland', status: 'Rare' },
+    };
+
     function getCommonName(s) { return BAT_NAMES[s] || s; }
     function formatTime(ts) { try { return new Date(ts).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }); } catch(e) { return ts; } }
     function formatDate(ts) { try { return new Date(ts).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }); } catch(e) { return ''; } }
 
+    function getSunTimes() {
+      const lat = 54.616, lon = -3.056;
+      const now = new Date();
+      const jd = Math.floor(Date.now() / 86400000) + 2440587.5;
+      const n = jd - 2451545.0;
+      const L = (280.46 + 0.9856474 * n) % 360;
+      const g = ((357.528 + 0.9856003 * n) % 360) * Math.PI / 180;
+      const lambda = (L + 1.915 * Math.sin(g) + 0.02 * Math.sin(2*g)) * Math.PI / 180;
+      const sinDec = Math.sin(23.439 * Math.PI / 180) * Math.sin(lambda);
+      const cosDec = Math.cos(Math.asin(sinDec));
+      const cosH = (Math.cos(90.833 * Math.PI / 180) - sinDec * Math.sin(lat * Math.PI / 180)) / (cosDec * Math.cos(lat * Math.PI / 180));
+      const H = Math.acos(Math.max(-1, Math.min(1, cosH))) * 180 / Math.PI;
+      const sunriseHour = (360 - H - (0.06571 * n) - 6.622 + lon / 15 + 24) % 24;
+      const sunsetHour = (H - (0.06571 * n) - 6.622 + lon / 15 + 24) % 24;
+      return { sunrise: sunriseHour, sunset: sunsetHour };
+    }
+
     function isTonight(ts) {
       const d = new Date(ts);
       const now = new Date();
-      const yesterday = new Date(now); yesterday.setDate(now.getDate() - 1); yesterday.setHours(12,0,0,0);
-      return d >= yesterday;
+      const { sunrise, sunset } = getSunTimes();
+      const currentHour = now.getHours() + now.getMinutes() / 60;
+      // Night session starts at sunset - 30 mins, ends at sunrise + 30 mins
+      const nightStart = sunset - 0.5;
+      const nightEnd = sunrise + 0.5;
+      const dHour = d.getHours() + d.getMinutes() / 60;
+      // If we're currently before sunrise + 30 mins, tonight = last night onward
+      if (currentHour < nightEnd) {
+        // We're in the early morning — tonight's session started yesterday at sunset
+        const yesterday = new Date(now); yesterday.setDate(now.getDate() - 1);
+        const sessionStart = new Date(yesterday);
+        sessionStart.setHours(Math.floor(nightStart), Math.round((nightStart % 1) * 60), 0, 0);
+        return d >= sessionStart;
+      } else {
+        // We're in daytime — tonight's session started today at sunset (future) 
+        // or show last night = yesterday sunset to today sunrise
+        const yesterday = new Date(now); yesterday.setDate(now.getDate() - 1);
+        const sessionStart = new Date(yesterday);
+        sessionStart.setHours(Math.floor(nightStart), Math.round((nightStart % 1) * 60), 0, 0);
+        const sessionEnd = new Date(now);
+        sessionEnd.setHours(Math.floor(nightEnd), Math.round((nightEnd % 1) * 60), 0, 0);
+        return d >= sessionStart && d <= sessionEnd;
+      }
+    }
+
+    function getInatPhoto(scientific, callback) {
+      const id = INAT_IDS[scientific];
+      if (!id) { callback(null); return; }
+      fetch(`https://api.inaturalist.org/v1/taxa/${id}`)
+        .then(r => r.json())
+        .then(d => {
+          const photo = d.results?.[0]?.default_photo?.medium_url || null;
+          callback(photo);
+        })
+        .catch(() => callback(null));
+    }
+
+    function renderBotd() {
+      const tonight = allDetections.filter(d => isTonight(d.timestamp));
+      const source = tonight.length > 0 ? tonight : allDetections;
+      if (source.length === 0) {
+        document.getElementById('botdCard').innerHTML = '<div class="loading">Waiting for detections...</div>';
+        return;
+      }
+      const counts = {};
+      source.forEach(d => { counts[d.species] = (counts[d.species] || 0) + 1; });
+      const topSpecies = Object.entries(counts).sort((a,b) => b[1]-a[1])[0];
+      const [species, count] = topSpecies;
+      const common = getCommonName(species);
+      const info = BAT_INFO[species] || {};
+      const avgConf = Math.round(source.filter(d => d.species === species).reduce((s,d) => s + d.confidence, 0) / count * 100);
+      const inatId = INAT_IDS[species];
+
+      document.getElementById('botdSub').textContent = tonight.length > 0 ? 'Most detected species tonight' : 'Most detected species all time';
+
+      getInatPhoto(species, (photo) => {
+        document.getElementById('botdCard').innerHTML = `
+          <div class="botd-card">
+            <img class="botd-image" src="${photo || ''}" alt="${common}" onerror="this.style.display='none'">
+            <div class="botd-info">
+              <div class="botd-eyebrow">🦇 Bat of the Night</div>
+              <div class="botd-name">${common}</div>
+              <div class="botd-latin">${species}</div>
+              <div class="botd-facts">
+                <div class="botd-fact"><span>Detections</span><span>${count} tonight</span></div>
+                <div class="botd-fact"><span>Avg confidence</span><span>${avgConf}%</span></div>
+                ${info.freq ? `<div class="botd-fact"><span>Echolocation</span><span>${info.freq}</span></div>` : ''}
+                ${info.size ? `<div class="botd-fact"><span>Weight</span><span>${info.size}</span></div>` : ''}
+                ${info.habitat ? `<div class="botd-fact"><span>Habitat</span><span>${info.habitat}</span></div>` : ''}
+                ${info.status ? `<div class="botd-fact"><span>UK status</span><span>${info.status}</span></div>` : ''}
+              </div>
+              ${inatId ? `<a class="botd-inat" href="https://www.inaturalist.org/taxa/${inatId}" target="_blank">View on iNaturalist ↗</a>` : ''}
+            </div>
+          </div>`;
+      });
+    }
+
+    function renderActivityChart() {
+      const ctx = document.getElementById('activityChart');
+      if (!ctx) return;
+      const now = new Date();
+      const hours = Array.from({length: 24}, (_, i) => {
+        const h = new Date(now - (23-i) * 3600000);
+        return h.getHours();
+      });
+      const labels = hours.map(h => `${String(h).padStart(2,'0')}:00`);
+      const counts = new Array(24).fill(0);
+      allDetections.forEach(d => {
+        const age = now - new Date(d.timestamp);
+        if (age < 24 * 3600000) {
+          const hoursAgo = Math.floor(age / 3600000);
+          const idx = 23 - hoursAgo;
+          if (idx >= 0) counts[idx]++;
+        }
+      });
+      if (activityChart) activityChart.destroy();
+      activityChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [{
+            data: counts,
+            backgroundColor: 'rgba(155,114,207,0.5)',
+            borderColor: 'rgba(155,114,207,0.8)',
+            borderWidth: 1,
+            borderRadius: 2,
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { ticks: { color: 'rgba(232,240,228,0.4)', font: { size: 9 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 12 }, grid: { color: 'rgba(122,184,122,0.05)' } },
+            y: { ticks: { color: 'rgba(232,240,228,0.4)', font: { size: 10 } }, grid: { color: 'rgba(122,184,122,0.07)' }, beginAtZero: true }
+          }
+        }
+      });
+    }
+
+    function renderSpeciesGrid() {
+      const grid = document.getElementById('speciesGrid');
+      const counts = {};
+      const confs = {};
+      allDetections.forEach(d => {
+        counts[d.species] = (counts[d.species] || 0) + 1;
+        if (!confs[d.species]) confs[d.species] = [];
+        confs[d.species].push(d.confidence);
+      });
+      if (Object.keys(counts).length === 0) { grid.innerHTML = '<div class="loading">No species detected yet</div>'; return; }
+      const sorted = Object.entries(counts).sort((a,b) => b[1]-a[1]);
+      document.getElementById('speciesSub').textContent = `${sorted.length} species · Click to filter detections`;
+      grid.innerHTML = sorted.map(([sp, cnt]) => {
+        const avgConf = Math.round(confs[sp].reduce((a,b) => a+b, 0) / confs[sp].length * 100);
+        const inatId = INAT_IDS[sp];
+        const isActive = activeFilter === sp;
+        return `<div class="species-card ${isActive ? 'highlight' : ''}" onclick="filterSpecies('${sp}')">
+          <img class="species-img" src="https://api.inaturalist.org/v1/taxa/${inatId || 0}/photos?page=1&per_page=1" 
+               onerror="this.style.display='none'" alt="${getCommonName(sp)}">
+          <div class="species-body">
+            <div class="species-name">${getCommonName(sp)}</div>
+            <div class="species-latin">${sp}</div>
+            <div class="species-count">${cnt} detection${cnt>1?'s':''}</div>
+            <div class="species-conf">Avg confidence: ${avgConf}%</div>
+          </div>
+        </div>`;
+      }).join('');
+
+      // Load iNat photos properly
+      sorted.forEach(([sp]) => {
+        const inatId = INAT_IDS[sp];
+        if (!inatId) return;
+        getInatPhoto(sp, (photo) => {
+          if (!photo) return;
+          const imgs = grid.querySelectorAll('.species-img');
+          imgs.forEach(img => {
+            if (img.alt === getCommonName(sp)) img.src = photo;
+          });
+        });
+      });
+    }
+
+    function filterSpecies(species) {
+      activeFilter = activeFilter === species ? null : species;
+      renderSpeciesGrid();
+      renderDetections();
     }
 
     function renderStats() {
       const tonight = allDetections.filter(d => isTonight(d.timestamp));
       const tonightSpecies = new Set(tonight.map(d => d.species));
       const allSpecies = new Set(allDetections.map(d => d.species));
-      document.getElementById('statTonight').textContent = tonight.length;
+      document.getElementById('statTonight').textContent = tonight.length || '—';
       document.getElementById('statSpeciesTonight').textContent = tonightSpecies.size || '—';
-      document.getElementById('statTotal').textContent = allDetections.length;
+      document.getElementById('statTotal').textContent = allDetections.length || '—';
       document.getElementById('statSpeciesTotal').textContent = allSpecies.size || '—';
-
-      if (tonightSpecies.size > 0) {
-        document.getElementById('tonightCard').style.display = 'block';
-        const counts = {};
-        tonight.forEach(d => { counts[d.species] = (counts[d.species] || 0) + 1; });
-        document.getElementById('tonightGrid').innerHTML = Object.entries(counts)
-          .sort((a,b) => b[1]-a[1])
-          .map(([sp, cnt]) => `
-            <div class="tonight-species">
-              <div class="tonight-species-name">${getCommonName(sp)}</div>
-              <div class="tonight-species-count">${sp} · ${cnt} detection${cnt>1?'s':''}</div>
-            </div>`).join('');
-      }
     }
 
     function renderDetections() {
       const list = document.getElementById('detectionList');
-      if (allDetections.length === 0) {
+      const source = activeFilter ? allDetections.filter(d => d.species === activeFilter) : allDetections;
+      if (source.length === 0) {
         list.innerHTML = `<div class="empty-state"><div class="empty-icon">🦇</div><div class="empty-title">No detections yet</div><div class="empty-sub">The bat detector is active between dusk and dawn.<br>Detections will appear here as bats are recorded.</div></div>`;
         return;
       }
-      list.innerHTML = allDetections.slice(0, 50).map(d => {
+      list.innerHTML = source.slice(0, 50).map(d => {
         const conf = Math.round((d.confidence || 0) * 100);
-        const color = conf >= 70 ? 'var(--bat)' : conf >= 50 ? '#c8a84a' : 'var(--cream-dim)';
-        return `<div class="detection-card">
+        const color = conf >= 60 ? 'var(--bat)' : conf >= 40 ? '#c8a84a' : '#888';
+        const possible = conf < 50;
+        return `<div class="detection-card ${conf < 40 ? 'low-conf' : ''}">
           <div>
-            <div class="detection-species">${getCommonName(d.species)}<em>${d.species}</em></div>
-            <div class="detection-meta"><span>🕐 ${formatTime(d.timestamp)}</span><span>📅 ${formatDate(d.timestamp)}</span></div>
+            <div class="detection-species">
+              ${possible ? '<span class="detection-possible">Possibly</span> ' : ''}${getCommonName(d.species)}<em>${d.species}</em>
+            </div>
+            <div class="detection-meta">
+              <span>🕐 ${formatTime(d.timestamp)}</span>
+              <span>📅 ${formatDate(d.timestamp)}</span>
+            </div>
           </div>
           <div class="detection-right">
             <div class="confidence-bar"><div class="confidence-fill" style="width:${conf}%;background:${color}"></div></div>
@@ -257,7 +536,9 @@
           </div>
         </div>`;
       }).join('');
-      document.getElementById('detectionsSub').textContent = `Last ${Math.min(50,allDetections.length)} of ${allDetections.length} · AudioMoth + BatDetect2`;
+      document.getElementById('detectionsSub').textContent = activeFilter
+        ? `Showing ${getCommonName(activeFilter)} · ${source.length} detections · Click species to clear filter`
+        : `Last ${Math.min(50,source.length)} of ${source.length} · AudioMoth + BatDetect2`;
     }
 
     function parseAcoupiMessage(payload) {
@@ -277,18 +558,31 @@
       } catch(e) { return []; }
     }
 
+    function renderAll() {
+      renderStats();
+      renderBotd();
+      renderActivityChart();
+      renderSpeciesGrid();
+      renderDetections();
+    }
+
     function saveCache() { try { localStorage.setItem(CACHE_KEY, JSON.stringify({ data: allDetections, ts: Date.now() })); } catch(e) {} }
 
     const cached = (() => { try { const r = localStorage.getItem(CACHE_KEY); if (!r) return null; const {data,ts} = JSON.parse(r); return {data, age: Math.round((Date.now()-ts)/60000)}; } catch(e) { return null; } })();
-    if (cached && cached.data.length > 0) {
+    if (cached && cached.data && cached.data.length > 0) {
       allDetections = cached.data;
-      renderStats(); renderDetections();
+      renderAll();
       document.getElementById('offlineBanner').style.display = 'flex';
       document.getElementById('offlineAge').textContent = cached.age < 60 ? `${cached.age} mins ago` : `${Math.round(cached.age/60)} hours ago`;
     }
 
     const client = mqtt.connect(`wss://${MQTT_HOST}:${MQTT_PORT}/mqtt`);
-    client.on('connect', () => { document.getElementById('statusDot').className='dot live'; document.getElementById('statusText').textContent='Live'; document.getElementById('offlineBanner').style.display='none'; client.subscribe(BAT_TOPIC); });
+    client.on('connect', () => {
+      document.getElementById('statusDot').className = 'dot live';
+      document.getElementById('statusText').textContent = 'Live';
+      document.getElementById('offlineBanner').style.display = 'none';
+      client.subscribe(BAT_TOPIC);
+    });
     client.on('error', () => { document.getElementById('statusDot').className='dot error'; document.getElementById('statusText').textContent='Connection error'; });
     client.on('close', () => { document.getElementById('statusDot').className='dot error'; document.getElementById('statusText').textContent='Disconnected'; });
     client.on('reconnect', () => { document.getElementById('statusDot').className='dot connecting'; document.getElementById('statusText').textContent='Reconnecting...'; });
@@ -300,7 +594,7 @@
         allDetections = allDetections.slice(0, 1000);
         saveCache();
         document.getElementById('lastUpdate').textContent = `Updated ${new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}`;
-        renderStats(); renderDetections();
+        renderAll();
       } catch(e) { console.error(e); }
     });
 
