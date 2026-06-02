@@ -712,29 +712,36 @@
       const peakLabel = peakHour ? `${String(peakHour[0]).padStart(2,'0')}:00 (${peakHour[1]} detections)` : '—';
       const sessionLabel = isDaytime() ? 'last night' : 'tonight';
 
-      getInatPhoto(species, (photo) => {
-        document.getElementById('botdCard').innerHTML = `
-          <div class="botd-card">
-            <img class="botd-image" src="${photo || ''}" alt="${common}" onerror="this.style.display='none'">
-            <div class="botd-info">
-              <div class="botd-eyebrow">🦇 Bat of the Night</div>
-              <div class="botd-name">${common}</div>
-              <div class="botd-latin">${species}</div>
-              <div class="botd-facts">
-                <div class="botd-fact"><span>Total detections ${sessionLabel}</span><span>${sessionTotal}</span></div>
-                <div class="botd-fact"><span>Species detected</span><span>${sessionSpecies}</span></div>
-                <div class="botd-fact"><span>${common} detections</span><span>${count}</span></div>
-                <div class="botd-fact"><span>Avg confidence</span><span>${avgConf}%</span></div>
-                ${runnerUp ? `<div class="botd-fact"><span>Runner up</span><span>${runnerUp}</span></div>` : ''}
-                <div class="botd-fact"><span>Peak hour</span><span>${peakLabel}</span></div>
-                <div class="botd-fact"><span>First detection</span><span>${first ? formatTime(first.timestamp) : '—'}</span></div>
-                <div class="botd-fact"><span>Last detection</span><span>${last ? formatTime(last.timestamp) : '—'}</span></div>
-                ${info.freq ? `<div class="botd-fact"><span>Echolocation</span><span>${info.freq}</span></div>` : ''}
-                ${info.status ? `<div class="botd-fact"><span>UK status</span><span>${info.status}</span></div>` : ''}
-              </div>
-              ${inatId ? `<a class="botd-inat" href="https://www.inaturalist.org/taxa/${inatId}" target="_blank">View on iNaturalist ↗</a>` : ''}
+      // Render card immediately without waiting for photo
+      document.getElementById('botdCard').innerHTML = `
+        <div class="botd-card">
+          <img class="botd-image" id="botdPhoto" src="" alt="${common}" onerror="this.style.display='none'" style="background:var(--forest-mid)">
+          <div class="botd-info">
+            <div class="botd-eyebrow">🦇 Bat of the Night</div>
+            <div class="botd-name">${common}</div>
+            <div class="botd-latin">${species}</div>
+            <div class="botd-facts">
+              <div class="botd-fact"><span>Total detections ${sessionLabel}</span><span>${sessionTotal}</span></div>
+              <div class="botd-fact"><span>Species detected</span><span>${sessionSpecies}</span></div>
+              <div class="botd-fact"><span>${common} detections</span><span>${count}</span></div>
+              <div class="botd-fact"><span>Avg confidence</span><span>${avgConf}%</span></div>
+              ${runnerUp ? `<div class="botd-fact"><span>Runner up</span><span>${runnerUp}</span></div>` : ''}
+              <div class="botd-fact"><span>Peak hour</span><span>${peakLabel}</span></div>
+              <div class="botd-fact"><span>First detection</span><span>${first ? formatTime(first.timestamp) : '—'}</span></div>
+              <div class="botd-fact"><span>Last detection</span><span>${last ? formatTime(last.timestamp) : '—'}</span></div>
+              ${info.freq ? `<div class="botd-fact"><span>Echolocation</span><span>${info.freq}</span></div>` : ''}
+              ${info.status ? `<div class="botd-fact"><span>UK status</span><span>${info.status}</span></div>` : ''}
             </div>
-          </div>`;
+            ${inatId ? `<a class="botd-inat" href="https://www.inaturalist.org/taxa/${inatId}" target="_blank">View on iNaturalist ↗</a>` : ''}
+          </div>
+        </div>`;
+
+      // Then fetch photo and just update the img src — no re-render
+      getInatPhoto(species, (photo) => {
+        if (photo) {
+          const img = document.getElementById('botdPhoto');
+          if (img) img.src = photo;
+        }
       });
     }
 
