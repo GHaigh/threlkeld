@@ -227,6 +227,55 @@
     }
     .fellcam-updated { color: var(--sage); }
 
+    /* Time-lapse buttons */
+    .timelapse-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: var(--sage); color: var(--forest-deep);
+      font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase;
+      border: none; padding: 8px 16px; border-radius: 6px;
+      cursor: pointer; white-space: nowrap; transition: background 0.2s;
+      font-family: 'Source Sans 3', sans-serif; margin-top: 10px;
+    }
+    .timelapse-btn:hover { background: var(--sage-light); }
+    .tl-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: var(--sage); color: var(--forest-deep);
+      font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase;
+      border: none; padding: 8px 20px; border-radius: 6px;
+      cursor: pointer; transition: background 0.2s; font-family: 'Source Sans 3', sans-serif;
+    }
+    .tl-btn:hover { background: var(--sage-light); }
+    .tl-day-btn {
+      background: rgba(122,184,122,0.12); border: 1px solid rgba(122,184,122,0.3);
+      color: var(--sage); font-size: 11px; font-weight: 500; letter-spacing: 0.06em;
+      padding: 5px 12px; border-radius: 20px; cursor: pointer;
+      transition: background 0.2s, border-color 0.2s, color 0.2s; font-family: 'Source Sans 3', sans-serif;
+    }
+    .tl-day-btn:hover { background: rgba(122,184,122,0.22); border-color: rgba(122,184,122,0.5); }
+    .tl-day-btn.active { background: var(--sage); color: var(--forest-deep); border-color: var(--sage); }
+    .tl-speed {
+      appearance: none; -webkit-appearance: none;
+      background: rgba(122,184,122,0.12) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%237ab87a'/%3E%3C/svg%3E") no-repeat right 10px center;
+      border: 1px solid rgba(122,184,122,0.3); color: var(--sage);
+      font-size: 11px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase;
+      padding: 5px 28px 5px 12px; border-radius: 20px; cursor: pointer;
+      font-family: 'Source Sans 3', sans-serif; transition: background-color 0.2s, border-color 0.2s;
+    }
+    .tl-speed:hover { background-color: rgba(122,184,122,0.22); border-color: rgba(122,184,122,0.5); }
+    .tl-speed:focus { outline: none; border-color: var(--sage); }
+    .tl-speed option { background: #1a2e1a; color: var(--cream); text-transform: uppercase; }
+    .tl-wrap { display: inline-block; width: 100%; max-width: max-content; }
+    .tl-controls { display: flex; align-items: center; gap: 12px; padding: 12px 0 8px; flex-wrap: wrap; }
+    .tl-progress-wrap { flex: 1; min-width: 80px; display: flex; align-items: center; gap: 10px; }
+    .tl-progress-bar { flex: 1; height: 4px; background: rgba(122,184,122,0.15); border-radius: 2px; overflow: hidden; }
+    .tl-progress-fill { height: 100%; width: 0%; background: var(--sage); border-radius: 2px; transition: width 0.2s; }
+    .tl-counter { font-size: 11px; color: var(--cream-dim); white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .tl-days { display: flex; flex-wrap: wrap; gap: 8px; padding: 4px 0 12px; }
+    .tl-overlay {
+      position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+      background: rgba(0,0,0,0.3); font-size: 13px; color: var(--cream-dim); pointer-events: none;
+    }
+
     /* Forecast section */
     .forecast-section { margin-bottom: 28px; }
     .forecast-days { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; margin-bottom: 16px; }
@@ -1324,9 +1373,36 @@
               <div class="section-sub">Reolink · 5 min refresh</div>
             </div>
             <div class="sg-card">
-              <img id="fellcamImg" src="" alt="Fell and Weather Camera" style="width:100%;height:160px;object-fit:cover;border-radius:6px;background:var(--forest-mid);display:block">
-              <div style="font-size:10px;color:var(--cream-dim);margin-top:8px" id="fellcamUpdated">—</div>
+              <div id="fellcamLive">
+                <img id="fellcamImg" src="" alt="Fell and Weather Camera" style="width:100%;height:160px;object-fit:cover;border-radius:6px;background:var(--forest-mid);display:block">
+                <div style="font-size:10px;color:var(--cream-dim);margin-top:8px" id="fellcamUpdated">—</div>
+                <button class="timelapse-btn" onclick="toggleTimelapse()">📽️ View time-lapse</button>
+              </div>
             </div>
+          </div>
+        </div>
+
+        <!-- Time-lapse viewer (full width, below 3-col row) -->
+        <div id="fellcamTimelapse" style="display:none;margin-bottom:28px">
+          <div class="tl-wrap">
+            <div class="fellcam-card" style="position:relative;max-width:100%;border-radius:10px;overflow:hidden;border:1px solid var(--divider)">
+              <img id="tlImg" src="" alt="Time-lapse" style="width:100%;height:auto;display:block;min-height:200px;object-fit:cover;background:var(--forest-mid)">
+              <div class="tl-overlay" id="tlOverlay"><span id="tlTime">—</span></div>
+            </div>
+            <div class="tl-controls">
+              <button class="tl-btn" id="tlPlayBtn" onclick="tlTogglePlay()">&#9654; Play</button>
+              <div class="tl-progress-wrap">
+                <div class="tl-progress-bar"><div class="tl-progress-fill" id="tlProgressFill"></div></div>
+                <span class="tl-counter" id="tlCounter">0 / 0</span>
+              </div>
+              <select class="tl-speed" id="tlSpeed" onchange="tlSetSpeed(this.value)">
+                <option value="200">Slow</option>
+                <option value="100" selected>Normal</option>
+                <option value="50">Fast</option>
+              </select>
+            </div>
+            <div class="tl-days" id="tlDays">Loading...</div>
+            <button class="timelapse-btn" onclick="toggleTimelapse()">📷 Back to live cam</button>
           </div>
         </div>
 
@@ -1908,7 +1984,11 @@
       } catch(e) { console.error('Parse error:', e); }
     });
 
-    // Fell cam refresh every 5 minutes
+    // Fell cam + time-lapse
+    const FELLCAM_BASE = 'https://rlpzmepeautd1v5pgoumz9aa2qhd92xd.ui.nabu.casa/local/fellcam/';
+    const FELLCAM_INDEX = FELLCAM_BASE + 'index.json';
+    let tlFiles = [], tlIndex = 0, tlPlaying = false, tlInterval = null, tlSpeed = 100, fellcamIndex = null;
+
     function refreshFellCam() {
       const img = document.getElementById('fellcamImg');
       const sub = document.getElementById('fellcamUpdated');
@@ -1919,6 +1999,88 @@
     }
     refreshFellCam();
     setInterval(refreshFellCam, 5 * 60 * 1000);
+
+    async function loadFellcamIndex() {
+      try {
+        const r = await fetch(FELLCAM_INDEX + '?t=' + Date.now());
+        fellcamIndex = await r.json();
+        return fellcamIndex;
+      } catch(e) { return null; }
+    }
+
+    function toggleTimelapse() {
+      const live = document.getElementById('fellcamLive');
+      const tl = document.getElementById('fellcamTimelapse');
+      if (tl.style.display === 'none') {
+        live.style.display = 'none';
+        tl.style.display = 'block';
+        initTimelapse();
+      } else {
+        tl.style.display = 'none';
+        live.style.display = 'block';
+        tlStop();
+      }
+    }
+
+    async function initTimelapse() {
+      const idx = fellcamIndex || await loadFellcamIndex();
+      if (!idx || !idx.days || idx.days.length === 0) {
+        document.getElementById('tlDays').innerHTML = '<span style="color:var(--cream-dim);font-size:12px">No time-lapse available yet</span>';
+        return;
+      }
+      const daysEl = document.getElementById('tlDays');
+      daysEl.innerHTML = idx.days.map((d, i) => {
+        const label = i === 0 ? 'Today' : i === 1 ? 'Yesterday' : new Date(d.date).toLocaleDateString('en-GB', {day:'numeric',month:'short'});
+        return `<button class="tl-day-btn ${i===0?'active':''}" onclick="loadDay(${i})">${label} (${d.count})</button>`;
+      }).join('');
+      loadDay(0);
+    }
+
+    function loadDay(dayIdx) {
+      if (!fellcamIndex || !fellcamIndex.days[dayIdx]) return;
+      const day = fellcamIndex.days[dayIdx];
+      tlFiles = day.files.map(f => FELLCAM_BASE + f);
+      tlIndex = 0;
+      tlStop();
+      document.querySelectorAll('.tl-day-btn').forEach((b,i) => b.classList.toggle('active', i===dayIdx));
+      tlShowFrame(0);
+    }
+
+    function tlShowFrame(idx) {
+      if (!tlFiles.length) return;
+      idx = Math.max(0, Math.min(idx, tlFiles.length - 1));
+      tlIndex = idx;
+      document.getElementById('tlImg').src = tlFiles[idx] + '?t=' + Date.now();
+      const match = tlFiles[idx].match(/fellcam_(\d{4})(\d{2})(\d{2})_(\d{2})(\d{2})/);
+      if (match) document.getElementById('tlTime').textContent = `${match[4]}:${match[5]}`;
+      const pct = tlFiles.length > 1 ? (idx / (tlFiles.length - 1)) * 100 : 0;
+      document.getElementById('tlProgressFill').style.width = pct + '%';
+      document.getElementById('tlCounter').textContent = `${idx+1} / ${tlFiles.length}`;
+    }
+
+    function tlTogglePlay() { tlPlaying ? tlStop() : tlPlay(); }
+
+    function tlPlay() {
+      if (!tlFiles.length) return;
+      tlPlaying = true;
+      document.getElementById('tlPlayBtn').textContent = '⏸ Pause';
+      tlInterval = setInterval(() => {
+        tlIndex = tlIndex >= tlFiles.length - 1 ? 0 : tlIndex + 1;
+        tlShowFrame(tlIndex);
+      }, tlSpeed);
+    }
+
+    function tlStop() {
+      tlPlaying = false;
+      clearInterval(tlInterval);
+      const btn = document.getElementById('tlPlayBtn');
+      if (btn) btn.textContent = '▶ Play';
+    }
+
+    function tlSetSpeed(v) {
+      tlSpeed = parseInt(v);
+      if (tlPlaying) { tlStop(); tlPlay(); }
+    }
 
     // Mobile nav
     document.getElementById('navHamburger').addEventListener('click', function() {
