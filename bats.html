@@ -94,7 +94,21 @@
     .botd-fact span:last-child { color: var(--cream); text-align: right; }
     .botd-inat { display: inline-block; margin-top: 12px; font-size: 11px; color: var(--bat); text-decoration: none; letter-spacing: 0.05em; }
     .botd-inat:hover { text-decoration: underline; }
-    .timelapse-btn {
+    /* Species summary */
+    .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 28px; }
+    .summary-panel { border: 1px solid var(--bat-border); border-radius: 8px; overflow: hidden; }
+    .summary-panel-header { background: var(--forest-mid); padding: 8px 12px; font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--bat); }
+    .summary-body { max-height: 220px; overflow-y: auto; }
+    .summary-body::-webkit-scrollbar { width: 3px; }
+    .summary-body::-webkit-scrollbar-track { background: var(--forest-deep); }
+    .summary-body::-webkit-scrollbar-thumb { background: var(--forest-mid); border-radius: 2px; }
+    .summary-row { display: flex; justify-content: space-between; align-items: center; padding: 7px 12px; border-bottom: 1px solid var(--divider); background: var(--forest-dark); transition: background 0.15s; }
+    .summary-row:last-child { border-bottom: none; }
+    .summary-row:hover { background: var(--forest-mid); }
+    .summary-species { font-size: 12px; color: var(--cream); }
+    .summary-count { font-size: 12px; color: var(--bat); font-weight: 500; font-family: 'Playfair Display', serif; }
+
+        .timelapse-btn {
       display: inline-flex; align-items: center; gap: 6px;
       background: var(--bat); color: var(--forest-deep);
       font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase;
@@ -319,11 +333,6 @@
     <div class="section-header" style="margin-top:0">
       <div class="section-title">Bat of the Night</div>
       <div class="section-sub" id="botdSub">Most detected species</div>
-      <button class="timelapse-btn" id="botdHistoryBtn" onclick="toggleBotdHistory()" style="margin-top:0;margin-left:auto">📅 Previous nights</button>
-    </div>
-    <!-- Night history picker -->
-    <div id="botdHistoryPanel" style="display:none;margin-bottom:12px">
-      <div class="tl-days" id="botdNightButtons">Loading...</div>
     </div>
     <div class="bat-of-day" id="botdCard">
       <div class="loading"><div class="loading-spinner"></div> Waiting for detections...</div>
@@ -349,6 +358,29 @@
     </div>
     <div class="nightly-chart-card">
       <canvas id="nightlyChart"></canvas>
+    </div>
+
+    <!-- Species Summary -->
+    <div class="section-header">
+      <div class="section-title">Species Summary</div>
+    </div>
+    <div class="summary-grid">
+      <div class="summary-panel">
+        <div class="summary-panel-header">Tonight</div>
+        <div class="summary-body" id="summaryTonight"><div style="padding:10px 12px;font-size:12px;color:var(--cream-dim);font-style:italic">No detections yet</div></div>
+      </div>
+      <div class="summary-panel">
+        <div class="summary-panel-header">This Week</div>
+        <div class="summary-body" id="summaryWeek"><div style="padding:10px 12px;font-size:12px;color:var(--cream-dim);font-style:italic">No detections yet</div></div>
+      </div>
+      <div class="summary-panel">
+        <div class="summary-panel-header">This Month</div>
+        <div class="summary-body" id="summaryMonth"><div style="padding:10px 12px;font-size:12px;color:var(--cream-dim);font-style:italic">No detections yet</div></div>
+      </div>
+      <div class="summary-panel">
+        <div class="summary-panel-header">This Year</div>
+        <div class="summary-body" id="summaryYear"><div style="padding:10px 12px;font-size:12px;color:var(--cream-dim);font-style:italic">No detections yet</div></div>
+      </div>
     </div>
 
     <!-- Activity chart -->
@@ -667,6 +699,19 @@
         : (tonight.length > 0 ? 'Most detected species tonight' : 'Most detected species last night');
       document.getElementById('botdSub').textContent = subText;
 
+      // Session-wide stats
+      const sessionTotal = source.length;
+      const sessionSpecies = new Set(source.map(d => d.species)).size;
+      const sortedSpecies = Object.entries(counts).sort((a,b) => b[1]-a[1]);
+      const runnerUp = sortedSpecies[1] ? `${getCommonName(sortedSpecies[1][0])} (${sortedSpecies[1][1]})` : null;
+      const sorted = [...source].sort((a,b) => new Date(a.timestamp)-new Date(b.timestamp));
+      const first = sorted[0], last = sorted[sorted.length-1];
+      const hourCounts = {};
+      source.forEach(d => { const h = new Date(d.timestamp).getHours(); hourCounts[h] = (hourCounts[h]||0)+1; });
+      const peakHour = Object.entries(hourCounts).sort((a,b)=>b[1]-a[1])[0];
+      const peakLabel = peakHour ? `${String(peakHour[0]).padStart(2,'0')}:00 (${peakHour[1]} detections)` : '—';
+      const sessionLabel = isDaytime() ? 'last night' : 'tonight';
+
       getInatPhoto(species, (photo) => {
         document.getElementById('botdCard').innerHTML = `
           <div class="botd-card">
@@ -676,11 +721,15 @@
               <div class="botd-name">${common}</div>
               <div class="botd-latin">${species}</div>
               <div class="botd-facts">
-                <div class="botd-fact"><span>Detections</span><span>${count} tonight</span></div>
+                <div class="botd-fact"><span>Total detections ${sessionLabel}</span><span>${sessionTotal}</span></div>
+                <div class="botd-fact"><span>Species detected</span><span>${sessionSpecies}</span></div>
+                <div class="botd-fact"><span>${common} detections</span><span>${count}</span></div>
                 <div class="botd-fact"><span>Avg confidence</span><span>${avgConf}%</span></div>
+                ${runnerUp ? `<div class="botd-fact"><span>Runner up</span><span>${runnerUp}</span></div>` : ''}
+                <div class="botd-fact"><span>Peak hour</span><span>${peakLabel}</span></div>
+                <div class="botd-fact"><span>First detection</span><span>${first ? formatTime(first.timestamp) : '—'}</span></div>
+                <div class="botd-fact"><span>Last detection</span><span>${last ? formatTime(last.timestamp) : '—'}</span></div>
                 ${info.freq ? `<div class="botd-fact"><span>Echolocation</span><span>${info.freq}</span></div>` : ''}
-                ${info.size ? `<div class="botd-fact"><span>Weight</span><span>${info.size}</span></div>` : ''}
-                ${info.habitat ? `<div class="botd-fact"><span>Habitat</span><span>${info.habitat}</span></div>` : ''}
                 ${info.status ? `<div class="botd-fact"><span>UK status</span><span>${info.status}</span></div>` : ''}
               </div>
               ${inatId ? `<a class="botd-inat" href="https://www.inaturalist.org/taxa/${inatId}" target="_blank">View on iNaturalist ↗</a>` : ''}
@@ -792,6 +841,51 @@
       const sessionEnd = new Date(now);
       sessionEnd.setHours(Math.floor(sunrise + 0.5), Math.round(((sunrise + 0.5) % 1) * 60), 0, 0);
       return d >= sessionStart && d <= sessionEnd;
+    }
+
+    function renderSummary() {
+      if (!allDetections.length) return;
+
+      function getStats(dets, fromDate) {
+        const filtered = dets.filter(d => new Date(d.timestamp) >= fromDate);
+        const counts = {};
+        filtered.forEach(d => { counts[d.species] = (counts[d.species] || 0) + 1; });
+        return Object.entries(counts)
+          .sort((a, b) => b[1] - a[1])
+          .map(([species, count]) => ({ species, count, common: getCommonName(species) }));
+      }
+
+      function buildList(species) {
+        if (!species.length) return '<div style="padding:10px 12px;font-size:12px;color:var(--cream-dim);font-style:italic">No detections</div>';
+        return species.map(s => `
+          <div class="summary-row">
+            <div class="summary-species">${s.common}</div>
+            <div class="summary-count">${s.count}</div>
+          </div>`).join('');
+      }
+
+      const now = new Date();
+      const tonight = allDetections.filter(d => isTonight(d.timestamp));
+      const startOfWeek = new Date(now); startOfWeek.setDate(now.getDate() - now.getDay());  startOfWeek.setHours(0,0,0,0);
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      const startOfYear = new Date(now.getFullYear(), 0, 1);
+
+      const tonightStats = (() => {
+        const counts = {};
+        tonight.forEach(d => { counts[d.species] = (counts[d.species] || 0) + 1; });
+        return Object.entries(counts).sort((a,b)=>b[1]-a[1]).map(([species,count])=>({ species, count, common: getCommonName(species) }));
+      })();
+
+      const el = {
+        tonight: document.getElementById('summaryTonight'),
+        week: document.getElementById('summaryWeek'),
+        month: document.getElementById('summaryMonth'),
+        year: document.getElementById('summaryYear'),
+      };
+      if (el.tonight) el.tonight.innerHTML = buildList(tonightStats);
+      if (el.week)    el.week.innerHTML    = buildList(getStats(allDetections, startOfWeek));
+      if (el.month)   el.month.innerHTML   = buildList(getStats(allDetections, startOfMonth));
+      if (el.year)    el.year.innerHTML    = buildList(getStats(allDetections, startOfYear));
     }
 
     function renderStats() {
@@ -1156,6 +1250,7 @@
 
     function renderAll() {
       renderStats();
+      renderSummary();
       renderBotd();
       renderSpeciesBadge();
       renderBestNight();
