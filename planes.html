@@ -863,7 +863,7 @@
 
     function isNightFlight(timestamp) {
       const hour = new Date(timestamp).getHours();
-      return hour >= 21 || hour < 6;
+      return hour >= 22 || hour < 5;
     }
 
     function isLast24Hours(ts) {
@@ -871,13 +871,13 @@
     }
 
     function isLastNight(ts) {
-      // Between yesterday 19:00 and this morning 07:00
+      // Between yesterday 22:00 and this morning 05:00
       const now = new Date();
       const d = new Date(ts);
       const hour = d.getHours();
       const isYesterday = d.toDateString() === new Date(now - 86400000).toDateString();
       const isTonight = d.toDateString() === now.toDateString();
-      return (isYesterday && hour >= 19) || (isTonight && hour < 7);
+      return (isYesterday && hour >= 22) || (isTonight && hour < 5);
     }
 
     function renderStats(flights, total) {
@@ -911,7 +911,7 @@
       const sunriseHour = (360 - H - (0.06571 * n) - 6.622 + lon / 15 + 24) % 24;
       const sunsetHour = (H - (0.06571 * n) - 6.622 + lon / 15 + 24) % 24;
       const afterSunrise = now.getHours() + now.getMinutes()/60 > sunriseHour + 1;
-      const nightFlights24 = flights.filter(f => isNightFlight(f.timestamp) && isLast24Hours(f.timestamp));
+      const nightFlights24 = flights.filter(f => isLastNight(f.timestamp));
       const nightLabel = afterSunrise ? "🌙 Last Night" : "🌙 Tonight So Far";
       const nightEl = document.getElementById('statNightAll');
       const nightLabelEl = document.querySelector('[data-label="night"]');
