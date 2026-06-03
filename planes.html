@@ -845,15 +845,17 @@
     }
 
     function isAirAmbulance(f) {
+      // Use stored boolean if available (set by Node-RED)
+      if (f.airAmbulance === true) return true;
       const cs = (f.callsign || '').toUpperCase();
       const airline = (f.airline || '').toUpperCase();
       const model = (f.aircraft_model || '').toUpperCase();
-      // UK air ambulance callsigns and operators
       return cs.startsWith('HELIMED') ||
              cs.startsWith('HEMS') ||
              cs.startsWith('CLIFT') ||
              cs.startsWith('MAGPIE') ||
              cs.startsWith('NOVAIR') ||
+             cs.startsWith('RESCUE') ||
              airline.includes('AIR AMBULANCE') ||
              airline.includes('HEMS') ||
              (model.includes('EC135') && cs.startsWith('G-')) ||
