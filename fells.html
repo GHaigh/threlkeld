@@ -1213,19 +1213,26 @@
       if (!tlFiles.length) return;
       tlPlaying = true;
       document.getElementById('tlPlayBtn').textContent = '⏸ Pause'; document.getElementById('tlPlayBtn').classList.add('playing');
-      tlInterval = setInterval(() => {
-        if (tlIndex >= tlFiles.length - 1) {
-          tlIndex = 0;
-        } else {
-          tlIndex++;
-        }
-        tlShowFrame(tlIndex);
-      }, tlSpeed);
+      function tlAdvance() {
+        if (!tlPlaying) return;
+        tlIndex = tlIndex >= tlFiles.length - 1 ? 0 : tlIndex + 1;
+        const img = document.getElementById('tlImg');
+        const next = new Image();
+        next.onload = () => {
+          if (!tlPlaying) return;
+          img.src = next.src;
+          tlUpdateUI(tlIndex);
+          tlInterval = setTimeout(tlAdvance, tlSpeed);
+        };
+        next.onerror = () => { if (tlPlaying) tlInterval = setTimeout(tlAdvance, tlSpeed); };
+        next.src = tlFiles[tlIndex];
+      }
+      tlInterval = setTimeout(tlAdvance, tlSpeed);
     }
 
     function tlStop() {
       tlPlaying = false;
-      if (tlInterval) { clearInterval(tlInterval); tlInterval = null; }
+      if (tlInterval) { clearTimeout(tlInterval); tlInterval = null; }
       const btn = document.getElementById('tlPlayBtn');
       if (btn) btn.textContent = '▶ Play';
     }

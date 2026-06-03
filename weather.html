@@ -2058,7 +2058,13 @@
       if (!tlFiles.length) return;
       idx = Math.max(0, Math.min(idx, tlFiles.length - 1));
       tlIndex = idx;
-      document.getElementById('tlImg').src = tlFiles[idx] + '?t=' + Date.now();
+      document.getElementById('tlImg').src = tlFiles[idx];
+      tlUpdateUI(idx);
+    }
+
+    function tlTogglePlay() { tlPlaying ? tlStop() : tlPlay(); }
+
+    function tlUpdateUI(idx) {
       const match = tlFiles[idx].match(/fellcam_(\d{4})(\d{2})(\d{2})_(\d{2})(\d{2})/);
       if (match) document.getElementById('tlTime').textContent = `${match[4]}:${match[5]}`;
       const pct = tlFiles.length > 1 ? (idx / (tlFiles.length - 1)) * 100 : 0;
@@ -2066,21 +2072,30 @@
       document.getElementById('tlCounter').textContent = `${idx+1} / ${tlFiles.length}`;
     }
 
-    function tlTogglePlay() { tlPlaying ? tlStop() : tlPlay(); }
-
     function tlPlay() {
       if (!tlFiles.length) return;
       tlPlaying = true;
       document.getElementById('tlPlayBtn').textContent = '⏸ Pause';
-      tlInterval = setInterval(() => {
+      function tlAdvance() {
+        if (!tlPlaying) return;
         tlIndex = tlIndex >= tlFiles.length - 1 ? 0 : tlIndex + 1;
-        tlShowFrame(tlIndex);
-      }, tlSpeed);
+        const img = document.getElementById('tlImg');
+        const next = new Image();
+        next.onload = () => {
+          if (!tlPlaying) return;
+          img.src = next.src;
+          tlUpdateUI(tlIndex);
+          tlInterval = setTimeout(tlAdvance, tlSpeed);
+        };
+        next.onerror = () => { if (tlPlaying) tlInterval = setTimeout(tlAdvance, tlSpeed); };
+        next.src = tlFiles[tlIndex];
+      }
+      tlInterval = setTimeout(tlAdvance, tlSpeed);
     }
 
     function tlStop() {
       tlPlaying = false;
-      clearInterval(tlInterval);
+      clearTimeout(tlInterval);
       const btn = document.getElementById('tlPlayBtn');
       if (btn) btn.textContent = '▶ Play';
     }
