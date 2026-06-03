@@ -1188,6 +1188,7 @@
 
     // ── Calendar ──────────────────────────────────────────
     let calDetections = [];
+    let calDailyMap = null;
     let calYear = new Date().getFullYear();
     const CAL_START_YEAR = 2024;
 
@@ -1216,7 +1217,7 @@
     }
 
     function renderCalendar(year) {
-      const dailyMap = buildDailyMap(calDetections);
+      const dailyMap = calDailyMap || buildDailyMap(calDetections);
       const today = new Date();
       const todayKey = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
 
@@ -1448,7 +1449,14 @@
           calDetections = dets;
           renderCalendar(calYear);
         }
-        else if (topic === STATS_TOPIC) renderSummary(data);
+        else if (topic === STATS_TOPIC) {
+          renderSummary(data);
+          if (data.daily) {
+            calDetections = null;
+            calDailyMap = data.daily;
+            renderCalendar(calYear);
+          }
+        }
       } catch(e) { console.error('Parse error:', e); }
     });
 
