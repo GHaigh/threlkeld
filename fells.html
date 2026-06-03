@@ -1187,22 +1187,20 @@
       tlShowFrame(0);
     }
 
+    function tlUpdateUI(idx) {
+      const match = tlFiles[idx].match(/fellcam_(\d{4})(\d{2})(\d{2})_(\d{2})(\d{2})/);
+      if (match) document.getElementById('tlTime').textContent = `${match[4]}:${match[5]}`;
+      const pct = tlFiles.length > 1 ? (idx / (tlFiles.length - 1)) * 100 : 0;
+      document.getElementById('tlProgressFill').style.width = pct + '%';
+      document.getElementById('tlCounter').textContent = `${idx+1} / ${tlFiles.length}`;
+    }
+
     function tlShowFrame(idx) {
       if (!tlFiles.length) return;
       idx = Math.max(0, Math.min(idx, tlFiles.length - 1));
       tlIndex = idx;
-      const img = document.getElementById('tlImg');
-      img.src = tlFiles[idx] + '?t=' + Date.now();
-      
-      // Extract time from filename
-      const match = tlFiles[idx].match(/fellcam_(\d{4})(\d{2})(\d{2})_(\d{2})(\d{2})/);
-      if (match) {
-        document.getElementById('tlTime').textContent = `${match[4]}:${match[5]}`;
-      }
-      
-      const pct = tlFiles.length > 1 ? (idx / (tlFiles.length - 1)) * 100 : 0;
-      document.getElementById('tlProgressFill').style.width = pct + '%';
-      document.getElementById('tlCounter').textContent = `${idx+1} / ${tlFiles.length}`;
+      document.getElementById('tlImg').src = tlFiles[idx];
+      tlUpdateUI(idx);
     }
 
     function tlTogglePlay() {
