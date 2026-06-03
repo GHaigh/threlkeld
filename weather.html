@@ -1376,7 +1376,7 @@
               <div id="fellcamLive">
                 <img id="fellcamImg" src="" alt="Fell and Weather Camera" style="width:100%;height:160px;object-fit:cover;border-radius:6px;background:var(--forest-mid);display:block">
                 <div style="font-size:10px;color:var(--cream-dim);margin-top:8px" id="fellcamUpdated">—</div>
-                <button class="timelapse-btn" onclick="toggleTimelapse()">📽️ View time-lapse</button>
+                <button class="timelapse-btn" id="tlToggleBtn" onclick="toggleTimelapse()">📽️ View time-lapse</button>
               </div>
             </div>
           </div>
@@ -1402,7 +1402,7 @@
               </select>
             </div>
             <div class="tl-days" id="tlDays">Loading...</div>
-            <button class="timelapse-btn" onclick="toggleTimelapse()">📷 Back to live cam</button>
+
           </div>
         </div>
 
@@ -2017,15 +2017,15 @@
     }
 
     function toggleTimelapse() {
-      const live = document.getElementById('fellcamLive');
       const tl = document.getElementById('fellcamTimelapse');
+      const btn = document.getElementById('tlToggleBtn');
       if (tl.style.display === 'none') {
-        live.style.display = 'none';
         tl.style.display = 'block';
+        if (btn) btn.textContent = '📷 Hide time-lapse';
         initTimelapse();
       } else {
         tl.style.display = 'none';
-        live.style.display = 'block';
+        if (btn) btn.textContent = '📽️ View time-lapse';
         tlStop();
       }
     }
