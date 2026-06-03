@@ -129,6 +129,7 @@
         <a href="river.html" class="nav-link">🌊 Rivers</a>
         <a href="weather.html" class="nav-link">🌤️ Weather</a>
         <a href="wildlife.html" class="nav-link">🦔 Wildlife</a>
+        <a href="about.html" class="nav-link active">ℹ️ About</a>
       </div>
       <button class="nav-hamburger" id="navHamburger" aria-label="Menu">
         <span></span><span></span><span></span>
@@ -146,7 +147,7 @@
 
     <h2>The Numbers</h2>
     <div class="stat-row">
-      <div class="stat-item"><div class="stat-num">7</div><div class="stat-label">Live pages</div></div>
+      <div class="stat-item"><div class="stat-num">8</div><div class="stat-label">Live pages</div></div>
       <div class="stat-item"><div class="stat-num">9</div><div class="stat-label">River stations</div></div>
       <div class="stat-item"><div class="stat-num">9</div><div class="stat-label">Fell summits</div></div>
       <div class="stat-item"><div class="stat-num">50,000</div><div class="stat-label">Max bird detections</div></div>
@@ -160,7 +161,7 @@
     <div class="pipeline">
       <div class="pipeline-step"><div class="pipeline-icon">🎙️</div><div class="pipeline-name">Sensors</div><div class="pipeline-detail">BirdNET-Pi<br>Weather station<br>EA river API</div></div>
       <div class="pipeline-arrow">→</div>
-      <div class="pipeline-step"><div class="pipeline-icon">🏠</div><div class="pipeline-name">Home Assistant</div><div class="pipeline-detail">HA OS 2026<br>Raspberry Pi 4</div></div>
+      <div class="pipeline-step"><div class="pipeline-icon">🏠</div><div class="pipeline-name">Home Assistant</div><div class="pipeline-detail">HA OS 2026<br>Lenovo ThinkCentre<br>Proxmox VM</div></div>
       <div class="pipeline-arrow">→</div>
       <div class="pipeline-step"><div class="pipeline-icon">⚙️</div><div class="pipeline-name">Node-RED</div><div class="pipeline-detail">v4.1 · Processing<br>Notifications<br>File storage</div></div>
       <div class="pipeline-arrow">→</div>
@@ -174,7 +175,12 @@
       <div class="stack-card">
         <div class="stack-layer">Bird Detection</div>
         <div class="stack-name">BirdNET-Pi</div>
-        <div class="stack-desc">Open source acoustic bird monitoring. Raspberry Pi 4 with USB microphone, runs BirdNET neural network in real time. Detects species from audio and publishes via MQTT.</div>
+        <div class="stack-desc">Open source acoustic bird monitoring. Raspberry Pi 3B+ with USB microphone, runs BirdNET neural network in real time. Detects species from audio and publishes via MQTT apprise to the local Mosquitto broker.</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-layer">Bat Detection</div>
+        <div class="stack-name">acoupi · BatDetect2</div>
+        <div class="stack-desc">Raspberry Pi 4 4GB running acoupi with BatDetect2 neural network and AudioMoth USB microphone. Detects UK bat species in real time at dusk, publishing detections via MQTT with time-expanded audio saved for playback.</div>
       </div>
       <div class="stack-card">
         <div class="stack-layer">Home Automation</div>
@@ -200,6 +206,11 @@
         <div class="stack-layer">River Data</div>
         <div class="stack-name">EA Flood API</div>
         <div class="stack-desc">Environment Agency's real-time flood monitoring API. Free, no key required. 9 stations covering the Glenderamackin, Greta, Derwent and 4 lakes. Updated every 15 minutes.</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-layer">Fell &amp; Weather Cam</div>
+        <div class="stack-name">Reolink · Node-RED</div>
+        <div class="stack-desc">Reolink WiFi camera mounted in the garden pointing toward Blencathra. Node-RED saves a snapshot every 5 minutes during daylight. Live image shown on both the Fells and Weather pages, with a full day time-lapse viewer.</div>
       </div>
       <div class="stack-card">
         <div class="stack-layer">Flight Data</div>
@@ -229,7 +240,7 @@
       <div class="stack-card">
         <div class="stack-layer">Notifications</div>
         <div class="stack-name">HA · iOS Companion</div>
-        <div class="stack-desc">Push notifications via the Home Assistant iOS companion app. New species alerts, dawn chorus summaries and rare bird flags delivered directly to both iPhones.</div>
+        <div class="stack-desc">Push notifications via the Home Assistant iOS companion app. New species alerts delivered immediately during waking hours, queued overnight and sent at 8am. Daily dawn chorus summary at 8:45am with yesterday's top species, best confidence score and first detection. Rare Cumbrian species flagged separately.</div>
       </div>
     </div>
 
@@ -247,24 +258,21 @@
 
     <h2>Recent Changes</h2>
     <div class="hardware-list" style="margin-bottom:28px">
-      <div class="hardware-item"><span class="hardware-name">🦇 Bat detector launched</span><span class="hardware-spec">Jun 2026 · AudioMoth + BatDetect2 on Raspberry Pi 4 · Live species detection, activity charts, time-expanded audio playback</span></div>
-      <div class="hardware-item"><span class="hardware-name">📷 Fell &amp; Weather Cam</span><span class="hardware-spec">Jun 2026 · Reolink WiFi camera with live snapshot on weather and fells pages · Updated every 5 minutes</span></div>
+      <div class="hardware-item"><span class="hardware-name">🦇 Bat detector launched</span><span class="hardware-spec">Jun 2026 · acoupi + BatDetect2 on Raspberry Pi 4 · Live species detection, species summary, activity charts, time-expanded audio playback</span></div>
+      <div class="hardware-item"><span class="hardware-name">📷 Fell &amp; Weather Cam + time-lapse</span><span class="hardware-spec">Jun 2026 · Reolink WiFi camera with live snapshot and full-day time-lapse viewer on both Fells and Weather pages · Updated every 5 minutes during daylight</span></div>
+      <div class="hardware-item"><span class="hardware-name">📅 Bird species activity calendar</span><span class="hardware-spec">Jun 2026 · GitHub-style heatmap showing daily detection counts across the full year, powered by complete detection history</span></div>
       <div class="hardware-item"><span class="hardware-name">🌱 GDD bird cross-referencing</span><span class="hardware-spec">Jun 2026 · Growing Degree Day milestones now confirmed by actual BirdNET detections · Swift arrival confirmed</span></div>
       <div class="hardware-item"><span class="hardware-name">✈️ Flight total counter</span><span class="hardware-spec">Jun 2026 · Running total of all flights logged, night flights tracking, aircraft photo in last seen card</span></div>
-      <div class="hardware-item"><span class="hardware-name">🌿 Species phenology page</span><span class="hardware-spec">May 2026 · First arrival dates per species, year-on-year comparisons from 2027</span></div>
       <div class="hardware-item"><span class="hardware-name">🌊 EA flood alerts</span><span class="hardware-spec">May 2026 · Live flood warnings for Rivers Greta and Glenderamackin area</span></div>
-      <div class="hardware-item"><span class="hardware-name">🐦 Bird detection storage</span><span class="hardware-spec">May 2026 · Increased from 5,000 to 50,000 detections stored</span></div>
+      <div class="hardware-item"><span class="hardware-name">🐦 Bird detection storage</span><span class="hardware-spec">May 2026 · History increased to 50,000 detections · Full history powers calendar and species summary</span></div>
       <div class="hardware-item"><span class="hardware-name">🌡️ BirdNET-Pi monitoring</span><span class="hardware-spec">May 2026 · Temperature, fan status and IP published to Home Assistant</span></div>
-      <div class="hardware-item"><span class="hardware-name">📱 PWA app</span><span class="hardware-spec">May 2026 · Installable as Threlkeld Projects home screen app</span></div>
-      <div class="hardware-item"><span class="hardware-name">🌌 Northern Lights forecast</span><span class="hardware-spec">May 2026 · NOAA Kp index with aurora likelihood for Threlkeld</span></div>
-      <div class="hardware-item"><span class="hardware-name">🌤️ 7-day weather forecast</span><span class="hardware-spec">May 2026 · Open-Meteo forecast added to weather page</span></div>
-      <div class="hardware-item"><span class="hardware-name">🌱 Growing Degree Days</span><span class="hardware-spec">May 2026 · Accumulated heat units with seasonal milestones and bird cross-referencing</span></div>
-      <div class="hardware-item"><span class="hardware-name">⭐ Stargazing conditions</span><span class="hardware-spec">May 2026 · Cloud cover, moon phase, visibility and Bortle rating</span></div>
-      <div class="hardware-item"><span class="hardware-name">✈️ Flight map</span><span class="hardware-spec">May 2026 · OSM tile map with SVG flight markers and tooltips</span></div>
-      <div class="hardware-item"><span class="hardware-name">🐦 Bird detection storage</span><span class="hardware-spec">May 2026 · Increased from 5,000 to 50,000 detections stored</span></div>
-      <div class="hardware-item"><span class="hardware-name">🌌 Northern Lights forecast</span><span class="hardware-spec">May 2026 · NOAA Kp index with aurora likelihood for Threlkeld</span></div>
-      <div class="hardware-item"><span class="hardware-name">🌱 Phenology logging</span><span class="hardware-spec">May 2026 · First detection dates logged per species per year</span></div>
-      <div class="hardware-item"><span class="hardware-name">📱 PWA app</span><span class="hardware-spec">May 2026 · Installable as home screen app on iPhone and Android</span></div>
+      <div class="hardware-item"><span class="hardware-name">🌱 Phenology logging</span><span class="hardware-spec">May 2026 · First detection date per species per year logged automatically · Back-filled from full detection history</span></div>
+      <div class="hardware-item"><span class="hardware-name">🌌 Northern Lights forecast</span><span class="hardware-spec">May 2026 · NOAA Kp index with aurora likelihood rating for Threlkeld at 54.6°N</span></div>
+      <div class="hardware-item"><span class="hardware-name">🌱 Growing Degree Days</span><span class="hardware-spec">May 2026 · Accumulated heat units since 1 Jan with seasonal milestones cross-referenced against bird detections</span></div>
+      <div class="hardware-item"><span class="hardware-name">⭐ Stargazing conditions</span><span class="hardware-spec">May 2026 · Cloud cover, moon phase, visibility and Bortle 3–4 dark sky rating for tonight</span></div>
+      <div class="hardware-item"><span class="hardware-name">🌤️ 7-day weather forecast</span><span class="hardware-spec">May 2026 · Open-Meteo forecast with hourly breakdown added to weather page</span></div>
+      <div class="hardware-item"><span class="hardware-name">✈️ Flight map</span><span class="hardware-spec">May 2026 · OSM tile map with SVG flight markers, tooltips and trail lines</span></div>
+      <div class="hardware-item"><span class="hardware-name">📱 PWA app</span><span class="hardware-spec">May 2026 · Installable as home screen app on iPhone and Android · Works offline with cached data</span></div>
     </div>
 
     <h2>What's Coming Next</h2>
@@ -272,9 +280,9 @@
 
     <div class="stack-grid">
       <div class="stack-card">
-        <div class="stack-layer">Live · June 2026</div>
-        <div class="stack-name">🦇 Bat Detector</div>
-        <div class="stack-desc">A Raspberry Pi 4 running acoupi with BatDetect2 and an AudioMoth USB microphone. Automatically identifies bat species passing through the garden at dusk. Common Pipistrelle and Leisler's Bat detected in the first night. Time-expanded audio playback available on the Bats page.</div>
+        <div class="stack-layer">Planned · 2026</div>
+        <div class="stack-name">🐿️ Red Squirrel Feeder Cam</div>
+        <div class="stack-desc">A Tuya wildlife camera mounted at the garden red squirrel feeder, integrated via RTSP into Home Assistant. Live motion-triggered snapshots published to the Wildlife page.</div>
       </div>
       <div class="stack-card">
         <div class="stack-layer">Planned · 2026</div>
