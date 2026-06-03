@@ -922,7 +922,7 @@
       document.getElementById('labelSpeciesSession').textContent = _isDaytime ? 'Species Last Night' : 'Species Tonight';
       document.getElementById('statSession').textContent = session.length || '—';
       document.getElementById('statSpeciesSession').textContent = sessionSpecies.size || '—';
-      document.getElementById('statTotal').textContent = allDetections.length || '—';
+      // statTotal set from MQTT total field
       document.getElementById('statSpeciesTotal').textContent = allSpecies.size || '—';
     }
 
@@ -1303,10 +1303,19 @@
             document.getElementById('bestNightSpecies').textContent = bn.topSpecies ? getCommonName(bn.topSpecies) : '—';
           }
         } else {
-          // Live detection
-          const detections = parseAcoupiMessage(message.toString());
-          detections.forEach(d => allDetections.unshift(d));
-          allDetections = allDetections.slice(0, 1000);
+          // Live detections payload
+          const data = JSON.parse(message.toString());
+          // Load detections array
+          const count = data.count || 0;
+          const loaded = [];
+          for (var i = 0; i < count; i++) { if (data[i]) loaded.push(data[i]); }
+          if (loaded.length > 0) {
+            allDetections = loaded;
+          }
+          // Use server-side total for ALL TIME stat
+          if (data.total) {
+            document.getElementById('statTotal').textContent = data.total;
+          }
           saveCache();
           document.getElementById('lastUpdate').textContent = `Updated ${new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}`;
           renderAll();
