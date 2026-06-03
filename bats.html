@@ -1082,29 +1082,7 @@
       }
     }
 
-    function renderBestNight() {
-      if (allDetections.length === 0) return;
-      const nights = {};
-      const nightSpecies = {};
-      allDetections.forEach(d => {
-        const date = new Date(d.timestamp);
-        // Group by night date (use previous day if before noon)
-        const nightDate = date.getHours() < 12
-          ? new Date(date - 86400000).toLocaleDateString('en-GB')
-          : date.toLocaleDateString('en-GB');
-        nights[nightDate] = (nights[nightDate] || 0) + 1;
-        if (!nightSpecies[nightDate]) nightSpecies[nightDate] = {};
-        nightSpecies[nightDate][d.species] = (nightSpecies[nightDate][d.species] || 0) + 1;
-      });
-      const best = Object.entries(nights).sort((a,b) => b[1]-a[1])[0];
-      if (!best) return;
-      const [date, count] = best;
-      const topSp = Object.entries(nightSpecies[date]).sort((a,b)=>b[1]-a[1])[0];
-      document.getElementById('bestNightCard').style.display = 'flex';
-      document.getElementById('bestNightCount').textContent = count;
-      document.getElementById('bestNightDate').textContent = date;
-      document.getElementById('bestNightSpecies').textContent = topSp ? getCommonName(topSp[0]) : '—';
-    }
+    function renderBestNight() { /* populated from stats topic only */ }
 
     function renderNightlyChart() {
       const ctx = document.getElementById('nightlyChart');
