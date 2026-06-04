@@ -730,17 +730,19 @@
         : (tonight.length > 0 ? 'Most detected species tonight' : 'Most detected species last night');
       document.getElementById('botdSub').textContent = subText;
 
-      // Session-wide stats — use bat_stats.py data if available for accurate counts
-      const sessionTotal = batSessionStats ? batSessionStats.session.total : source.length;
-      const sessionSpecies = batSessionStats ? batSessionStats.session.species : new Set(source.map(d => d.species)).size;
-      const sortedSpecies = Object.entries(counts).sort((a,b) => b[1]-a[1]);
-      const runnerUp = sortedSpecies[1] ? `${getCommonName(sortedSpecies[1][0])} (${sortedSpecies[1][1]})` : null;
-      const sorted = [...source].sort((a,b) => new Date(a.timestamp)-new Date(b.timestamp));
-      const first = sorted[0], last = sorted[sorted.length-1];
-      const hourCounts = {};
-      source.forEach(d => { const h = new Date(d.timestamp).getHours(); hourCounts[h] = (hourCounts[h]||0)+1; });
-      const peakHour = Object.entries(hourCounts).sort((a,b)=>b[1]-a[1])[0];
-      const peakLabel = peakHour ? `${String(peakHour[0]).padStart(2,'0')}:00 (${peakHour[1]} detections)` : '—';
+      // Use bat_stats.py session data for accurate counts (not capped at 200)
+      const bs = batSessionStats ? batSessionStats.session : null;
+      const sessionTotal = bs ? bs.total : source.length;
+      const sessionSpecies = bs ? bs.species : new Set(source.map(d => d.species)).size;
+      const topCount = bs ? bs.topCount : count;
+      const runnerUp = bs && bs.runnerUp ? `${getCommonName(bs.runnerUp)} (${bs.runnerUpCount})` :
+                       (() => { const s = Object.entries(counts).sort((a,b)=>b[1]-a[1]); return s[1] ? `${getCommonName(s[1][0])} (${s[1][1]})` : null; })();
+      const peakLabel = bs && bs.peakHour ? `${bs.peakHour}:00 (${bs.peakCount} detections)` :
+                        (() => { const h = {}; source.forEach(d=>{const hr=new Date(d.timestamp).getHours(); h[hr]=(h[hr]||0)+1;}); const p=Object.entries(h).sort((a,b)=>b[1]-a[1])[0]; return p ? `${String(p[0]).padStart(2,'0')}:00 (${p[1]} detections)` : '—'; })();
+      const firstTime = bs && bs.firstDetection ? bs.firstDetection.substr(11,5) :
+                        (() => { const s=[...source].sort((a,b)=>new Date(a.timestamp)-new Date(b.timestamp)); return s[0] ? formatTime(s[0].timestamp) : '—'; })();
+      const lastTime = bs && bs.lastDetection ? bs.lastDetection.substr(11,5) :
+                       (() => { const s=[...source].sort((a,b)=>new Date(a.timestamp)-new Date(b.timestamp)); return s[s.length-1] ? formatTime(s[s.length-1].timestamp) : '—'; })();
       const sessionLabel = isDaytime() ? 'last night' : 'tonight';
 
       // Render card immediately without waiting for photo
@@ -754,12 +756,12 @@
             <div class="botd-facts">
               <div class="botd-fact"><span>Total detections ${sessionLabel}</span><span>${sessionTotal}</span></div>
               <div class="botd-fact"><span>Species detected</span><span>${sessionSpecies}</span></div>
-              <div class="botd-fact"><span>${common} detections</span><span>${count}</span></div>
+              <div class="botd-fact"><span>${common} detections</span><span>${topCount}</span></div>
               <div class="botd-fact"><span>Avg confidence</span><span>${avgConf}%</span></div>
               ${runnerUp ? `<div class="botd-fact"><span>Runner up</span><span>${runnerUp}</span></div>` : ''}
               <div class="botd-fact"><span>Peak hour</span><span>${peakLabel}</span></div>
-              <div class="botd-fact"><span>First detection</span><span>${first ? formatTime(first.timestamp) : '—'}</span></div>
-              <div class="botd-fact"><span>Last detection</span><span>${last ? formatTime(last.timestamp) : '—'}</span></div>
+              <div class="botd-fact"><span>First detection</span><span>${firstTime}</span></div>
+              <div class="botd-fact"><span>Last detection</span><span>${lastTime}</span></div>
               ${info.freq ? `<div class="botd-fact"><span>Echolocation</span><span>${info.freq}</span></div>` : ''}
               ${info.status ? `<div class="botd-fact"><span>UK status</span><span>${info.status}</span></div>` : ''}
             </div>
