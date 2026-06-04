@@ -934,7 +934,7 @@
       document.getElementById('labelSpeciesSession').textContent = _isDaytime ? 'Species Last Night' : 'Species Tonight';
       // Stats populated from bats/stats topic (bat_stats.py)
       // Only update species total from local data if stats topic hasn't arrived
-      if (document.getElementById('statSpeciesTotal').textContent === '—') {
+      if (!window._batStatsReceived) {
         document.getElementById('statSpeciesTotal').textContent = allSpecies.size || '—';
       }
     }
@@ -1330,6 +1330,7 @@
           if (stats.allTime) {
             document.getElementById('statTotal').textContent = stats.allTime.total || '—';
             document.getElementById('statSpeciesTotal').textContent = stats.allTime.species || '—';
+            window._batStatsReceived = true;
           }
           // Best night
           if (stats.bestNight && stats.bestNight.count) {
