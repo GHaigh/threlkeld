@@ -320,7 +320,8 @@
       </div>
       <div class="stat-card">
         <div class="stat-value" id="statTotal">—</div>
-        <div class="stat-label">All Time <span class="info-tooltip" style="vertical-align:middle"><i class="info-icon">i</i><span class="info-box" style="left:50%;transform:translateX(-50%)"><strong>Confident detections only</strong> — counts detections the BatDetect2 model identified with at least 50% confidence. Lower-confidence possible detections are recorded but excluded from these totals to keep the figures reliable.</span></span></div>
+        <div class="stat-label">All Time</div>
+        <span class="info-tooltip" style="display:inline-block;margin-top:4px"><i class="info-icon">i</i><span class="info-box" style="left:50%;transform:translateX(-50%)"><strong>Confident detections only</strong> — counts detections the BatDetect2 model identified with at least 50% confidence. Lower-confidence possible detections are recorded but excluded from these totals to keep the figures reliable.</span></span>
       </div>
       <div class="stat-card">
         <div class="stat-value" id="statSpeciesTotal">—</div>
@@ -360,7 +361,7 @@
     </div>
     <div class="summary-grid">
       <div class="summary-panel">
-        <div class="summary-panel-header">Tonight</div>
+        <div class="summary-panel-header" id="summaryTonightHeader">Tonight</div>
         <div class="summary-body" id="summaryTonight"><div style="padding:10px 12px;font-size:12px;color:var(--cream-dim);font-style:italic">No detections yet</div></div>
       </div>
       <div class="summary-panel">
@@ -777,9 +778,19 @@
       const lastTime = bs && bs.lastDetection ? utcStrToLocal(bs.lastDetection) : '—';
 
       // Update subtitle
-      const subText = selectedNight
-        ? new Date(selectedNight).toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long' })
-        : (isTonight ? 'Most detected species tonight' : 'Most detected species last night');
+      const isFallback = batSessionStats ? batSessionStats.isFallback : false;
+      const fallbackDate = batSessionStats ? batSessionStats.fallbackDate : null;
+      let subText;
+      if (selectedNight) {
+        subText = new Date(selectedNight).toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long' });
+      } else if (isTonight) {
+        subText = 'Most detected species tonight';
+      } else if (isFallback && fallbackDate) {
+        const d = new Date(fallbackDate + 'T12:00:00').toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long' });
+        subText = `Most recent active night · ${d} (last night was quiet)`;
+      } else {
+        subText = 'Most detected species last night';
+      }
       document.getElementById('botdSub').textContent = subText;
 
       // Render card immediately, photo loads async after
@@ -944,7 +955,15 @@
         month: document.getElementById('summaryMonth'),
         year: document.getElementById('summaryYear'),
       };
-      // "Tonight" column = current session breakdown (tonight or last night)
+      // Header reflects what the first column is showing
+      const hdr = document.getElementById('summaryTonightHeader');
+      if (hdr && batSessionStats) {
+        if (batSessionStats.isTonight) hdr.textContent = 'Tonight';
+        else if (batSessionStats.isFallback && batSessionStats.fallbackDate) {
+          hdr.textContent = new Date(batSessionStats.fallbackDate + 'T12:00:00').toLocaleDateString('en-GB', { day:'numeric', month:'short' });
+        } else hdr.textContent = 'Last Night';
+      }
+      // First column = current session breakdown
       if (el.tonight) el.tonight.innerHTML = buildList(session ? session.speciesBreakdown : null);
       if (el.week)    el.week.innerHTML    = buildList(periods ? periods.week : null);
       if (el.month)   el.month.innerHTML   = buildList(periods ? periods.month : null);
@@ -952,16 +971,32 @@
     }
 
     function renderStats() {
-      // Use batSessionStats.isTonight as the authority on tonight vs last night
-      // Fall back to isDaytime() only if stats haven't arrived yet
       const isTonight = batSessionStats ? batSessionStats.isTonight : !isDaytime();
+      const isFallback = batSessionStats ? batSessionStats.isFallback : false;
+      const fallbackDate = batSessionStats ? batSessionStats.fallbackDate : null;
 
-      document.getElementById('labelSession').textContent = isTonight ? 'Tonight So Far' : 'Last Night';
+      let sessionLabel, speciesLabel, activityLabel;
+      if (isTonight) {
+        sessionLabel = 'Tonight So Far';
+        speciesLabel = 'Species Tonight';
+        activityLabel = "Tonight's Activity";
+      } else if (isFallback && fallbackDate) {
+        // Last night was quiet — showing most recent active night
+        const d = new Date(fallbackDate + 'T12:00:00');
+        const dateStr = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+        sessionLabel = `Night of ${dateStr}`;
+        speciesLabel = `Species (${dateStr})`;
+        activityLabel = `Activity · ${dateStr}`;
+      } else {
+        sessionLabel = 'Last Night';
+        speciesLabel = 'Species Last Night';
+        activityLabel = "Last Night's Activity";
+      }
+
+      document.getElementById('labelSession').textContent = sessionLabel;
+      document.getElementById('labelSpeciesSession').textContent = speciesLabel;
       const actTitle = document.getElementById('activityTitle');
-      if (actTitle) actTitle.textContent = isTonight ? "Tonight's Activity" : "Last Night's Activity";
-      document.getElementById('labelSpeciesSession').textContent = isTonight ? 'Species Tonight' : 'Species Last Night';
-      // statSession, statSpeciesSession, statTotal, statSpeciesTotal
-      // are all set from bat_stats.py via the stats topic handler
+      if (actTitle) actTitle.textContent = activityLabel;
     }
 
     function renderDetections() {
