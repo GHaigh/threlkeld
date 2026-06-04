@@ -1276,13 +1276,12 @@
       renderStats();
       renderSummary();
       renderBotd();
-      renderSpeciesBadge();
       // Best night rendered from stats topic only
       renderNightlyChart();
       renderActivityChart();
       renderWeatherCorrelation();
       renderCalendar();
-      renderSpeciesGrid();
+      // renderSpeciesGrid and renderSpeciesBadge called from stats handler once allSpeciesList is populated
       renderDetections();
       loadRecordings();
     }
