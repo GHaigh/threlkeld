@@ -932,10 +932,11 @@
       const actTitle = document.getElementById('activityTitle');
       if (actTitle) actTitle.textContent = _isDaytime ? "Last Night's Activity" : "Tonight's Activity";
       document.getElementById('labelSpeciesSession').textContent = _isDaytime ? 'Species Last Night' : 'Species Tonight';
-      document.getElementById('statSession').textContent = session.length || '—';
-      document.getElementById('statSpeciesSession').textContent = sessionSpecies.size || '—';
-      // statTotal set from MQTT total field
-      document.getElementById('statSpeciesTotal').textContent = allSpecies.size || '—';
+      // Stats populated from bats/stats topic (bat_stats.py)
+      // Only update species total from local data if stats topic hasn't arrived
+      if (document.getElementById('statSpeciesTotal').textContent === '—') {
+        document.getElementById('statSpeciesTotal').textContent = allSpecies.size || '—';
+      }
     }
 
     function renderDetections() {
@@ -1315,12 +1316,27 @@
       try {
         if (topic === BAT_STATS_TOPIC) {
           const stats = JSON.parse(message.toString());
-          if (stats.bestNight) {
+          // Session stats (tonight or last night)
+          if (stats.session) {
+            const s = stats.session;
+            const label = stats.isTonight ? 'Tonight So Far' : 'Last Night';
+            const speciesLabel = stats.isTonight ? 'Species Tonight' : 'Species Last Night';
+            document.getElementById('labelSession').textContent = label;
+            document.getElementById('labelSpeciesSession').textContent = speciesLabel;
+            document.getElementById('statSession').textContent = s.total || '—';
+            document.getElementById('statSpeciesSession').textContent = s.species || '—';
+          }
+          // All time stats
+          if (stats.allTime) {
+            document.getElementById('statTotal').textContent = stats.allTime.total || '—';
+            document.getElementById('statSpeciesTotal').textContent = stats.allTime.species || '—';
+          }
+          // Best night
+          if (stats.bestNight && stats.bestNight.count) {
             const bn = stats.bestNight;
             document.getElementById('bestNightCard').style.display = 'flex';
             document.getElementById('bestNightCount').textContent = bn.count;
             document.getElementById('bestNightDate').textContent = new Date(bn.date).toLocaleDateString('en-GB');
-            document.getElementById('bestNightSpecies').textContent = bn.topSpecies ? getCommonName(bn.topSpecies) : '—';
           }
         } else {
           // Live detections payload
