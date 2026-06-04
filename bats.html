@@ -468,6 +468,7 @@
     const CACHE_KEY = 'threlkeld_bats_cache';
     let allDetections = [];
     let allSpeciesList = []; // populated from bat_stats.py stats topic
+    let batSessionStats = null; // populated from bat_stats.py stats topic
     let activeFilter = null;
     let activityChart = null;
 
@@ -729,9 +730,9 @@
         : (tonight.length > 0 ? 'Most detected species tonight' : 'Most detected species last night');
       document.getElementById('botdSub').textContent = subText;
 
-      // Session-wide stats
-      const sessionTotal = source.length;
-      const sessionSpecies = new Set(source.map(d => d.species)).size;
+      // Session-wide stats — use bat_stats.py data if available for accurate counts
+      const sessionTotal = batSessionStats ? batSessionStats.session.total : source.length;
+      const sessionSpecies = batSessionStats ? batSessionStats.session.species : new Set(source.map(d => d.species)).size;
       const sortedSpecies = Object.entries(counts).sort((a,b) => b[1]-a[1]);
       const runnerUp = sortedSpecies[1] ? `${getCommonName(sortedSpecies[1][0])} (${sortedSpecies[1][1]})` : null;
       const sorted = [...source].sort((a,b) => new Date(a.timestamp)-new Date(b.timestamp));
@@ -1332,12 +1333,14 @@
           // Session stats (tonight or last night)
           if (stats.session) {
             const s = stats.session;
+            batSessionStats = stats;
             const label = stats.isTonight ? 'Tonight So Far' : 'Last Night';
             const speciesLabel = stats.isTonight ? 'Species Tonight' : 'Species Last Night';
             document.getElementById('labelSession').textContent = label;
             document.getElementById('labelSpeciesSession').textContent = speciesLabel;
             document.getElementById('statSession').textContent = s.total || '—';
             document.getElementById('statSpeciesSession').textContent = s.species || '—';
+            renderBotd();
           }
           // All time stats
           if (stats.allTime) {
