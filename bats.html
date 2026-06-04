@@ -467,6 +467,7 @@
     const BAT_STATS_TOPIC = 'birdnetpi/greg2026/bats/stats';
     const CACHE_KEY = 'threlkeld_bats_cache';
     let allDetections = [];
+    let allSpeciesList = []; // populated from bat_stats.py stats topic
     let activeFilter = null;
     let activityChart = null;
 
@@ -820,21 +821,32 @@
 
     function renderSpeciesGrid() {
       const grid = document.getElementById('speciesGrid');
-      const counts = {};
-      const confs = {};
-      allDetections.forEach(d => {
-        counts[d.species] = (counts[d.species] || 0) + 1;
-        if (!confs[d.species]) confs[d.species] = [];
-        confs[d.species].push(d.confidence);
-      });
-      if (Object.keys(counts).length === 0) { grid.innerHTML = '<div class="loading">No species detected yet</div>'; return; }
-      const sorted = Object.entries(counts).sort((a,b) => b[1]-a[1]);
+
+      // Use full species list from bat_stats.py if available, else fall back to allDetections
+      let sorted;
+      if (allSpeciesList.length > 0) {
+        sorted = allSpeciesList.map(s => [s.species, s.count, s.avgConfidence, s.firstSeen]);
+      } else {
+        const counts = {}, confs = {};
+        allDetections.forEach(d => {
+          counts[d.species] = (counts[d.species] || 0) + 1;
+          if (!confs[d.species]) confs[d.species] = [];
+          confs[d.species].push(d.confidence);
+        });
+        if (Object.keys(counts).length === 0) { grid.innerHTML = '<div class="loading">No species detected yet</div>'; return; }
+        sorted = Object.entries(counts).sort((a,b) => b[1]-a[1]).map(([sp, cnt]) => {
+          const avgConf = Math.round(confs[sp].reduce((a,b) => a+b, 0) / confs[sp].length * 100);
+          const first = allDetections.filter(d=>d.species===sp).reduce((a,b)=>new Date(a.timestamp)<new Date(b.timestamp)?a:b);
+          return [sp, cnt, avgConf, first ? first.timestamp : null];
+        });
+      }
+
+      if (sorted.length === 0) { grid.innerHTML = '<div class="loading">No species detected yet</div>'; return; }
       document.getElementById('speciesSub').textContent = `${sorted.length} species · Click to filter detections`;
-      grid.innerHTML = sorted.map(([sp, cnt]) => {
-        const avgConf = Math.round(confs[sp].reduce((a,b) => a+b, 0) / confs[sp].length * 100);
-        const inatId = INAT_IDS[sp];
+
+      grid.innerHTML = sorted.map(([sp, cnt, avgConf, firstSeen]) => {
         const isActive = activeFilter === sp;
-        const photoUrl = null; // loaded async below
+        const firstDate = firstSeen ? new Date(firstSeen).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) : '—';
         return `<div class="species-card ${isActive ? 'highlight' : ''}" onclick="filterSpecies('${sp}')">
           <img class="species-img" id="batimg-${sp.replace(/ /g, '-')}" src="" style="display:none" alt="${getCommonName(sp)}">
           <div class="species-body">
@@ -842,7 +854,7 @@
             <div class="species-latin">${sp}</div>
             <div class="species-count">${cnt} detection${cnt>1?'s':''}</div>
             <div class="species-conf">Avg confidence: ${avgConf}%</div>
-            <div class="species-first">First: ${(() => { const first = allDetections.filter(d=>d.species===sp).reduce((a,b)=>new Date(a.timestamp)<new Date(b.timestamp)?a:b); return new Date(first.timestamp).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}); })()}</div>
+            <div class="species-first">First: ${firstDate}</div>
           </div>
         </div>`;
       }).join('');
@@ -1072,12 +1084,12 @@
     }
 
     function renderSpeciesBadge() {
-      const species = new Set(allDetections.map(d => d.species));
+      const count = allSpeciesList.length > 0 ? allSpeciesList.length : new Set(allDetections.map(d => d.species)).size;
       const el = document.getElementById('speciesBadge');
       const txt = document.getElementById('speciesBadgeText');
-      if (species.size > 0) {
+      if (count > 0) {
         el.style.display = 'inline-flex';
-        txt.textContent = `${species.size} species detected`;
+        txt.textContent = `${count} species detected`;
       }
     }
 
@@ -1329,6 +1341,11 @@
             document.getElementById('statTotal').textContent = stats.allTime.total || '—';
             document.getElementById('statSpeciesTotal').textContent = stats.allTime.species || '—';
             window._batStatsReceived = true;
+            if (stats.allTime.speciesList && stats.allTime.speciesList.length > 0) {
+              allSpeciesList = stats.allTime.speciesList;
+              renderSpeciesGrid();
+              renderSpeciesBadge();
+            }
           }
           // Best night
           if (stats.bestNight && stats.bestNight.count) {
