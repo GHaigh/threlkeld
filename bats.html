@@ -1277,7 +1277,7 @@
     const cached = (() => { try { const r = localStorage.getItem(CACHE_KEY); if (!r) return null; const {data,ts} = JSON.parse(r); return {data, age: Math.round((Date.now()-ts)/60000)}; } catch(e) { return null; } })();
     if (cached && cached.data && cached.data.length > 0) {
       allDetections = cached.data;
-      renderAll();
+      // Don't renderAll yet — wait for sun times so isTonight() works correctly
       document.getElementById('offlineBanner').style.display = 'flex';
       document.getElementById('offlineAge').textContent = cached.age < 60 ? `${cached.age} mins ago` : `${Math.round(cached.age/60)} hours ago`;
     }
@@ -1288,6 +1288,8 @@
       var m = Math.round((sun.sunset % 1) * 60);
       var label = String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0') + ' BST';
       var el = document.getElementById('tooltipSunset');
+      // Now render with correct sun times if we have cached data
+      if (allDetections.length > 0) renderAll();
       if (el) el.textContent = label;
     });
 
