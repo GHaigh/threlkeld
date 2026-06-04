@@ -712,18 +712,34 @@
     function renderBotd() {
       const tonight = getDetectionsForNight(selectedNight);
       const source = tonight.length > 0 ? tonight : allDetections;
-      if (source.length === 0) {
+      if (source.length === 0 && !batSessionStats) {
         document.getElementById('botdCard').innerHTML = '<div class="loading">Waiting for detections...</div>';
         return;
       }
-      const counts = {};
-      source.forEach(d => { counts[d.species] = (counts[d.species] || 0) + 1; });
-      const topSpecies = Object.entries(counts).sort((a,b) => b[1]-a[1])[0];
-      const [species, count] = topSpecies;
+
+      // Use bat_stats.py exclusively when available — it has the correct full-night data
+      const bs = batSessionStats ? batSessionStats.session : null;
+      if (!bs && source.length === 0) {
+        document.getElementById('botdCard').innerHTML = '<div class="loading">Waiting for detections...</div>';
+        return;
+      }
+      let species, count, avgConf;
+      if (bs && bs.topSpecies) {
+        species = bs.topSpecies;
+        count = bs.topCount;
+        avgConf = bs.avgConfidence;
+      } else {
+        const localCounts = {};
+        source.forEach(d => { localCounts[d.species] = (localCounts[d.species] || 0) + 1; });
+        const topEntry = Object.entries(localCounts).sort((a,b) => b[1]-a[1])[0];
+        [species, count] = topEntry;
+        avgConf = Math.round(source.filter(d => d.species === species).reduce((s,d) => s + d.confidence, 0) / count * 100);
+      }
       const common = getCommonName(species);
       const info = BAT_INFO[species] || {};
-      const avgConf = Math.round(source.filter(d => d.species === species).reduce((s,d) => s + d.confidence, 0) / count * 100);
       const inatId = INAT_IDS[species];
+      const counts = {};
+      source.forEach(d => { counts[d.species] = (counts[d.species] || 0) + 1; });
 
       const subText = selectedNight
         ? new Date(selectedNight).toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long' })
