@@ -591,11 +591,13 @@
         sessionStart.setHours(Math.floor(nightStart), Math.round((nightStart % 1) * 60), 0, 0);
         return d >= sessionStart;
       } else {
+        // Daytime — show last night: yesterday sunset-30m to today, up to noon at latest
         const yesterday = new Date(now); yesterday.setDate(now.getDate() - 1);
         const sessionStart = new Date(yesterday);
         sessionStart.setHours(Math.floor(nightStart), Math.round((nightStart % 1) * 60), 0, 0);
+        // End at noon today (catches all dawn bat activity)
         const sessionEnd = new Date(now);
-        sessionEnd.setHours(Math.floor(nightEnd), Math.round((nightEnd % 1) * 60), 0, 0);
+        sessionEnd.setHours(12, 0, 0, 0);
         return d >= sessionStart && d <= sessionEnd;
       }
     }
