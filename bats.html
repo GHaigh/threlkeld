@@ -818,21 +818,18 @@
     function renderActivityChart() {
       const ctx = document.getElementById('activityChart');
       if (!ctx) return;
-      const now = new Date();
-      const hours = Array.from({length: 24}, (_, i) => {
-        const h = new Date(now - (23-i) * 3600000);
-        return h.getHours();
-      });
-      const labels = hours.map(h => `${String(h).padStart(2,'0')}:00`);
+      // Use session.hourly from bat_stats.py (24 UTC-hour buckets), shift to local time
+      const bs = batSessionStats ? batSessionStats.session : null;
+      const offset = batSessionStats ? batSessionStats.utcOffset : (-new Date().getTimezoneOffset()/60);
+      // Build local-hour labels 00:00..23:00 and remap UTC buckets to local
+      const labels = Array.from({length: 24}, (_, h) => `${String(h).padStart(2,'0')}:00`);
       const counts = new Array(24).fill(0);
-      allDetections.forEach(d => {
-        const age = now - new Date(d.timestamp);
-        if (age < 24 * 3600000) {
-          const hoursAgo = Math.floor(age / 3600000);
-          const idx = 23 - hoursAgo;
-          if (idx >= 0) counts[idx]++;
+      if (bs && bs.hourly) {
+        for (let utcH = 0; utcH < 24; utcH++) {
+          const localH = (utcH + offset + 24) % 24;
+          counts[localH] = bs.hourly[utcH];
         }
-      });
+      }
       if (activityChart) activityChart.destroy();
       activityChart = new Chart(ctx, {
         type: 'bar',
@@ -928,37 +925,18 @@
     }
 
     function renderSummary() {
-      if (!allDetections.length) return;
+      // All period breakdowns come from bat_stats.py (full DB), not the 200-record payload
+      const periods = batSessionStats ? batSessionStats.periods : null;
+      const session = batSessionStats ? batSessionStats.session : null;
 
-      function getStats(dets, fromDate) {
-        const filtered = dets.filter(d => new Date(d.timestamp) >= fromDate);
-        const counts = {};
-        filtered.forEach(d => { counts[d.species] = (counts[d.species] || 0) + 1; });
-        return Object.entries(counts)
-          .sort((a, b) => b[1] - a[1])
-          .map(([species, count]) => ({ species, count, common: getCommonName(species) }));
-      }
-
-      function buildList(species) {
-        if (!species.length) return '<div style="padding:10px 12px;font-size:12px;color:var(--cream-dim);font-style:italic">No detections</div>';
-        return species.map(s => `
+      function buildList(arr) {
+        if (!arr || !arr.length) return '<div style="padding:10px 12px;font-size:12px;color:var(--cream-dim);font-style:italic">No detections</div>';
+        return arr.map(s => `
           <div class="summary-row">
-            <div class="summary-species">${s.common}</div>
+            <div class="summary-species">${getCommonName(s.species)}</div>
             <div class="summary-count">${s.count}</div>
           </div>`).join('');
       }
-
-      const now = new Date();
-      const tonight = allDetections.filter(d => isTonight(d.timestamp));
-      const startOfWeek = new Date(now); startOfWeek.setDate(now.getDate() - now.getDay());  startOfWeek.setHours(0,0,0,0);
-      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-      const startOfYear = new Date(now.getFullYear(), 0, 1);
-
-      const tonightStats = (() => {
-        const counts = {};
-        tonight.forEach(d => { counts[d.species] = (counts[d.species] || 0) + 1; });
-        return Object.entries(counts).sort((a,b)=>b[1]-a[1]).map(([species,count])=>({ species, count, common: getCommonName(species) }));
-      })();
 
       const el = {
         tonight: document.getElementById('summaryTonight'),
@@ -966,10 +944,11 @@
         month: document.getElementById('summaryMonth'),
         year: document.getElementById('summaryYear'),
       };
-      if (el.tonight) el.tonight.innerHTML = buildList(tonightStats);
-      if (el.week)    el.week.innerHTML    = buildList(getStats(allDetections, startOfWeek));
-      if (el.month)   el.month.innerHTML   = buildList(getStats(allDetections, startOfMonth));
-      if (el.year)    el.year.innerHTML    = buildList(getStats(allDetections, startOfYear));
+      // "Tonight" column = current session breakdown (tonight or last night)
+      if (el.tonight) el.tonight.innerHTML = buildList(session ? session.speciesBreakdown : null);
+      if (el.week)    el.week.innerHTML    = buildList(periods ? periods.week : null);
+      if (el.month)   el.month.innerHTML   = buildList(periods ? periods.month : null);
+      if (el.year)    el.year.innerHTML    = buildList(periods ? periods.year : null);
     }
 
     function renderStats() {
@@ -1134,21 +1113,13 @@
     function renderNightlyChart() {
       const ctx = document.getElementById('nightlyChart');
       if (!ctx) return;
-      const now = new Date();
-      const days = Array.from({length: 30}, (_, i) => {
-        const d = new Date(now - (29-i) * 86400000);
+      // Use nightly array from bat_stats.py: [{date:'YYYY-MM-DD', count:N}, ...] oldest first
+      const nightly = batSessionStats && batSessionStats.nightly ? batSessionStats.nightly : [];
+      const days = nightly.map(n => {
+        const d = new Date(n.date + 'T12:00:00');
         return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
       });
-      const counts = new Array(30).fill(0);
-      allDetections.forEach(d => {
-        const date = new Date(d.timestamp);
-        const age = now - date;
-        if (age < 30 * 86400000) {
-          const dayIdx = Math.floor(age / 86400000);
-          const idx = 29 - dayIdx;
-          if (idx >= 0) counts[idx]++;
-        }
-      });
+      const counts = nightly.map(n => n.count);
       if (nightlyChart) nightlyChart.destroy();
       nightlyChart = new Chart(ctx, {
         type: 'bar',
@@ -1177,25 +1148,16 @@
     function renderCalendar() {
       const grid = document.getElementById('calendarGrid');
       if (!grid) return;
-      const now = new Date();
-      const days = 30; // last 30 nights
-      const nightCounts = {};
-      allDetections.forEach(d => {
-        const date = new Date(d.timestamp);
-        const key = date.toISOString().split('T')[0];
-        nightCounts[key] = (nightCounts[key] || 0) + 1;
-      });
-      const max = Math.max(...Object.values(nightCounts), 1);
-      let html = '';
-      for (let i = days - 1; i >= 0; i--) {
-        const d = new Date(now - i * 86400000);
-        const key = d.toISOString().split('T')[0];
-        const count = nightCounts[key] || 0;
+      // Use nightly array from bat_stats.py (full DB, correct night attribution)
+      const nightly = batSessionStats && batSessionStats.nightly ? batSessionStats.nightly : [];
+      if (!nightly.length) { grid.innerHTML = ''; return; }
+      const max = Math.max(...nightly.map(n => n.count), 1);
+      grid.innerHTML = nightly.map(n => {
+        const count = n.count;
         const level = count === 0 ? 0 : count < max * 0.25 ? 1 : count < max * 0.5 ? 2 : count < max * 0.75 ? 3 : 4;
-        const label = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
-        html += `<div class="cal-day level-${level}" title="${label}: ${count} detection${count!==1?'s':''}"></div>`;
-      }
-      grid.innerHTML = html;
+        const label = new Date(n.date + 'T12:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+        return `<div class="cal-day level-${level}" title="${label}: ${count} detection${count!==1?'s':''}"></div>`;
+      }).join('');
     }
 
     // ── Recordings Player ────────────────────────────────────
@@ -1361,36 +1323,39 @@
       try {
         if (topic === BAT_STATS_TOPIC) {
           const stats = JSON.parse(message.toString());
-          // Session stats (tonight or last night)
+          batSessionStats = stats;
+
+          // Stat cards — session (tonight/last night)
           if (stats.session) {
             const s = stats.session;
-            batSessionStats = stats;
-            const label = stats.isTonight ? 'Tonight So Far' : 'Last Night';
-            const speciesLabel = stats.isTonight ? 'Species Tonight' : 'Species Last Night';
-            document.getElementById('labelSession').textContent = label;
-            document.getElementById('labelSpeciesSession').textContent = speciesLabel;
             document.getElementById('statSession').textContent = s.total || '—';
             document.getElementById('statSpeciesSession').textContent = s.species || '—';
-            renderBotd();
           }
-          // All time stats
+          // Stat cards — all time
           if (stats.allTime) {
             document.getElementById('statTotal').textContent = stats.allTime.total || '—';
             document.getElementById('statSpeciesTotal').textContent = stats.allTime.species || '—';
-            window._batStatsReceived = true;
             if (stats.allTime.speciesList && stats.allTime.speciesList.length > 0) {
               allSpeciesList = stats.allTime.speciesList;
-              renderSpeciesGrid();
-              renderSpeciesBadge();
             }
           }
-          // Best night
+          // Best night card
           if (stats.bestNight && stats.bestNight.count) {
             const bn = stats.bestNight;
             document.getElementById('bestNightCard').style.display = 'flex';
             document.getElementById('bestNightCount').textContent = bn.count;
-            document.getElementById('bestNightDate').textContent = new Date(bn.date).toLocaleDateString('en-GB');
+            document.getElementById('bestNightDate').textContent = new Date(bn.date + 'T12:00:00').toLocaleDateString('en-GB');
           }
+
+          // Everything below depends on batSessionStats — re-render all
+          renderStats();
+          renderSummary();
+          renderBotd();
+          renderNightlyChart();
+          renderActivityChart();
+          renderCalendar();
+          renderSpeciesGrid();
+          renderSpeciesBadge();
         } else {
           // Live detections payload
           const data = JSON.parse(message.toString());
