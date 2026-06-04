@@ -463,7 +463,7 @@
   <script>
     const MQTT_HOST = 'broker.hivemq.com';
     const MQTT_PORT = 8884;
-    const BAT_TOPIC = 'birdnetpi/greg2026/bats/processed';
+    const BAT_TOPIC = 'birdnetpi/greg2026/bats';
     const BAT_STATS_TOPIC = 'birdnetpi/greg2026/bats/stats';
     const CACHE_KEY = 'threlkeld_bats_cache';
     let allDetections = [];
@@ -1330,7 +1330,8 @@
           }
           saveCache();
           document.getElementById('lastUpdate').textContent = `Updated ${new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}`;
-          renderAll();
+          // Ensure sun times are loaded before rendering
+          getSunTimes().then(() => renderAll());
         }
       } catch(e) { console.error(e); }
     });
