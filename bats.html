@@ -624,21 +624,21 @@
     const BAT_WIKI_ARTICLES = {
       'Pipistrellus pipistrellus': 'Common_pipistrelle',
       'Pipistrellus pygmaeus': 'Soprano_pipistrelle',
-      'Pipistrellus nathusii': "Nathusius%27s_pipistrelle",
+      'Pipistrellus nathusii': "Nathusius's_pipistrelle",
       'Nyctalus noctula': 'Common_noctule',
-      'Nyctalus leisleri': "Leisler%27s_bat",
+      'Nyctalus leisleri': "Leisler's_bat",
       'Eptesicus serotinus': 'Serotine_bat',
-      'Myotis daubentonii': "Daubenton%27s_bat",
-      'Myotis nattereri': "Natterer%27s_bat",
+      'Myotis daubentonii': "Daubenton's_bat",
+      'Myotis nattereri': "Natterer's_bat",
       'Myotis mystacinus': 'Whiskered_bat',
-      'Myotis brandtii': "Brandt%27s_bat",
+      'Myotis brandtii': "Brandt's_bat",
       'Plecotus auritus': 'Brown_long-eared_bat',
       'Plecotus austriacus': 'Grey_long-eared_bat',
       'Rhinolophus ferrumequinum': 'Greater_horseshoe_bat',
       'Rhinolophus hipposideros': 'Lesser_horseshoe_bat',
       'Barbastella barbastellus': 'Western_barbastelle',
       'Myotis alcathoe': 'Alcathoe_bat',
-      'Myotis bechsteinii': "Bechstein%27s_bat",
+      'Myotis bechsteinii': "Bechstein's_bat",
     };
 
     const _batPhotoCache = {};
@@ -710,58 +710,79 @@
     }
 
     function renderBotd() {
-      const tonight = getDetectionsForNight(selectedNight);
-      const source = tonight.length > 0 ? tonight : allDetections;
-      if (source.length === 0 && !batSessionStats) {
+      // bat_stats.py is the single source of truth for all botd stats.
+      // allDetections (200-record MQTT payload) is only used as a fallback
+      // when bat_stats.py hasn't arrived yet.
+      const bs = batSessionStats ? batSessionStats.session : null;
+      const isTonight = batSessionStats ? batSessionStats.isTonight : !isDaytime();
+      const sessionLabel = isTonight ? 'tonight' : 'last night';
+
+      // Determine top species — prefer bat_stats.py
+      let species, topCount, avgConf;
+      if (bs && bs.topSpecies) {
+        species = bs.topSpecies;
+        topCount = bs.topCount;
+        avgConf = bs.avgConfidence;
+      } else {
+        // Fallback: calculate from allDetections
+        const tonight = getDetectionsForNight(null);
+        const source = tonight.length > 0 ? tonight : allDetections;
+        if (source.length === 0) {
+          document.getElementById('botdCard').innerHTML = '<div class="loading">Waiting for detections...</div>';
+          return;
+        }
+        const localCounts = {};
+        source.forEach(d => { localCounts[d.species] = (localCounts[d.species] || 0) + 1; });
+        const top = Object.entries(localCounts).sort((a,b) => b[1]-a[1])[0];
+        species = top[0];
+        topCount = top[1];
+        avgConf = Math.round(source.filter(d => d.species === species).reduce((s,d) => s + d.confidence, 0) / topCount * 100);
+      }
+
+      if (!species) {
         document.getElementById('botdCard').innerHTML = '<div class="loading">Waiting for detections...</div>';
         return;
       }
 
-      // Use bat_stats.py exclusively when available — it has the correct full-night data
-      const bs = batSessionStats ? batSessionStats.session : null;
-      if (!bs && source.length === 0) {
-        document.getElementById('botdCard').innerHTML = '<div class="loading">Waiting for detections...</div>';
-        return;
-      }
-      let species, count, avgConf;
-      if (bs && bs.topSpecies) {
-        species = bs.topSpecies;
-        count = bs.topCount;
-        avgConf = bs.avgConfidence;
-      } else {
-        const localCounts = {};
-        source.forEach(d => { localCounts[d.species] = (localCounts[d.species] || 0) + 1; });
-        const topEntry = Object.entries(localCounts).sort((a,b) => b[1]-a[1])[0];
-        [species, count] = topEntry;
-        avgConf = Math.round(source.filter(d => d.species === species).reduce((s,d) => s + d.confidence, 0) / count * 100);
-      }
       const common = getCommonName(species);
       const info = BAT_INFO[species] || {};
       const inatId = INAT_IDS[species];
-      const counts = {};
-      source.forEach(d => { counts[d.species] = (counts[d.species] || 0) + 1; });
 
+      // Session totals — from bat_stats.py or fallback
+      const sessionTotal = bs ? bs.total : allDetections.length;
+      const sessionSpecies = bs ? bs.species : new Set(allDetections.map(d => d.species)).size;
+
+      // Runner up — from bat_stats.py or fallback
+      let runnerUp = null;
+      if (bs && bs.runnerUp) {
+        runnerUp = `${getCommonName(bs.runnerUp)} (${bs.runnerUpCount})`;
+      }
+
+      // Peak hour — from bat_stats.py, convert UTC to local time, or fallback
+      let peakLabel = '—';
+      if (bs && bs.peakHour) {
+        // Convert UTC hour to local time using browser offset
+        const utcOffset = -new Date().getTimezoneOffset() / 60;
+        const peakLocal = (parseInt(bs.peakHour) + utcOffset + 24) % 24;
+        peakLabel = `${String(peakLocal).padStart(2,'0')}:00 (${bs.peakCount} detections)`;
+      }
+
+      // First/last detection — from bat_stats.py, convert UTC to local, or fallback
+      function utcStrToLocal(str) {
+        if (!str) return '—';
+        const d = new Date(str.replace(' ', 'T') + 'Z'); // treat as UTC
+        return d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+      }
+      const firstTime = bs && bs.firstDetection ? utcStrToLocal(bs.firstDetection) : '—';
+      const lastTime = bs && bs.lastDetection ? utcStrToLocal(bs.lastDetection) : '—';
+
+      // Update subtitle
       const subText = selectedNight
         ? new Date(selectedNight).toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long' })
-        : (tonight.length > 0 ? 'Most detected species tonight' : 'Most detected species last night');
+        : (isTonight ? 'Most detected species tonight' : 'Most detected species last night');
       document.getElementById('botdSub').textContent = subText;
 
-      // Use bat_stats.py session data for accurate counts (not capped at 200)
-      const bs2 = batSessionStats ? batSessionStats.session : null;
-      const sessionTotal = bs ? bs.total : source.length;
-      const sessionSpecies = bs ? bs.species : new Set(source.map(d => d.species)).size;
-      const topCount = bs ? bs.topCount : count;
-      const runnerUp = bs && bs.runnerUp ? `${getCommonName(bs.runnerUp)} (${bs.runnerUpCount})` :
-                       (() => { const s = Object.entries(counts).sort((a,b)=>b[1]-a[1]); return s[1] ? `${getCommonName(s[1][0])} (${s[1][1]})` : null; })();
-      const peakLabel = bs && bs.peakHour ? `${bs.peakHour}:00 (${bs.peakCount} detections)` :
-                        (() => { const h = {}; source.forEach(d=>{const hr=new Date(d.timestamp).getHours(); h[hr]=(h[hr]||0)+1;}); const p=Object.entries(h).sort((a,b)=>b[1]-a[1])[0]; return p ? `${String(p[0]).padStart(2,'0')}:00 (${p[1]} detections)` : '—'; })();
-      const firstTime = bs && bs.firstDetection ? bs.firstDetection.substr(11,5) :
-                        (() => { const s=[...source].sort((a,b)=>new Date(a.timestamp)-new Date(b.timestamp)); return s[0] ? formatTime(s[0].timestamp) : '—'; })();
-      const lastTime = bs && bs.lastDetection ? bs.lastDetection.substr(11,5) :
-                       (() => { const s=[...source].sort((a,b)=>new Date(a.timestamp)-new Date(b.timestamp)); return s[s.length-1] ? formatTime(s[s.length-1].timestamp) : '—'; })();
-      const sessionLabel = isDaytime() ? 'last night' : 'tonight';
-
-      // Render card immediately without waiting for photo
+      // Render card immediately, photo loads async after
       document.getElementById('botdCard').innerHTML = `
         <div class="botd-card">
           <img class="botd-image" id="botdPhoto" alt="${common}" style="background:var(--forest-mid);display:none">
@@ -785,17 +806,12 @@
           </div>
         </div>`;
 
-      // Then fetch photo and update img src — no re-render
+      // Fetch photo and inject into existing img — no re-render
       getInatPhoto(species, (photo) => {
         const img = document.getElementById('botdPhoto');
         if (!img) return;
-        if (photo) {
-          img.src = photo;
-          img.style.display = 'block';
-        } else {
-          // No photo — remove image element so grid uses full width
-          img.remove();
-        }
+        if (photo) { img.src = photo; img.style.display = 'block'; }
+        else { img.remove(); }
       });
     }
 
@@ -957,19 +973,16 @@
     }
 
     function renderStats() {
-      const currentHour = new Date().getHours() + new Date().getMinutes() / 60;
-      const _isDaytime = isDaytime();
-      const session = allDetections.filter(d => isTonight(d.timestamp));
-      const sessionSpecies = new Set(session.map(d => d.species));
-      const allSpecies = new Set(allDetections.map(d => d.species));
+      // Use batSessionStats.isTonight as the authority on tonight vs last night
+      // Fall back to isDaytime() only if stats haven't arrived yet
+      const isTonight = batSessionStats ? batSessionStats.isTonight : !isDaytime();
 
-      document.getElementById('labelSession').textContent = _isDaytime ? 'Last Night' : 'Tonight So Far';
+      document.getElementById('labelSession').textContent = isTonight ? 'Tonight So Far' : 'Last Night';
       const actTitle = document.getElementById('activityTitle');
-      if (actTitle) actTitle.textContent = _isDaytime ? "Last Night's Activity" : "Tonight's Activity";
-      document.getElementById('labelSpeciesSession').textContent = _isDaytime ? 'Species Last Night' : 'Species Tonight';
-      // Stats populated from bats/stats topic (bat_stats.py)
-      // Only update species total from local data if stats topic hasn't arrived
-      // statSpeciesTotal and statTotal are set from bat_stats.py via stats topic only
+      if (actTitle) actTitle.textContent = isTonight ? "Tonight's Activity" : "Last Night's Activity";
+      document.getElementById('labelSpeciesSession').textContent = isTonight ? 'Species Tonight' : 'Species Last Night';
+      // statSession, statSpeciesSession, statTotal, statSpeciesTotal
+      // are all set from bat_stats.py via the stats topic handler
     }
 
     function renderDetections() {
