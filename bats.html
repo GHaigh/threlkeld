@@ -412,7 +412,7 @@
     <!-- Calendar -->
     <div class="section-header">
       <div class="section-title">Detection Calendar</div>
-      <div class="section-sub">Activity heatmap · Each square = one night</div>
+      <div class="section-sub">Last 30 nights · Each square = one night</div>
     </div>
     <div class="cal-months" id="calMonths"></div>
     <div class="calendar-grid" id="calendarGrid"></div>
@@ -487,6 +487,8 @@
       'Rhinolophus ferrumequinum': 'Greater Horseshoe Bat',
       'Rhinolophus hipposideros': 'Lesser Horseshoe Bat',
       'Barbastella barbastellus': 'Barbastelle',
+      'Myotis alcathoe': 'Alcathoe Bat',
+      'Myotis bechsteinii': "Bechstein's Bat",
     };
 
     const INAT_IDS = {
@@ -634,6 +636,8 @@
       'Rhinolophus ferrumequinum': 'Greater_horseshoe_bat',
       'Rhinolophus hipposideros': 'Lesser_horseshoe_bat',
       'Barbastella barbastellus': 'Western_barbastelle',
+      'Myotis alcathoe': 'Alcathoe_bat',
+      'Myotis bechsteinii': "Bechstein%27s_bat",
     };
 
     const _batPhotoCache = {};
@@ -1142,7 +1146,7 @@
       const grid = document.getElementById('calendarGrid');
       if (!grid) return;
       const now = new Date();
-      const days = 90; // last 90 nights
+      const days = 30; // last 30 nights
       const nightCounts = {};
       allDetections.forEach(d => {
         const date = new Date(d.timestamp);
