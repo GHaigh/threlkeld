@@ -1339,12 +1339,17 @@
               allSpeciesList = stats.allTime.speciesList;
             }
           }
-          // Best night card
+          // Best night card (may not exist in current layout — guard against null)
           if (stats.bestNight && stats.bestNight.count) {
             const bn = stats.bestNight;
-            document.getElementById('bestNightCard').style.display = 'flex';
-            document.getElementById('bestNightCount').textContent = bn.count;
-            document.getElementById('bestNightDate').textContent = new Date(bn.date + 'T12:00:00').toLocaleDateString('en-GB');
+            const card = document.getElementById('bestNightCard');
+            if (card) {
+              card.style.display = 'flex';
+              const cnt = document.getElementById('bestNightCount');
+              const dt = document.getElementById('bestNightDate');
+              if (cnt) cnt.textContent = bn.count;
+              if (dt) dt.textContent = new Date(bn.date + 'T12:00:00').toLocaleDateString('en-GB');
+            }
           }
 
           // Everything below depends on batSessionStats — re-render all
