@@ -591,11 +591,15 @@
         sessionStart.setHours(Math.floor(nightStart), Math.round((nightStart % 1) * 60), 0, 0);
         return d >= sessionStart;
       } else {
-        // Daytime — show last night: yesterday sunset-30m to today, up to noon at latest
-        const yesterday = new Date(now); yesterday.setDate(now.getDate() - 1);
-        const sessionStart = new Date(yesterday);
+        // Daytime — show last night: two nights ago sunset to today noon
+        // e.g. at 07:00 Thu, last night = Wed 21:09 to Thu 12:00
+        // Detection at Wed 06:58 = night of Tue->Wed, so session starts Tue 21:09
+        // We need to find the most recent sunset BEFORE the earliest detection
+        // Simplest: session starts at nightStart on the day before yesterday
+        const dayBeforeYesterday = new Date(now); dayBeforeYesterday.setDate(now.getDate() - 2);
+        const sessionStart = new Date(dayBeforeYesterday);
         sessionStart.setHours(Math.floor(nightStart), Math.round((nightStart % 1) * 60), 0, 0);
-        // End at noon today (catches all dawn bat activity)
+        // End at noon today
         const sessionEnd = new Date(now);
         sessionEnd.setHours(12, 0, 0, 0);
         return d >= sessionStart && d <= sessionEnd;
