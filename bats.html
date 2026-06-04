@@ -747,7 +747,7 @@
       document.getElementById('botdSub').textContent = subText;
 
       // Use bat_stats.py session data for accurate counts (not capped at 200)
-      const bs = batSessionStats ? batSessionStats.session : null;
+      const bs2 = batSessionStats ? batSessionStats.session : null;
       const sessionTotal = bs ? bs.total : source.length;
       const sessionSpecies = bs ? bs.species : new Set(source.map(d => d.species)).size;
       const topCount = bs ? bs.topCount : count;
