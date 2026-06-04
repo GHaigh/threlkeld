@@ -934,9 +934,7 @@
       document.getElementById('labelSpeciesSession').textContent = _isDaytime ? 'Species Last Night' : 'Species Tonight';
       // Stats populated from bats/stats topic (bat_stats.py)
       // Only update species total from local data if stats topic hasn't arrived
-      if (!window._batStatsReceived) {
-        document.getElementById('statSpeciesTotal').textContent = allSpecies.size || '—';
-      }
+      // statSpeciesTotal and statTotal are set from bat_stats.py via stats topic only
     }
 
     function renderDetections() {
@@ -1349,10 +1347,7 @@
           if (loaded.length > 0) {
             allDetections = loaded;
           }
-          // Use server-side total for ALL TIME stat
-          if (data.total) {
-            document.getElementById('statTotal').textContent = data.total;
-          }
+          // statTotal set from bat_stats.py stats topic
           saveCache();
           document.getElementById('lastUpdate').textContent = `Updated ${new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}`;
           // Ensure sun times are loaded before rendering
