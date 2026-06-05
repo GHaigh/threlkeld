@@ -161,10 +161,8 @@
       return;
     }
     try {
-      const res = await fetch('https://threlkeld.haigh-greg.workers.dev/', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({email})
+      const res = await fetch('https://threlkeld.haigh-greg.workers.dev/?email=' + encodeURIComponent(email), {
+        method: 'POST'
       });
       msg.style.display = 'block';
       if (res.ok || res.status === 201) {
