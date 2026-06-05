@@ -9,58 +9,35 @@
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Source+Sans+3:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
   *{margin:0;padding:0;box-sizing:border-box}
-    :root {
-      --forest-deep: #0d1a0d;
-      --forest-dark: #1a2e1a;
-      --forest-mid: #243022;
-      --sage: #7ab87a;
-      --cream: #e8f0e4;
-      --cream-dim: rgba(232,240,228,0.55);
-      --divider: rgba(122,184,122,0.15);
-      --bat: #9b72cf;
-      --bat-dim: rgba(155,114,207,0.15);
-      --bat-border: rgba(155,114,207,0.3);
-    }
+  :root {
+    --forest-deep: #0d1a0d;
+    --forest-dark: #1a2e1a;
+    --forest-mid: #243022;
+    --sage: #7ab87a;
+    --cream: #e8f0e4;
+    --cream-dim: rgba(232,240,228,0.55);
+    --divider: rgba(122,184,122,0.15);
+    --bat: #9b72cf;
+    --bat-dim: rgba(155,114,207,0.15);
+    --bat-border: rgba(155,114,207,0.3);
+  }
   body{background:var(--forest-deep);color:var(--cream);font-family:'Source Sans 3',sans-serif;font-weight:300;font-size:15px;line-height:1.7;min-height:100vh}
 
-    nav {
-      display: flex;
-      align-items: center;
-      gap: 24px;
-      padding: 16px 0;
-      border-bottom: 1px solid var(--divider);
-      margin-bottom: 28px;
-    }
-    .nav-home {
-      font-size: 11px;
-      letter-spacing: 0.15em;
-      text-transform: uppercase;
-      color: var(--sage);
-      text-decoration: none;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      transition: color 0.2s;
-    }
-    .nav-home:hover { color: var(--cream); }
-    .nav-divider { color: var(--divider); font-size: 12px; }
-    .nav-links {
-      display: flex;
-      gap: 20px;
-      margin-left: auto;
-    }
-    .nav-link {
-      font-size: 11px;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: var(--cream-dim);
-      text-decoration: none;
-      transition: color 0.2s;
-    }
-    .nav-link:hover { color: var(--cream); }
+  nav{display:flex;align-items:center;gap:24px;padding:16px 32px;border-bottom:1px solid var(--divider);position:relative}
+  .nav-home{font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:var(--sage);text-decoration:none;white-space:nowrap}
+  .nav-home:hover{color:var(--cream)}
+  .nav-divider{color:var(--divider);font-size:12px}
+  .nav-links{display:flex;gap:20px;margin-left:auto}
+  .nav-link{font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:var(--cream-dim);text-decoration:none;transition:color 0.2s}
+  .nav-link:hover{color:var(--cream)}
+  .nav-link.active{color:var(--sage)}
+  .nav-hamburger{display:none;flex-direction:column;gap:5px;background:none;border:none;cursor:pointer;padding:4px;margin-left:auto}
+  .nav-hamburger span{display:block;width:22px;height:2px;background:var(--cream-dim);border-radius:2px;transition:all 0.25s}
+  .nav-hamburger.open span:nth-child(1){transform:translateY(7px) rotate(45deg)}
+  .nav-hamburger.open span:nth-child(2){opacity:0}
+  .nav-hamburger.open span:nth-child(3){transform:translateY(-7px) rotate(-45deg)}
 
   .page{max-width:700px;margin:0 auto;padding:64px 32px 80px}
-
   .eyebrow{font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:var(--sage);margin-bottom:16px}
   h1{font-family:'Playfair Display',serif;font-size:44px;font-weight:400;line-height:1.15;margin-bottom:8px}
   h1 em{font-style:italic;color:var(--bat)}
@@ -71,10 +48,10 @@
   .subscribe-box h2{font-family:'Playfair Display',serif;font-size:20px;font-weight:400;margin-bottom:6px}
   .subscribe-box p{color:var(--cream-dim);font-size:14px;margin-bottom:18px}
   .subscribe-row{display:flex;gap:10px;flex-wrap:wrap}
-  .subscribe-row input{background:rgba(255,255,255,0.05);border:1px solid var(--divider);border-radius:6px;padding:10px 14px;color:var(--cream);font-size:14px;font-family:'Inter',sans-serif;flex:1;min-width:200px;outline:none}
-  .subscribe-row input:focus{border-color:rgba(168,130,200,0.4)}
+  .subscribe-row input{background:rgba(255,255,255,0.05);border:1px solid var(--divider);border-radius:6px;padding:10px 14px;color:var(--cream);font-size:14px;font-family:'Source Sans 3',sans-serif;flex:1;min-width:200px;outline:none}
+  .subscribe-row input:focus{border-color:var(--bat-border)}
   .subscribe-row input::placeholder{color:#6a7e6a}
-  .subscribe-row button{background:var(--bat-dim);border:1px solid var(--bat-border);color:var(--bat);border-radius:6px;padding:10px 20px;font-size:13px;font-family:'Inter',sans-serif;cursor:pointer;white-space:nowrap;transition:background 0.15s}
+  .subscribe-row button{background:var(--bat-dim);border:1px solid var(--bat-border);color:var(--bat);border-radius:6px;padding:10px 20px;font-size:13px;font-family:'Source Sans 3',sans-serif;cursor:pointer;white-space:nowrap;transition:background 0.15s}
   .subscribe-row button:hover{background:rgba(155,114,207,0.25)}
   .subscribe-msg{font-size:13px;margin-top:10px;display:none}
 
@@ -88,745 +65,49 @@
   .issue-toggle.open{transform:rotate(180deg)}
   .issue-body{display:none}
   .issue-body.open{display:block}
-  .issue-body iframe{width:100%;border:none;background:var(--forest-dark)}
-
+  .issue-body iframe{width:100%;border:none;background:var(--forest-deep)}
   .empty{color:var(--cream-dim);font-size:14px;padding:32px 0}
 
   footer{border-top:1px solid var(--divider);padding:24px 32px;text-align:center;font-size:12px;color:#5a6e5a}
   footer a{color:var(--bat);text-decoration:none}
 
-  @media(max-width:600px){
+  @media(max-width:700px){
     nav{padding:12px 16px}
+    .nav-hamburger{display:flex}
+    .nav-links{
+      display:none;position:absolute;top:56px;left:0;right:0;
+      background:var(--forest-deep);border-bottom:1px solid var(--divider);
+      padding:12px 24px;flex-direction:column;gap:14px;z-index:100;margin-left:0
+    }
+    .nav-links.open{display:flex}
+    .nav-divider{display:none}
     .page{padding:40px 16px 60px}
     h1{font-size:32px}
   }
-
-  /* Mobile hamburger nav */
-    .nav-hamburger {
-      display: none;
-      flex-direction: column;
-      gap: 5px;
-      background: none;
-      border: none;
-      cursor: pointer;
-      padding: 4px;
-      margin-left: auto;
-    }
-    .nav-hamburger span {
-      display: block;
-      width: 22px;
-      height: 2px;
-      background: var(--cream-dim);
-      border-radius: 2px;
-      transition: all 0.25s;
-    }
-    .nav-hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
-    .nav-hamburger.open span:nth-child(2) { opacity: 0; }
-    .nav-hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
-
-  @media (max-width: 700px) {
-      .nav-hamburger { display: flex; }
-      .nav-links {
-        display: none;
-        position: absolute;
-        top: 56px;
-        left: 0;
-        right: 0;
-        background: var(--forest-dark);
-        border-bottom: 1px solid var(--divider);
-        padding: 12px 24px;
-        flex-direction: column;
-        gap: 14px;
-        z-index: 100;
-      }
-      .nav-links.open { display: flex; }
-      .nav-divider { display: none; }
-      nav { position: relative; }
-    }
-  </style>
-  <script src="https://cdn.counter.dev/script.js" data-id="0f7db49f-3699-43bc-b09e-d45b58c39067" data-utcoffset="1"></script>
-
-  <script>
-    // Threlkeld Analytics
-    (function() {
-      fetch('https://rlpzmepeautd1v5pgoumz9aa2qhd92xd.ui.nabu.casa/api/webhook/-FGc31SjPhOeecG848YzrwkwP', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          page: 'birds.html',
-          referrer: document.referrer || '',
-          screen: window.screen.width + 'x' + window.screen.height,
-          userAgent: navigator.userAgent
-        })
-      }).catch(() => {});
-    })();
-  </script>
-
-  <style>
-    .install-banner {
-      display: none;
-      position: fixed;
-      bottom: 16px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: #1a2e1a;
-      border: 1px solid rgba(122,184,122,0.3);
-      border-radius: 12px;
-      padding: 12px 18px;
-      z-index: 999;
-      box-shadow: 0 4px 24px rgba(0,0,0,0.4);
-      max-width: 360px;
-      width: calc(100% - 32px);
-      font-family: 'Source Sans 3', sans-serif;
-      animation: slideUp 0.3s ease;
-    }
-    @keyframes slideUp { from { opacity:0; transform: translateX(-50%) translateY(20px); } to { opacity:1; transform: translateX(-50%) translateY(0); } }
-    .install-banner-inner { display: flex; align-items: center; gap: 12px; }
-    .install-banner-icon { font-size: 24px; flex-shrink: 0; }
-    .install-banner-text { flex: 1; }
-    .install-banner-title { font-size: 13px; font-weight: 500; color: #e8f0e4; margin-bottom: 2px; }
-    .install-banner-sub { font-size: 11px; color: rgba(232,240,228,0.6); line-height: 1.4; }
-    .install-banner-actions { display: flex; gap: 8px; margin-top: 10px; }
-    .install-btn { background: rgba(122,184,122,0.2); border: 1px solid rgba(122,184,122,0.4); color: #7ab87a; font-size: 12px; padding: 6px 14px; border-radius: 20px; cursor: pointer; font-family: inherit; }
-    .install-btn:hover { background: rgba(122,184,122,0.3); }
-    .install-dismiss { background: none; border: none; color: rgba(232,240,228,0.4); font-size: 12px; cursor: pointer; font-family: inherit; padding: 6px 8px; }
-  </style>
-</head>
-<body>
-  <div class="page">
-    <nav>
-      <a href="index.html" class="nav-home">← Threlkeld Projects</a>
-      <span class="nav-divider">|</span>
-      <div class="nav-links">
-        <a href="birds.html" class="nav-link active">🐦 Birds</a>
-        <a href="bats.html" class="nav-link">🦇 Bats</a>
-        <a href="fells.html" class="nav-link">🏔️ Fells</a>
-        <a href="planes.html" class="nav-link">✈️ Planes</a>
-        <a href="river.html" class="nav-link">🌊 Rivers</a>
-        <a href="weather.html" class="nav-link">🌤️ Weather</a>
-        <a href="wildlife.html" class="nav-link">🦔 Wildlife</a>
-        <a href="about.html" class="nav-link">ℹ️ About</a>
-      </div>
-      <button class="nav-hamburger" id="navHamburger" aria-label="Menu">
-        <span></span><span></span><span></span>
-      </button>
-    </nav>
-
-    <header>
-      <div class="header-left">
-        <div class="header-eyebrow">Live Garden Detection · Threlkeld, Cumbria</div>
-        <h1>Threlkeld Garden <em>Bird Watch</em></h1>
-      </div>
-      <div class="header-right">
-        <div class="status-dot">
-          <div class="dot" id="statusDot"></div>
-          <span id="statusText">Connecting...</span>
-        </div>
-        <div class="last-update" id="lastUpdate"></div>
-        <div class="last-update" id="footerDate"></div>
-      </div>
-    </header>
-
-    <!-- Bird of the Day -->
-    <div class="botd-panel" id="botdPanel" style="display:none">
-      <div class="botd-inner">
-        <img class="botd-img" id="botdImg" src="" alt=""
-             onerror="this.src=document.getElementById('botdFallback').value"/>
-        <input type="hidden" id="botdFallback">
-        <div class="botd-info">
-          <div class="botd-label" id="botdLabel">Bird of the Day</div>
-          <div class="botd-name" id="botdName"></div>
-          <div class="botd-count" id="botdCount"></div>
-          <div class="botd-runner" id="botdRunner"></div>
-        </div>
-      </div>
-    </div>
-
-    <div class="stats-row">
-      <div class="stat-cell">
-        <div class="stat-label">Today</div>
-        <div class="stat-value" id="statToday">—</div>
-        <div class="stat-sub">detections</div>
-      </div>
-      <div class="stat-cell">
-        <div class="stat-label">This Week</div>
-        <div class="stat-value" id="statWeek">—</div>
-        <div class="stat-sub">species</div>
-      </div>
-      <div class="stat-cell">
-        <div class="stat-label">This Month</div>
-        <div class="stat-value" id="statMonth">—</div>
-        <div class="stat-sub">species</div>
-      </div>
-      <div class="stat-cell">
-        <div class="stat-label">This Year</div>
-        <div class="stat-value" id="statYear">—</div>
-        <div class="stat-sub">species detected</div>
-      </div>
-    </div>
-
-    <div style="font-size:11px;color:var(--cream-dim);margin-bottom:12px">
-      Total detections logged: <strong id="totalDetections" style="color:var(--cream)">—</strong>
-    </div>
-    <div style="text-align:right;margin-bottom:8px">
-      <a href="phenology.html" style="font-size:11px;color:var(--sage);text-decoration:none;letter-spacing:0.08em">🌿 View first arrival dates →</a>
-    </div>
-    <div id="speciesBadge" style="display:none" class="species-badge" onclick="document.getElementById('birdSearch').value='';document.getElementById('birdSearch').dispatchEvent(new Event('input'));document.getElementById('birdSearch').scrollIntoView({behavior:'smooth'});" style="cursor:pointer">
-      <div class="species-badge-dot"></div>
-      <span id="speciesBadgeText"></span>
-      <span style="font-size:10px;color:var(--sage);margin-left:6px">↓ view all</span>
-    </div>
-
-    <!-- Offline banner -->
-    <div id="offlineBanner" style="display:none;background:rgba(200,168,74,0.1);border:1px solid rgba(200,168,74,0.3);border-radius:8px;padding:10px 16px;margin-bottom:16px;font-size:12px;color:var(--cream-dim);align-items:center;gap:10px">
-      <span>⚠️</span>
-      <span>Live data unavailable — showing cached data from <strong id="offlineAge">a moment ago</strong>. Reconnecting...</span>
-    </div>
-
-        <div class="main-grid">
-      <div>
-        <div class="section-header">
-          <div class="section-title">Recent Detections</div>
-          <div class="section-count" id="detectionCount"></div>
-        </div>
-        <input type="text" class="bird-search" id="birdSearch" placeholder="🔍 Search species — e.g. Robin, Blackbird..." autocomplete="off">
-        <div class="search-results-label" id="searchLabel" style="display:none"></div>
-        <div class="detections-grid"
-    <div class="detections-grid" id="detectionsList">
-          <div class="loading">
-            <div class="loading-spinner"></div>
-            Waiting for bird data...
-          </div>
-        </div>
-      </div>
-
-      <div class="right-col">
-        <div>
-          <div class="section-header" style="margin-top:0">
-            <div class="section-title">Species Summary</div>
-          </div>
-          <div class="summary-grid">
-            <div class="summary-panel">
-              <div class="summary-panel-header">Today</div>
-              <div class="summary-body" id="summaryToday"><div class="empty-state">No detections yet</div></div>
-            </div>
-            <div class="summary-panel">
-              <div class="summary-panel-header">This Week</div>
-              <div class="summary-body" id="summaryWeek"><div class="empty-state">No detections yet</div></div>
-            </div>
-            <div class="summary-panel">
-              <div class="summary-panel-header">This Month</div>
-              <div class="summary-body" id="summaryMonth"><div class="empty-state">No detections yet</div></div>
-            </div>
-            <div class="summary-panel">
-              <div class="summary-panel-header">This Year</div>
-              <div class="summary-body" id="summaryYear"><div class="empty-state">No detections yet</div></div>
-            </div>
-          </div>
-        </div>
-
-        <div>
-          <div class="section-header">
-            <div class="section-title">Activity Today</div>
-            <div class="section-count">by hour</div>
-          </div>
-          <div class="chart-container">
-            <div class="chart-bars" id="chartBars"></div>
-            <div class="chart-labels" id="chartLabels"></div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Calendar -->
-    <div class="calendar-section">
-      <div class="section-header">
-        <div class="section-title">Activity Calendar</div>
-        <div class="section-subtitle">Species detected per day</div>
-      </div>
-      <div id="calendarContent">
-        <div style="padding:40px;text-align:center;color:var(--cream-dim);font-style:italic">Loading calendar...</div>
-      </div>
-    </div>
-
-    <footer>
-      <div class="footer-text"><span id="footerUpdated" style="margin-right:12px;color:var(--cream-dim)"></span>Threlkeld, Cumbria · Powered by BirdNET-Pi acoustic monitoring</div>
-      <div class="footer-brand">Part of Threlkeld Local Projects</div>
-    </footer>
-  </div>
-
-  <script>
-    const MQTT_HOST = 'broker.hivemq.com';
-    const MQTT_PORT = 8884;
-    const DETECTIONS_TOPIC = 'birdnetpi/greg2026/detections';
-    const STATS_TOPIC = 'birdnetpi/greg2026/stats';
-
-    document.getElementById('footerDate').textContent = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
-
-    // Cache for iNaturalist photo URLs
-    const inatPhotoCache = {};
-
-    async function fetchInatPhoto(birdName) {
-      if (inatPhotoCache[birdName]) return inatPhotoCache[birdName];
-      try {
-        const res = await fetch(`https://api.inaturalist.org/v1/taxa?q=${encodeURIComponent(birdName)}&per_page=1&rank=species&iconic_taxa=Aves`);
-        const data = await res.json();
-        const url = data.results?.[0]?.default_photo?.square_url || null;
-        inatPhotoCache[birdName] = url;
-        return url;
-      } catch(e) { return null; }
-    }
-
-    function getBirdImageUrl(birdName) {
-      // Return placeholder — actual URL fetched async in renderDetectionsList
-      return {
-        primary: `https://api.inaturalist.org/v1/taxa?q=${encodeURIComponent(birdName)}&per_page=1&rank=species&iconic_taxa=Aves`,
-        fallback: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/ac/No_image_available.svg/100px-No_image_available.svg.png',
-        isInat: true,
-        name: birdName
-      };
-    }
-
-    function formatDate(dateStr) {
-      if (!dateStr) return '';
-      const parts = dateStr.split('-');
-      return `${parts[2]}-${parts[1]}-${parts[0]}`;
-    }
-
-    let allDetectionsStore = [];
-
-    function renderDetectionsList(dets, searchTerm = '') {
-      const list = document.getElementById('detectionsList');
-      const label = document.getElementById('searchLabel');
-
-      if (dets.length === 0) {
-        list.innerHTML = searchTerm
-          ? `<div class="loading">No detections found for "<strong>${searchTerm}</strong>"</div>`
-          : '<div class="loading">No detections in the last 24 hours</div>';
-        return;
-      }
-
-      const limit = searchTerm ? dets.length : 50;
-      let html = '';
-      for (let i = 0; i < Math.min(dets.length, limit); i++) {
-        const d = dets[i];
-        if (!d || !d.bird || !d.date) continue;
-        const score = Math.round(parseFloat(d.score) * 100);
-        const imgs = getBirdImageUrl(d.bird);
-        const birdName = searchTerm
-          ? d.bird.replace(new RegExp(`(${searchTerm})`, 'gi'), '<span class="search-highlight">$1</span>')
-          : d.bird;
-        html += `
-          <div class="detection-card" style="animation-delay:${i * 30}ms">
-            <img class="bird-photo" id="birdimg_${i}" src="${imgs.fallback}" alt="${d.bird}"
-                 onerror="this.src='${imgs.fallback}';this.onerror=null;"/>
-            <div class="bird-info">
-              <div class="bird-name">${birdName}</div>
-              <div class="bird-meta">${formatDate(d.date)} · ${d.time}</div>
-            </div>
-            <div class="confidence-block">
-              <div class="conf-label">Confidence</div>
-              <div class="conf-bar"><div class="conf-fill" style="width:${score}%"></div></div>
-              <div class="conf-pct">${score}%</div>
-            </div>
-          </div>`;
-      }
-      list.innerHTML = html || '<div class="loading">No results</div>';
-      // Async load iNaturalist photos
-      dets.slice(0, Math.min(dets.length, limit)).forEach((d, i) => {
-        if (!d || !d.bird) return;
-        fetchInatPhoto(d.bird).then(url => {
-          if (url) {
-            const img = document.getElementById(`birdimg_${i}`);
-            if (img) img.src = url;
-          }
-        });
-      });
-    }
-
-    function renderDetections(data) {
-      // data.count = recent 200, data.total = full history size
-      const recent = data.count || 0;
-      const fullTotal = data.total || recent;
-      allDetectionsStore = [];
-      for (let i = 0; i < recent; i++) {
-        if (data[i] && data[i].bird) allDetectionsStore.push(data[i]);
-      }
-
-      // Update total species badge with full history size
-      const totalEl = document.getElementById('totalDetections');
-      if (totalEl) totalEl.textContent = fullTotal.toLocaleString();
-
-      // Default: show last 24 hours from recent 200
-      const dayAgo = Date.now() - 24 * 60 * 60 * 1000;
-      const todayDets = allDetectionsStore.filter(d => new Date(d.timestamp).getTime() > dayAgo);
-      const count = todayDets.length;
-
-      document.getElementById('detectionCount').textContent = count > 0 ? `${count} in last 24 hours` : '';
-      renderDetectionsList(todayDets);
-    }
-
-    function renderBirdOfDay(stats) {
-      const today = Array.isArray(stats.today) ? stats.today : [];
-      const panel = document.getElementById('botdPanel');
-      if (!panel) return;
-
-      if (today.length === 0) {
-        panel.style.display = 'none';
-        return;
-      }
-
-      const top = today[0];
-      const runnerUp = today[1] || null;
-      const label = today.length === 1 ? "Today's Visitor" : "Bird of the Day";
-      const wikiName = top.bird.replace(/ /g, '_');
-      const nameParts = top.bird.split(' ');
-      const fallback = `https://en.wikipedia.org/w/index.php?title=Special:Redirect/file/${nameParts[nameParts.length-1]}.jpg&width=200`;
-
-      document.getElementById('botdLabel').textContent = label;
-      document.getElementById('botdName').textContent = top.bird;
-      document.getElementById('botdCount').textContent = `${top.count} detection${top.count !== 1 ? 's' : ''} today`;
-      document.getElementById('botdRunner').textContent = runnerUp ? `Runner up: ${runnerUp.bird} (${runnerUp.count})` : '';
-      document.getElementById('botdImg').src = `https://en.wikipedia.org/w/index.php?title=Special:Redirect/file/${wikiName}.jpg&width=200`;
-      document.getElementById('botdFallback').value = fallback;
-      panel.style.display = 'block';
-    }
-
-    function renderSummary(stats) {
-      renderBirdOfDay(stats);
-      function buildList(species) {
-        if (!species || species.length === 0) return '<div class="empty-state">No detections yet</div>';
-        return species.map(s => `
-          <div class="summary-row">
-            <div class="summary-bird">${s.bird}</div>
-            <div class="summary-count">${s.count}</div>
-          </div>`).join('');
-      }
-      document.getElementById('statToday').textContent = (stats.today || []).reduce((sum, s) => sum + s.count, 0);
-      document.getElementById('summaryToday').innerHTML = buildList(stats.today);
-      document.getElementById('summaryWeek').innerHTML = buildList(stats.week);
-      document.getElementById('summaryMonth').innerHTML = buildList(stats.month);
-      document.getElementById('summaryYear').innerHTML = buildList(stats.year);
-      document.getElementById('statWeek').textContent = (stats.week || []).length;
-      document.getElementById('statMonth').textContent = (stats.month || []).length;
-      const yearCount = (stats.year || []).length;
-      document.getElementById('statYear').textContent = yearCount;
-      if (yearCount > 0) {
-        document.getElementById('speciesBadgeText').textContent = yearCount + ' species detected in ' + new Date().getFullYear();
-        document.getElementById('speciesBadge').style.display = 'inline-flex';
-      }
-
-      if (stats.hourly) {
-        const hourly = stats.hourly;
-        const max = Math.max(...hourly, 1);
-        const currentHour = new Date().getHours();
-        let barsHtml = '', labelsHtml = '';
-        hourly.forEach((count, hour) => {
-          const height = Math.round((count / max) * 56);
-          barsHtml += `<div class="chart-bar-wrap"><div class="chart-bar ${hour === currentHour ? 'current' : ''}" style="height:${Math.max(height, 2)}px"></div></div>`;
-          labelsHtml += `<div class="chart-label ${hour % 6 === 0 ? 'show' : ''}">${hour.toString().padStart(2,'0')}</div>`;
-        });
-        document.getElementById('chartBars').innerHTML = barsHtml;
-        document.getElementById('chartLabels').innerHTML = labelsHtml;
-      }
-    }
-
-    // ── Calendar ──────────────────────────────────────────
-    let calDetections = [];
-    let calDailyMap = null;
-    let calYear = new Date().getFullYear();
-    const CAL_START_YEAR = 2024;
-
-    function buildDailyMap(detections) {
-      const map = {};
-      detections.forEach(d => {
-        if (!d.timestamp || !d.bird) return;
-        const dt = new Date(d.timestamp);
-        const key = `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
-        if (!map[key]) map[key] = {};
-        map[key][d.bird] = (map[key][d.bird] || 0) + 1;
-      });
-      return map;
-    }
-
-    function calColour(count) {
-      if (!count) return '';
-      if (count === 1) return 's1';
-      if (count === 2) return 's2';
-      if (count === 3) return 's3';
-      if (count <= 5) return 's4';
-      if (count <= 8) return 's5';
-      if (count <= 12) return 's6';
-      if (count <= 18) return 's7';
-      return 's8';
-    }
-
-    function renderCalendar(year) {
-      const dailyMap = calDailyMap || buildDailyMap(calDetections);
-      const today = new Date();
-      const todayKey = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
-
-      let totalDets = 0, speciesSet = new Set(), activeDays = 0, bestCount = 0;
-      Object.entries(dailyMap).forEach(([key, sp]) => {
-        if (!key.startsWith(year)) return;
-        const c = Object.keys(sp).length;
-        const d = Object.values(sp).reduce((a,b)=>a+b,0);
-        totalDets += d;
-        Object.keys(sp).forEach(s => speciesSet.add(s));
-        if (c > 0) activeDays++;
-        if (c > bestCount) bestCount = c;
-      });
-
-      // Build week grid
-      const jan1 = new Date(year, 0, 1);
-      const weeks = [];
-      let week = new Array(jan1.getDay()).fill(null);
-      const days = (year%4===0&&(year%100!==0||year%400===0)) ? 366 : 365;
-      for (let d = 0; d < days; d++) {
-        const date = new Date(year, 0, d+1);
-        week.push(date);
-        if (week.length === 7) { weeks.push(week); week = []; }
-      }
-      if (week.length) { while(week.length<7) week.push(null); weeks.push(week); }
-
-      const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-      const monthPos = {};
-      weeks.forEach((w,wi) => w.forEach(d => {
-        if (d && d.getDate()===1) monthPos[d.getMonth()] = wi;
-      }));
-
-      const html = `
-        <div class="year-nav">
-          <button class="year-btn" id="calPrevYear" ${year<=CAL_START_YEAR?'disabled':''}>← ${year-1}</button>
-          <div class="year-label">${year}</div>
-          <button class="year-btn" id="calNextYear" ${year>=new Date().getFullYear()?'disabled':''}>${year+1} →</button>
-        </div>
-        <div class="cal-stats-row">
-          <div class="cal-stat-box"><div class="cal-stat-value">${speciesSet.size}</div><div class="cal-stat-label">Species</div></div>
-          <div class="cal-stat-box"><div class="cal-stat-value">${totalDets}</div><div class="cal-stat-label">Detections</div></div>
-          <div class="cal-stat-box"><div class="cal-stat-value">${activeDays}</div><div class="cal-stat-label">Active Days</div></div>
-          <div class="cal-stat-box"><div class="cal-stat-value">${bestCount}</div><div class="cal-stat-label">Best Day</div></div>
-        </div>
-        <div class="calendar-container">
-          <div class="month-labels">
-            <div></div>
-            ${weeks.map((_,wi) => {
-              const m = Object.entries(monthPos).find(([,pos]) => pos===wi);
-              return `<div class="month-label">${m ? months[m[0]] : ''}</div>`;
-            }).join('')}
-          </div>
-          <div class="calendar-grid">
-            ${[['','Sun'],['M','Mon'],['','Tue'],['W','Wed'],['','Thu'],['F','Fri'],['','Sat']].map(([label],dow) =>
-              `<div class="day-label">${label}</div>` +
-              weeks.map(week => {
-                const date = week[dow];
-                if (!date || date.getFullYear()!==year) return '<div class="day-cell"></div>';
-                const key = `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
-                const sp = dailyMap[key]||{};
-                const c = Object.keys(sp).length;
-                const cls = ['day-cell', c>0?'has-data':'', calColour(c), key===todayKey?'today':''].filter(Boolean).join(' ');
-                const ds = date.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
-                return `<div class="${cls}" data-key="${key}" data-date="${ds}" title="${ds}${c>0?': '+c+' species':''}"></div>`;
-              }).join('')
-            ).join('')}
-          </div>
-          <div class="cal-legend">
-            <span>Fewer</span>
-            <div class="legend-cells">
-              <div class="legend-cell" style="background:var(--forest-mid)"></div>
-              <div class="legend-cell s1"></div><div class="legend-cell s2"></div><div class="legend-cell s3"></div>
-              <div class="legend-cell s4"></div><div class="legend-cell s5"></div><div class="legend-cell s6"></div>
-              <div class="legend-cell s7"></div><div class="legend-cell s8"></div>
-            </div>
-            <span>More species</span>
-          </div>
-        </div>`;
-
-      document.getElementById('calendarContent').innerHTML = html;
-
-      document.getElementById('calPrevYear').addEventListener('click', () => { calYear--; renderCalendar(calYear); });
-      document.getElementById('calNextYear').addEventListener('click', () => { calYear++; renderCalendar(calYear); });
-
-      document.querySelectorAll('.day-cell.has-data').forEach(cell => {
-        cell.addEventListener('click', () => {
-          const sp = dailyMap[cell.dataset.key]||{};
-          openCalModal(cell.dataset.date, sp);
-        });
-      });
-    }
-
-    function openCalModal(dateStr, species) {
-      const sorted = Object.entries(species).sort((a,b)=>b[1]-a[1]);
-      document.getElementById('calModalDate').textContent = dateStr;
-      document.getElementById('calModalCount').textContent = `${sorted.length} species detected`;
-      document.getElementById('calSpeciesList').innerHTML = sorted.map(([bird, count]) => {
-        const wn = bird.replace(/ /g,'_');
-        const fb = `https://en.wikipedia.org/w/index.php?title=Special:Redirect/file/${bird.split(' ').pop()}.jpg&width=80`;
-        return `<div class="cal-species-item">
-          <img class="cal-species-img" src="https://en.wikipedia.org/w/index.php?title=Special:Redirect/file/${wn}.jpg&width=80" onerror="this.src='${fb}'" alt="${bird}">
-          <div class="cal-species-name">${bird}</div>
-          <div class="cal-species-count">${count}</div>
-        </div>`;
-      }).join('');
-      document.getElementById('calModalOverlay').classList.add('open');
-      document.body.style.overflow = 'hidden';
-    }
-
-    function closeCalModal() {
-      document.getElementById('calModalOverlay').classList.remove('open');
-      document.body.style.overflow = '';
-    }
-
-    const calModalCloseBtn = document.getElementById('calModalClose');
-    const calModalOverlayEl = document.getElementById('calModalOverlay');
-    if (calModalCloseBtn) calModalCloseBtn.addEventListener('click', closeCalModal);
-    if (calModalOverlayEl) calModalOverlayEl.addEventListener('click', e => {
-      if (e.target === calModalOverlayEl) closeCalModal();
-    });
-    document.addEventListener('keydown', e => { if (e.key==='Escape') closeCalModal(); });
-
-    // Bird search
-    document.getElementById('birdSearch').addEventListener('input', function() {
-      const term = this.value.trim();
-      const label = document.getElementById('searchLabel');
-      const countEl = document.getElementById('detectionCount');
-
-      if (!term) {
-        // Back to last 24 hours
-        label.style.display = 'none';
-        const dayAgo = Date.now() - 24 * 60 * 60 * 1000;
-        const todayDets = allDetectionsStore.filter(d => new Date(d.timestamp).getTime() > dayAgo);
-        countEl.textContent = `${todayDets.length} in last 24 hours`;
-        renderDetectionsList(todayDets);
-        return;
-      }
-
-      // Search all stored detections
-      const results = allDetectionsStore.filter(d =>
-        d.bird && d.bird.toLowerCase().includes(term.toLowerCase())
-      );
-
-      // Group by species and show latest first
-      const dates = results.map(d => new Date(d.timestamp));
-      const earliest = dates.length ? new Date(Math.min(...dates)) : null;
-      const latest = dates.length ? new Date(Math.max(...dates)) : null;
-
-      countEl.textContent = '';
-      label.style.display = results.length ? 'block' : 'block';
-      label.innerHTML = results.length
-        ? `${results.length} detection${results.length !== 1 ? 's' : ''} of "<strong>${term}</strong>"` +
-          (earliest ? ` · First: ${formatDate(earliest.toISOString().split('T')[0])}` : '') +
-          (latest && earliest && latest.toDateString() !== earliest.toDateString() ? ` · Last: ${formatDate(latest.toISOString().split('T')[0])}` : '')
-        : `No detections found for "<strong>${term}</strong>"`;
-
-      renderDetectionsList(results, term);
-    });
-
-
-    // ── MQTT resilience ───────────────────────────────────────
-    const CACHE_KEY = 'threlkeld_birds_cache';
-
-    function saveCache(data) {
-      try { localStorage.setItem(CACHE_KEY, JSON.stringify({ data, ts: Date.now() })); } catch(e) {}
-    }
-
-    function loadCache() {
-      try {
-        const raw = localStorage.getItem(CACHE_KEY);
-        if (!raw) return null;
-        const { data, ts } = JSON.parse(raw);
-        const age = Math.round((Date.now() - ts) / 60000);
-        return { data, age };
-      } catch(e) { return null; }
-    }
-
-    function showOfflineBanner(age) {
-      const el = document.getElementById('offlineBanner');
-      if (el) el.style.display = 'flex';
-      const ageEl = document.getElementById('offlineAge');
-      if (ageEl) ageEl.textContent = age < 60
-        ? `${age} minute${age !== 1 ? 's' : ''} ago`
-        : `${Math.round(age/60)} hour${Math.round(age/60) !== 1 ? 's' : ''} ago`;
-    }
-
-    function hideOfflineBanner() {
-      const el = document.getElementById('offlineBanner');
-      if (el) el.style.display = 'none';
-    }
-    // Load cached data on startup
-    const cached = loadCache();
-    if (cached) { showOfflineBanner(cached.age); }
-
-    const client = mqtt.connect(`wss://${MQTT_HOST}:${MQTT_PORT}/mqtt`);
-
-    client.on('connect', () => {
-      document.getElementById('statusDot').className = 'dot connected';
-      document.getElementById('statusText').textContent = 'Live';
-      client.subscribe(DETECTIONS_TOPIC);
-      client.subscribe(STATS_TOPIC);
-    });
-
-    // Render empty calendar immediately — will populate when retained MQTT message arrives
-    renderCalendar(calYear);
-
-    client.on('error', () => {
-      document.getElementById('statusDot').className = 'dot error';
-      document.getElementById('statusText').textContent = 'Connection error';
-    });
-
-    client.on('offline', () => {
-      document.getElementById('statusDot').className = 'dot';
-      document.getElementById('statusText').textContent = 'Offline';
-    });
-
-
-      client.on('message', (topic, message) => {
-      try {
-        const data = JSON.parse(message.toString());
-        document.getElementById('lastUpdate').textContent = `Updated ${new Date().toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'})}`;
-        if (topic === DETECTIONS_TOPIC) {
-          renderDetections(data);
-          hideOfflineBanner(); saveCache(data);
-          // Update calendar
-          const dets = [];
-          const cnt = data.count || 0;
-          for (let i = 0; i < cnt; i++) { if (data[i]&&data[i].bird) dets.push(data[i]); }
-          calDetections = dets;
-          renderCalendar(calYear);
-        }
-        else if (topic === STATS_TOPIC) {
-          renderSummary(data);
-          if (data.daily) {
-            calDetections = null;
-            calDailyMap = data.daily;
-            renderCalendar(calYear);
-          }
-        }
-      }
 </style>
 </head>
 <body>
 
-<nav style="padding-left:32px;padding-right:32px">
-      <a href="index.html" class="nav-home">← Threlkeld Projects</a>
-      <span class="nav-divider">|</span>
-      <div class="nav-links">
-        <a href="birds.html" class="nav-link">🐦 Birds</a>
-        <a href="bats.html" class="nav-link">🦇 Bats</a>
-        <a href="fells.html" class="nav-link">🏔️ Fells</a>
-        <a href="planes.html" class="nav-link">✈️ Planes</a>
-        <a href="river.html" class="nav-link">🌊 Rivers</a>
-        <a href="weather.html" class="nav-link">🌤️ Weather</a>
-        <a href="wildlife.html" class="nav-link">🦔 Wildlife</a>
-        <a href="about.html" class="nav-link">ℹ️ About</a>
-      </div>
-      <button class="nav-hamburger" id="navHamburger" aria-label="Menu">
-        <span></span><span></span><span></span>
-      </button>
-    </nav>
+<nav>
+  <a class="nav-home" href="index.html">← Threlkeld Projects</a>
+  <span class="nav-divider">|</span>
+  <div class="nav-links">
+    <a href="birds.html" class="nav-link">🐦 Birds</a>
+    <a href="bats.html" class="nav-link">🦇 Bats</a>
+    <a href="fells.html" class="nav-link">🏔️ Fells</a>
+    <a href="planes.html" class="nav-link">✈️ Planes</a>
+    <a href="rivers.html" class="nav-link">🌊 Rivers</a>
+    <a href="weather.html" class="nav-link">🌤️ Weather</a>
+    <a href="wildlife.html" class="nav-link">🦔 Wildlife</a>
+    <a href="about.html" class="nav-link">ℹ️ About</a>
+    <a href="weekly.html" class="nav-link active">📬 Weekly</a>
+  </div>
+  <button class="nav-hamburger" id="navHamburger" aria-label="Menu">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
 
 <div class="page">
-
   <div class="eyebrow">Threlkeld · Cumbria</div>
   <h1>This Week in <em>Threlkeld</em></h1>
   <p class="tagline">Bats · Birds · Weather · Flights · Rivers</p>
@@ -846,7 +127,6 @@
   <div id="issueList">
     <p class="empty">No summaries yet — the first will be published this Sunday at 6pm.</p>
   </div>
-
 </div>
 
 <footer>
@@ -869,8 +149,8 @@
         method: 'POST'
       });
       msg.style.display = 'block';
-      if (res.ok || res.status === 201) {
-        msg.style.color = '#a882c8';
+      if (res.ok) {
+        msg.style.color = '#9b72cf';
         msg.textContent = '✓ Thank you — you\'ll receive the next summary this Sunday.';
         document.getElementById('subEmail').value = '';
       } else {
@@ -918,19 +198,19 @@
     if (e.key === 'Enter') subscribe();
   });
 
-  loadIssues();
-
-  // Mobile nav
   document.getElementById('navHamburger').addEventListener('click', function() {
     this.classList.toggle('open');
     document.querySelector('.nav-links').classList.toggle('open');
   });
+
   document.querySelectorAll('.nav-link').forEach(l => {
     l.addEventListener('click', () => {
       document.getElementById('navHamburger').classList.remove('open');
       document.querySelector('.nav-links').classList.remove('open');
     });
   });
+
+  loadIssues();
 </script>
 
 </body>
