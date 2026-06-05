@@ -5,15 +5,22 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>This Week in Threlkeld</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;1,400&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Source+Sans+3:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
   *{margin:0;padding:0;box-sizing:border-box}
-  :root{
-    --forest-dark:#0d1f0d;--forest-mid:#1a2e1a;--forest-light:#243824;
-    --cream:#e8e4d9;--cream-dim:#c8c4b4;--bat:#a882c8;
-    --divider:rgba(255,255,255,0.08);--sage:#7a9e7a;
-  }
-  body{background:var(--forest-dark);color:var(--cream);font-family:'Inter',sans-serif;font-size:15px;line-height:1.7;min-height:100vh}
+    :root {
+      --forest-deep: #0d1a0d;
+      --forest-dark: #1a2e1a;
+      --forest-mid: #243022;
+      --sage: #7ab87a;
+      --cream: #e8f0e4;
+      --cream-dim: rgba(232,240,228,0.55);
+      --divider: rgba(122,184,122,0.15);
+      --bat: #9b72cf;
+      --bat-dim: rgba(155,114,207,0.15);
+      --bat-border: rgba(155,114,207,0.3);
+    }
+  body{background:var(--forest-deep);color:var(--cream);font-family:'Source Sans 3',sans-serif;font-weight:300;font-size:15px;line-height:1.7;min-height:100vh}
 
   nav{display:flex;align-items:center;padding:16px 32px;border-bottom:1px solid var(--divider);font-size:13px;gap:16px}
   .nav-home{color:var(--cream-dim);text-decoration:none;white-space:nowrap}
@@ -29,23 +36,23 @@
   h1{font-family:'Playfair Display',serif;font-size:44px;font-weight:400;line-height:1.15;margin-bottom:8px}
   h1 em{font-style:italic;color:var(--bat)}
   .tagline{font-size:12px;letter-spacing:0.1em;text-transform:uppercase;color:var(--sage);margin-bottom:12px}
-  .desc{font-size:15px;color:var(--cream-dim);margin-bottom:48px;max-width:500px}
+  .desc{font-size:15px;font-weight:300;color:var(--cream-dim);margin-bottom:48px;max-width:500px}
 
-  .subscribe-box{background:var(--forest-mid);border:1px solid rgba(168,130,200,0.2);border-radius:10px;padding:28px;margin-bottom:56px}
+  .subscribe-box{background:var(--forest-dark);border:1px solid var(--bat-border);border-radius:10px;padding:28px;margin-bottom:56px}
   .subscribe-box h2{font-family:'Playfair Display',serif;font-size:20px;font-weight:400;margin-bottom:6px}
   .subscribe-box p{color:var(--cream-dim);font-size:14px;margin-bottom:18px}
   .subscribe-row{display:flex;gap:10px;flex-wrap:wrap}
   .subscribe-row input{background:rgba(255,255,255,0.05);border:1px solid var(--divider);border-radius:6px;padding:10px 14px;color:var(--cream);font-size:14px;font-family:'Inter',sans-serif;flex:1;min-width:200px;outline:none}
   .subscribe-row input:focus{border-color:rgba(168,130,200,0.4)}
   .subscribe-row input::placeholder{color:#6a7e6a}
-  .subscribe-row button{background:rgba(168,130,200,0.15);border:1px solid rgba(168,130,200,0.4);color:var(--bat);border-radius:6px;padding:10px 20px;font-size:13px;font-family:'Inter',sans-serif;cursor:pointer;white-space:nowrap;transition:background 0.15s}
-  .subscribe-row button:hover{background:rgba(168,130,200,0.25)}
+  .subscribe-row button{background:var(--bat-dim);border:1px solid var(--bat-border);color:var(--bat);border-radius:6px;padding:10px 20px;font-size:13px;font-family:'Inter',sans-serif;cursor:pointer;white-space:nowrap;transition:background 0.15s}
+  .subscribe-row button:hover{background:rgba(155,114,207,0.25)}
   .subscribe-msg{font-size:13px;margin-top:10px;display:none}
 
   .section-title{font-family:'Playfair Display',serif;font-size:24px;font-weight:400;margin-bottom:20px}
   .issue-card{border:1px solid var(--divider);border-radius:8px;margin-bottom:12px;overflow:hidden}
-  .issue-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;cursor:pointer;background:var(--forest-mid);transition:background 0.15s;user-select:none}
-  .issue-header:hover{background:var(--forest-light)}
+  .issue-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;cursor:pointer;background:var(--forest-dark);transition:background 0.15s;user-select:none}
+  .issue-header:hover{background:var(--forest-mid)}
   .issue-title{font-family:'Playfair Display',serif;font-size:16px;font-weight:400}
   .issue-date{font-size:12px;color:var(--cream-dim)}
   .issue-toggle{color:var(--cream-dim);transition:transform 0.2s}
