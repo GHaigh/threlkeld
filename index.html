@@ -551,6 +551,63 @@
       .nav-divider { display: none; }
       nav { position: relative; }
     }
+
+    .subscribe-section {
+      background: var(--forest-dark);
+      border: 1px solid rgba(155,114,207,0.25);
+      border-radius: 12px;
+      padding: 32px;
+      margin-bottom: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+    .subscribe-section-text h3 {
+      font-family: 'Playfair Display', serif;
+      font-size: 22px;
+      font-weight: 400;
+      color: var(--cream);
+      margin-bottom: 6px;
+    }
+    .subscribe-section-text p {
+      font-size: 14px;
+      color: var(--cream-dim);
+      max-width: 380px;
+    }
+    .subscribe-section-form {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .subscribe-section-form input {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--divider);
+      border-radius: 6px;
+      padding: 10px 14px;
+      color: var(--cream);
+      font-size: 14px;
+      font-family: inherit;
+      width: 220px;
+      outline: none;
+    }
+    .subscribe-section-form input:focus { border-color: rgba(155,114,207,0.4); }
+    .subscribe-section-form input::placeholder { color: #6a7e6a; }
+    .subscribe-section-form button {
+      background: rgba(155,114,207,0.15);
+      border: 1px solid rgba(155,114,207,0.35);
+      color: #9b72cf;
+      border-radius: 6px;
+      padding: 10px 18px;
+      font-size: 13px;
+      font-family: inherit;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.15s;
+    }
+    .subscribe-section-form button:hover { background: rgba(155,114,207,0.25); }
+    .subscribe-section-msg { font-size: 13px; margin-top: 8px; display: none; width: 100%; }
   </style>
   <script src="https://cdn.counter.dev/script.js" data-id="0f7db49f-3699-43bc-b09e-d45b58c39067" data-utcoffset="1"></script>
 
@@ -568,6 +625,34 @@
         })
       }).catch(() => {});
     })();
+
+  async function indexSubscribe() {
+    const email = document.getElementById('indexSubEmail').value.trim();
+    const msg = document.getElementById('indexSubMsg');
+    msg.style.display = 'none';
+    if (!email || !email.includes('@')) {
+      msg.style.display = 'block';
+      msg.style.color = '#e05555';
+      msg.textContent = 'Please enter a valid email address.';
+      return;
+    }
+    try {
+      const res = await fetch('https://threlkeld.haigh-greg.workers.dev/?email=' + encodeURIComponent(email), {method:'POST'});
+      msg.style.display = 'block';
+      if (res.ok) {
+        msg.style.color = '#9b72cf';
+        msg.textContent = '✓ Thank you — you\'ll receive the next summary this Sunday.';
+        document.getElementById('indexSubEmail').value = '';
+      } else {
+        msg.style.color = '#e05555';
+        msg.textContent = 'Something went wrong. Please try again.';
+      }
+    } catch(e) {
+      msg.style.display = 'block';
+      msg.style.color = '#e05555';
+      msg.textContent = 'Could not connect. Please try again.';
+    }
+  }
   </script>
 
   <style>
@@ -691,6 +776,21 @@
         <p class="project-desc">How it all works — BirdNET-Pi, Home Assistant, Node-RED, MQTT and GitHub Pages. The hardware, the data pipeline and the running costs (almost zero).</p>
         <div class="project-link">Read more</div>
       </a>
+    </div>
+
+
+    <div class="subscribe-section">
+      <div class="subscribe-section-text">
+        <h3>This Week in <em style="font-style:italic;color:#9b72cf">Threlkeld</em></h3>
+        <p>A weekly summary of bats, birds, weather, flights and river levels — delivered every Sunday at 6pm. Free, no spam.</p>
+      </div>
+      <div>
+        <div class="subscribe-section-form">
+          <input type="email" id="indexSubEmail" placeholder="your@email.com">
+          <button onclick="indexSubscribe()">Subscribe →</button>
+        </div>
+        <div class="subscribe-section-msg" id="indexSubMsg"></div>
+      </div>
     </div>
 
     <div class="suggestions-box">
