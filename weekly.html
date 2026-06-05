@@ -130,13 +130,10 @@
       return;
     }
     try {
-      const res = await fetch('https://api.resend.com/audiences/82500be9-6f1d-471f-bbae-d872a2bf6e04/contacts', {
+      const res = await fetch('https://rlpzmepeautd1v5pgoumz9aa2qhd92xd.ui.nabu.casa/weekly-subscribe', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer re_cBVyhH8j_8e65AVJ9RLWyU9vNEzDeTDKn'
-        },
-        body: JSON.stringify({email_address: email, unsubscribed: false})
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({email})
       });
       msg.style.display = 'block';
       if (res.ok || res.status === 201) {
