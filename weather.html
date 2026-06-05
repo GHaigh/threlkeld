@@ -457,7 +457,7 @@
     .gdd-bar-label { font-size: 11px; color: var(--cream-dim); }
 
     /* Stargazing + Aurora */
-    .sg-card { background: var(--forest-dark); border: 1px solid var(--divider); border-radius: 10px; padding: 20px 24px; display: flex; flex-direction: column; }
+    .sg-card { background: var(--forest-dark); border: 1px solid var(--divider); border-radius: 10px; padding: 20px 24px; display: flex; flex-direction: column; height: 100%; }
     .sg-panel { display: flex; flex-direction: column; }
     .sg-score { font-family: 'Playfair Display', serif; font-size: 48px; color: var(--cream); line-height: 1; }
     .sg-label { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; margin-top: 4px; color: var(--cream-dim); }
@@ -841,7 +841,6 @@
         <a href="weather.html" class="nav-link active">🌤️ Weather</a>
         <a href="wildlife.html" class="nav-link">🦔 Wildlife</a>
         <a href="about.html" class="nav-link">ℹ️ About</a>
-        <a href="weekly.html" class="nav-link">📬 Weekly</a>
       </div>
       <button class="nav-hamburger" id="navHamburger" aria-label="Menu">
         <span></span><span></span><span></span>
@@ -885,7 +884,7 @@
   <div class="tl-modal-overlay" id="tlModalOverlay">
     <div class="tl-modal">
       <div class="tl-modal-header">
-        <div class="tl-modal-title">📽️ Fell Cam Time-lapse</div>
+        <div class="tl-modal-title">📽️ Weather Cam Time-lapse</div>
         <button class="tl-modal-close" onclick="toggleTimelapse()">✕</button>
       </div>
       <div style="position:relative;border-radius:8px;overflow:hidden;border:1px solid var(--divider)">
@@ -1396,8 +1395,8 @@
           <div class="loading"><div class="loading-spinner"></div></div>
         </div>
 
-        <!-- Stargazing + Aurora + Fell Cam -->
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:28px;align-items:start">
+        <!-- Stargazing + Aurora + Weather Cam -->
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:28px;align-items:stretch">
           <div>
             <div class="section-header" style="margin-top:0">
               <div class="section-title">Stargazing Conditions
@@ -1421,12 +1420,12 @@
           <!-- Fell Cam -->
           <div>
             <div class="section-header" style="margin-top:0">
-              <div class="section-title" style="font-size:18px">📷 Fell Cam</div>
-              <div class="section-sub" id="fellcamWeatherSub">Reolink · 5 min refresh</div>
+              <div class="section-title" style="font-size:18px">📷 Weather Cam</div>
+              <div class="section-sub" id="fellcamWeatherSub">Reolink · Live feed</div>
             </div>
             <div class="sg-card">
               <div id="fellcamLive">
-                <img id="fellcamImg" src="" alt="Fell and Weather Camera" style="width:100%;height:160px;object-fit:cover;border-radius:6px;background:var(--forest-mid);display:block">
+                <img id="fellcamImg" src="" alt="Fell and Weather Camera" style="width:100%;height:200px;object-fit:cover;border-radius:6px;background:var(--forest-mid);display:block">
                 <div style="font-size:10px;color:var(--cream-dim);margin-top:8px" id="fellcamUpdated">—</div>
                 <button class="timelapse-btn" onclick="toggleTimelapse()">📽️ View time-lapse</button>
               </div>
