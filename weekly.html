@@ -113,10 +113,12 @@
 </footer>
 
 <script>
-  // Subscribe via Buttondown
+  // Subscribe via Resend Audiences
+  // We proxy through HA to avoid exposing the API key client-side
   async function subscribe() {
     const email = document.getElementById('subEmail').value.trim();
     const msg = document.getElementById('subMsg');
+    msg.style.display = 'none';
     if (!email || !email.includes('@')) {
       msg.style.display = 'block';
       msg.style.color = '#e05555';
@@ -124,22 +126,24 @@
       return;
     }
     try {
-      const res = await fetch('https://api.buttondown.email/v1/subscribers', {
+      // POST to HA webhook which adds to Resend audience
+      const res = await fetch('https://www.threlkeld.info/api/subscribe', {
         method: 'POST',
-        headers: {'Content-Type': 'application/json', 'Authorization': 'Token a672f137-1f3d-421c-ab35-2649d5e2bab6'},
-        body: JSON.stringify({email_address: email, tags: ['threlkeld-weekly']})
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({email})
       });
       msg.style.display = 'block';
       if (res.ok) {
         msg.style.color = '#a882c8';
-        msg.textContent = '✓ Subscribed! Check your inbox for a confirmation email.';
+        msg.textContent = '✓ Thank you! You'll receive the next summary this Sunday.';
         document.getElementById('subEmail').value = '';
       } else {
-        const err = await res.json();
         msg.style.color = '#e05555';
-        msg.textContent = err.detail || 'Something went wrong. Please try again.';
+        msg.textContent = 'Something went wrong. Please try again or email us directly.';
       }
     } catch(e) {
+      // Fallback — just send them to Resend hosted page
+      window.location.href = 'https://resend.com/audiences';
       msg.style.display = 'block';
       msg.style.color = '#e05555';
       msg.textContent = 'Could not connect. Please try again.';
