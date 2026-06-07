@@ -2224,11 +2224,14 @@
       if (!card) return;
       const lat = 54.616, lon = -3.056;
       try {
-        const res = await fetch(`https://threlkeldiss.haigh-greg.workers.dev/?lat=${lat}&lon=${lon}`);
+        const res = await fetch(`https://iss-api.polluxlabs.io/iss-pass?lat=${lat}&lon=${lon}&visible_only=true`);
         if (!res.ok) throw new Error('iss api ' + res.status);
-        const passes = await res.json();
-        if (!Array.isArray(passes) || passes.length === 0) {
-          card.innerHTML = '<div class="sg-score" style="font-size:28px">—</div><div class="sg-label">No visible passes soon</div>';
+        const json = await res.json();
+        const passes = (json && Array.isArray(json.passes)) ? json.passes : [];
+        if (passes.length === 0) {
+          card.innerHTML = '<div class="sg-score" style="font-size:34px">🛰️</div>'
+            + '<div class="sg-label">No visible passes right now</div>'
+            + '<div style="font-size:12px;color:var(--cream-dim);margin-top:14px;line-height:1.5">The ISS is currently passing over in daylight or through Earth\'s shadow, so it isn\'t visible from Threlkeld. Bright evening and dawn passes return every few weeks — check back soon.</div>';
           return;
         }
         const now = new Date();
@@ -2236,17 +2239,17 @@
           .map(p => ({
             rise: new Date(p.rise.time),
             set: new Date(p.set.time),
-            dir: p.rise.direction || '',
-            setDir: p.set.direction || '',
-            elev: Math.round(p.culminate ? p.culminate.degrees : 0),
-            mins: p.length_mins || (Math.round((p.length || 0) / 60) + ' min')
+            dir: p.rise.compass || '',
+            setDir: p.set.compass || '',
+            elev: Math.round(p.culmination ? p.culmination.elevation_deg : 0),
+            mins: Math.round((p.duration_sec || 0) / 60) + ' min'
           }))
           .filter(p => p.rise > now)
           .sort((a, b) => a.rise - b.rise)
           .slice(0, 4);
 
         if (upcoming.length === 0) {
-          card.innerHTML = '<div class="sg-score" style="font-size:28px">—</div><div class="sg-label">No upcoming passes</div>';
+          card.innerHTML = '<div class="sg-score" style="font-size:28px">—</div><div class="sg-label">No upcoming visible passes</div>';
           return;
         }
 
