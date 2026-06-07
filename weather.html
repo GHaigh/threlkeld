@@ -1469,9 +1469,6 @@
           </div>
         </div>
 
-
-
-
         <!-- Moon Phase Calendar -->
         <div class="section-header">
           <div class="section-title">Moon Calendar</div>
@@ -2064,9 +2061,9 @@
         if (topic === CURRENT_TOPIC) {
           currentData = data;
           hideOfflineBanner(); saveCache({ current: data, history: historyData });
-          renderStargazing(data);
           loadForecast();
           renderCurrent(data);
+          renderStargazing(data);
           if (historyData) {
             renderMiniCharts();
             renderRecords(historyData);
