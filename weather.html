@@ -1531,6 +1531,9 @@
 
       document.getElementById('mainContent').innerHTML = html;
       refreshFellCam();
+      renderMoonCalendar();
+      renderISS();
+      renderMeteorShowers();
 
       if (d.wind_dir !== null) {
         document.getElementById('compassArrow').style.transform =
@@ -2323,9 +2326,6 @@
         <div class="sg-facts">${facts}</div>`;
     }
 
-    renderISS();
-    renderMeteorShowers();
-
     // Moon Phase Calendar
     function renderMoonCalendar() {
       const now = new Date();
@@ -2388,7 +2388,6 @@
       const grid = document.getElementById('moonGrid');
       if (grid) grid.innerHTML = html;
     }
-    renderMoonCalendar();
 
     // Footer timestamp
     document.getElementById('footerUpdated') && (document.getElementById('footerUpdated').textContent =
