@@ -137,10 +137,9 @@
       padding: 22px 26px;
       margin: 28px 0 8px;
     }
-    .naturalist-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
-    .naturalist-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--sage); box-shadow: 0 0 6px var(--sage); flex: none; }
+    .naturalist-head { display: flex; align-items: center; margin-bottom: 12px; }
     .naturalist-title { font-family: 'Playfair Display', Georgia, serif; font-size: 17px; color: var(--cream); letter-spacing: 0.01em; }
-    .naturalist-date { font-size: 12px; color: var(--cream-dim); margin-left: auto; font-weight: 300; }
+    .naturalist-date { font-size: 12px; color: var(--cream-dim); font-weight: 300; font-family: 'Source Sans 3', sans-serif; margin-left: 8px; }
     .naturalist-body { font-size: 15px; line-height: 1.7; color: var(--cream); font-weight: 300; }
     @media(max-width:600px) { .naturalist-card { padding: 18px 18px; } .naturalist-date { display: none; } }
 
@@ -727,17 +726,16 @@
       <div class="hero-credit">Photo · Threlkeld Village Hall</div>
     </div>
 
+    <div class="projects-label">Citizen Environmental Science · Live · Updated in Real Time</div>
+
     <!-- AI Naturalist daily summary -->
     <div class="naturalist-card" id="naturalistCard" style="display:none">
       <div class="naturalist-head">
-        <span class="naturalist-dot"></span>
-        <span class="naturalist-title">The Threlkeld Naturalist</span>
-        <span class="naturalist-date" id="naturalistDate"></span>
+        <span class="naturalist-title">The AI Threlkeld Naturalist <span class="naturalist-date" id="naturalistDate"></span></span>
       </div>
       <div class="naturalist-body" id="naturalistBody"></div>
     </div>
 
-    <div class="projects-label">Citizen Environmental Science · Live · Updated in Real Time</div>
     <div class="projects-grid">
       <a href="birds.html" class="project-card">
         <div class="live-badge"><div class="live-dot"></div>Live</div>
@@ -988,7 +986,7 @@
             const dateEl = document.getElementById('naturalistDate');
             if (data.date) {
               const d = new Date(data.date + 'T00:00:00');
-              dateEl.textContent = d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+              dateEl.textContent = 'Summary from ' + d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
             }
             document.getElementById('naturalistCard').style.display = 'block';
           }
