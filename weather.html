@@ -1473,10 +1473,11 @@
 
 
         <!-- Moon Phase Calendar -->
+        <div class="section-header">
+          <div class="section-title">Moon Calendar</div>
+          <div class="section-sub" id="moonCalMonth"></div>
+        </div>
         <div class="moon-calendar">
-          <div class="section-header" style="margin-top:0">
-            <div class="section-title">Moon Calendar <span style="font-size:13px;color:var(--cream-dim);font-family:'Source Sans 3',sans-serif;font-weight:300" id="moonCalMonth"></span></div>
-          </div>
           <div class="moon-grid" id="moonGrid"></div>
         </div>
 
@@ -1495,7 +1496,7 @@
           <div>
             <div class="section-header" style="margin-top:0">
               <div class="section-title">Meteor Showers
-              <span class="info-tooltip"><i class="info-icon">i</i><span class="info-box"><strong>Meteor showers</strong> occur when Earth passes through debris left by comets. The Zenithal Hourly Rate (ZHR) is the number visible per hour under perfect dark skies at the radiant's zenith — real counts are usually lower. A dark, moonless sky greatly improves viewing, so check the moon phase. The radiant is the constellation the meteors appear to stream from.</span></span></div>
+              <span class="info-tooltip"><i class="info-icon">i</i><span class="info-box"><strong>Meteor showers</strong> ("shooting stars") happen when Earth drifts through dust left behind by comets. The rate shown (e.g. "~100/hr") is roughly how many you might see each hour on the peak night under a clear, dark sky — you'll usually see fewer, but the bigger showers are well worth a look. A bright moon washes them out, so darker nights are best. The radiant is the part of the sky they appear to come from.</span></span></div>
               <div class="section-sub">Upcoming peaks · Annual calendar</div>
             </div>
             <div class="sg-card" id="meteorCard">
@@ -2226,7 +2227,7 @@
       if (!card) return;
       const lat = 54.616, lon = -3.056;
       try {
-        const res = await fetch(`https://iss-in.space/api/passes/${lat}/${lon}`);
+        const res = await fetch(`https://threlkeldiss.haigh-greg.workers.dev/?lat=${lat}&lon=${lon}`);
         if (!res.ok) throw new Error('iss api ' + res.status);
         const passes = await res.json();
         if (!Array.isArray(passes) || passes.length === 0) {
