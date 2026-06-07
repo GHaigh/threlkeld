@@ -1445,17 +1445,6 @@
           </div>
         </div>
 
-
-
-
-        <!-- Moon Phase Calendar -->
-        <div class="moon-calendar">
-          <div class="section-header" style="margin-top:0">
-            <div class="section-title">Moon Calendar <span style="font-size:13px;color:var(--cream-dim);font-family:'Source Sans 3',sans-serif;font-weight:300" id="moonCalMonth"></span></div>
-          </div>
-          <div class="moon-grid" id="moonGrid"></div>
-        </div>
-
         <!-- Bird/Weather Correlation -->
         <div class="section-header">
           <div class="section-title">Weather & Bird Activity</div>
@@ -1479,9 +1468,18 @@
                 </div>
               </div>`).join('')}
           </div>
-        </div>`;
+        </div>`
+
+        <!-- Moon Phase Calendar -->
+        <div class="moon-calendar">
+          <div class="section-header" style="margin-top:0">
+            <div class="section-title">Moon Calendar <span style="font-size:13px;color:var(--cream-dim);font-family:'Source Sans 3',sans-serif;font-weight:300" id="moonCalMonth"></span></div>
+          </div>
+          <div class="moon-grid" id="moonGrid"></div>
+        </div>;
 
       document.getElementById('mainContent').innerHTML = html;
+      renderMoonCalendar();
       refreshFellCam();
 
       if (d.wind_dir !== null) {
@@ -2222,8 +2220,6 @@
       const grid = document.getElementById('moonGrid');
       if (grid) grid.innerHTML = html;
     }
-    renderMoonCalendar();
-
     // Footer timestamp
     document.getElementById('footerUpdated') && (document.getElementById('footerUpdated').textContent =
       'Updated ' + new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) +
