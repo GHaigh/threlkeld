@@ -552,6 +552,26 @@
       nav { position: relative; }
     }
 
+    /* Live ticker */
+    .live-ticker {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 32px;
+      padding: 14px 32px;
+      background: var(--forest-dark);
+      border-bottom: 1px solid var(--divider);
+      font-size: 13px;
+      font-weight: 300;
+      color: var(--cream-dim);
+      flex-wrap: wrap;
+    }
+    .ticker-item { display: flex; align-items: center; gap: 6px; }
+    .ticker-value { color: var(--cream); font-weight: 500; font-size: 15px; }
+    .ticker-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--sage); animation: livePulse 1.5s ease-in-out infinite; }
+    @media(max-width:600px) { .live-ticker { gap: 16px; padding: 10px 16px; font-size: 12px; } }
+
+    /* Subscribe section */
     .subscribe-section {
       background: var(--forest-dark);
       border: 1px solid rgba(155,114,207,0.25);
@@ -625,34 +645,6 @@
         })
       }).catch(() => {});
     })();
-
-  async function indexSubscribe() {
-    const email = document.getElementById('indexSubEmail').value.trim();
-    const msg = document.getElementById('indexSubMsg');
-    msg.style.display = 'none';
-    if (!email || !email.includes('@')) {
-      msg.style.display = 'block';
-      msg.style.color = '#e05555';
-      msg.textContent = 'Please enter a valid email address.';
-      return;
-    }
-    try {
-      const res = await fetch('https://threlkeld.haigh-greg.workers.dev/?email=' + encodeURIComponent(email), {method:'POST'});
-      msg.style.display = 'block';
-      if (res.ok) {
-        msg.style.color = '#9b72cf';
-        msg.textContent = '✓ Thank you — you\'ll receive the next summary this Sunday.';
-        document.getElementById('indexSubEmail').value = '';
-      } else {
-        msg.style.color = '#e05555';
-        msg.textContent = 'Something went wrong. Please try again.';
-      }
-    } catch(e) {
-      msg.style.display = 'block';
-      msg.style.color = '#e05555';
-      msg.textContent = 'Could not connect. Please try again.';
-    }
-  }
   </script>
 
   <style>
@@ -684,6 +676,7 @@
     .install-btn:hover { background: rgba(122,184,122,0.3); }
     .install-dismiss { background: none; border: none; color: rgba(232,240,228,0.4); font-size: 12px; cursor: pointer; font-family: inherit; padding: 6px 8px; }
   </style>
+  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 </head>
 <body>
   <div class="page">
@@ -704,6 +697,13 @@
       <div class="hero-credit">Photo · Threlkeld Village Hall</div>
     </div>
 
+
+    <div class="live-ticker" id="liveTicker">
+      <div class="ticker-item"><span class="ticker-dot"></span><span class="ticker-value" id="tickerBirdsToday">—</span> birds detected today</div>
+      <div class="ticker-item"><span class="ticker-value" id="tickerBirdSpecies">—</span> species</div>
+      <div class="ticker-item"><span class="ticker-value" id="tickerBatsLast">—</span> bats last night</div>
+      <div class="ticker-item"><span class="ticker-value" id="tickerBatSpecies">—</span> bat species</div>
+    </div>
     <div class="projects-label">Citizen Environmental Science · Live · Updated in Real Time</div>
     <div class="projects-grid">
       <a href="birds.html" class="project-card">
@@ -931,6 +931,63 @@
         }, 3000);
       }
     })();
+  </script>
+
+  <script>
+    // Live ticker via MQTT
+    const client = mqtt.connect('wss://broker.hivemq.com:8884/mqtt', {
+      reconnectPeriod: 5000,
+      connectTimeout: 10000
+    });
+    client.on('connect', function() {
+      client.subscribe('birdnetpi/greg2026/stats');
+      client.subscribe('birdnetpi/greg2026/bats/stats');
+    });
+    client.on('message', function(topic, message) {
+      try {
+        const data = JSON.parse(message.toString());
+        if (topic === 'birdnetpi/greg2026/stats') {
+          const today = data.today || [];
+          const todayTotal = today.reduce((s, b) => s + (b.count || 0), 0);
+          document.getElementById('tickerBirdsToday').textContent = todayTotal.toLocaleString();
+          document.getElementById('tickerBirdSpecies').textContent = today.length;
+        }
+        if (topic === 'birdnetpi/greg2026/bats/stats') {
+          const session = data.session || {};
+          document.getElementById('tickerBatsLast').textContent = session.total || 0;
+          document.getElementById('tickerBatSpecies').textContent = session.species || 0;
+        }
+      } catch(e) {}
+    });
+
+    // Subscribe form
+    async function indexSubscribe() {
+      const email = document.getElementById('indexSubEmail').value.trim();
+      const msg = document.getElementById('indexSubMsg');
+      msg.style.display = 'none';
+      if (!email || !email.includes('@')) {
+        msg.style.display = 'block';
+        msg.style.color = '#e05555';
+        msg.textContent = 'Please enter a valid email address.';
+        return;
+      }
+      try {
+        const res = await fetch('https://threlkeld.haigh-greg.workers.dev/?email=' + encodeURIComponent(email), {method:'POST'});
+        msg.style.display = 'block';
+        if (res.ok) {
+          msg.style.color = '#9b72cf';
+          msg.textContent = '✓ Thank you — you\'ll receive the next summary this Sunday.';
+          document.getElementById('indexSubEmail').value = '';
+        } else {
+          msg.style.color = '#e05555';
+          msg.textContent = 'Something went wrong. Please try again.';
+        }
+      } catch(e) {
+        msg.style.display = 'block';
+        msg.style.color = '#e05555';
+        msg.textContent = 'Could not connect. Please try again.';
+      }
+    }
   </script>
 </body>
 </html>
