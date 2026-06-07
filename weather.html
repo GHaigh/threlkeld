@@ -204,6 +204,7 @@
     /* Fell cam */
     @media (max-width: 800px) {
       div[style*="grid-template-columns:1fr 1fr 1fr"] { grid-template-columns: 1fr !important; }
+      .sky-events-grid { grid-template-columns: 1fr !important; }
     }
     .fellcam-card {
       background: var(--forest-dark);
@@ -460,6 +461,9 @@
     .sg-card { background: var(--forest-dark); border: 1px solid var(--divider); border-radius: 10px; padding: 20px 24px; display: flex; flex-direction: column; height: 100%; }
     .sg-panel { display: flex; flex-direction: column; }
     .sg-score { font-family: 'Playfair Display', serif; font-size: 48px; color: var(--cream); line-height: 1; }
+    .sg-score.excellent { color: #a8d4ff; }
+    .sg-score.good { color: var(--sage); }
+    .sg-score.fair { color: #c8a84a; }
     .sg-label { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; margin-top: 4px; color: var(--cream-dim); }
     .sg-label.excellent { color: #a8d4ff; }
     .sg-label.good { color: var(--sage); }
@@ -781,15 +785,35 @@
 
     /* Moon calendar */
     .moon-calendar { background: var(--forest-dark); border: 1px solid var(--divider); border-radius: 10px; padding: 20px 24px; margin-bottom: 28px; }
-    .moon-grid { display: grid; grid-template-columns: repeat(7, 1fr); column-gap: 4px; row-gap: 14px; text-align: center; }
+    .moon-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; }
     .moon-day-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--cream-dim); padding: 4px 0; }
-    .moon-day { font-size: 11px; padding: 8px 2px; border-radius: 4px; color: var(--cream-dim); position: relative; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 4px; }
-    .moon-day .moon-icon { font-size: 22px; display: block; line-height: 1; }
+    .moon-day { font-size: 11px; padding: 6px 2px; border-radius: 4px; color: var(--cream-dim); position: relative; }
+    .moon-day .moon-icon { font-size: 18px; display: block; line-height: 1.2; }
     .moon-day .moon-date { font-size: 9px; color: var(--cream-dim); }
     .moon-day.today { background: rgba(122,184,122,0.15); border: 1px solid var(--sage); }
     .moon-day.today .moon-date { color: var(--sage); font-weight: 500; }
     .moon-day:not(.empty):hover { background: rgba(255,255,255,0.05); cursor: default; }
     .moon-day.empty { visibility: hidden; }
+    .moon-day[data-tip]:hover::after {
+      content: attr(data-tip);
+      position: absolute;
+      bottom: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      margin-bottom: 6px;
+      white-space: nowrap;
+      background: var(--forest-mid, #14241a);
+      color: var(--cream, #e8f5e0);
+      border: 1px solid var(--sage);
+      border-radius: 6px;
+      padding: 5px 9px;
+      font-size: 11px;
+      font-weight: 400;
+      letter-spacing: 0.02em;
+      z-index: 20;
+      pointer-events: none;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    }
   </style>
   <script src="https://cdn.counter.dev/script.js" data-id="0f7db49f-3699-43bc-b09e-d45b58c39067" data-utcoffset="1"></script>
 
@@ -885,7 +909,6 @@
         Loading weather data...
       </div>
     </div>
-
 
     <footer>
       <div class="footer-text"><span id="footerUpdated" style="margin-right:12px;color:var(--cream-dim)"></span>Threlkeld, Cumbria · Ecowitt GW2000A Weather Station</div>
@@ -1446,13 +1469,39 @@
           </div>
         </div>
 
+
+
+
         <!-- Moon Phase Calendar -->
-        <div class="section-header" style="margin-top:72px">
-          <div class="section-title">Moon Calendar</div>
-          <div class="section-sub" id="moonCalMonth"></div>
-        </div>
         <div class="moon-calendar">
+          <div class="section-header" style="margin-top:0">
+            <div class="section-title">Moon Calendar <span style="font-size:13px;color:var(--cream-dim);font-family:'Source Sans 3',sans-serif;font-weight:300" id="moonCalMonth"></span></div>
+          </div>
           <div class="moon-grid" id="moonGrid"></div>
+        </div>
+
+        <!-- Sky Events: ISS + Meteor Showers -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:28px;align-items:stretch" class="sky-events-grid">
+          <div>
+            <div class="section-header" style="margin-top:0">
+              <div class="section-title">ISS Passes
+              <span class="info-tooltip"><i class="info-icon">i</i><span class="info-box"><strong>The International Space Station</strong> orbits ~400km up and is the third-brightest object in the night sky. It appears as a steady (non-blinking) white light gliding west to east, taking 3–6 minutes to cross. Higher peak elevation means brighter and longer. Passes are calculated live using SGP4 orbital propagation from current NORAD data. Only visible passes (when the ISS is sunlit but your sky is dark) are shown.</span></span></div>
+              <div class="section-sub">Visible passes over Threlkeld · Live</div>
+            </div>
+            <div class="sg-card" id="issCard">
+              <div class="loading"><div class="loading-spinner"></div></div>
+            </div>
+          </div>
+          <div>
+            <div class="section-header" style="margin-top:0">
+              <div class="section-title">Meteor Showers
+              <span class="info-tooltip"><i class="info-icon">i</i><span class="info-box"><strong>Meteor showers</strong> occur when Earth passes through debris left by comets. The Zenithal Hourly Rate (ZHR) is the number visible per hour under perfect dark skies at the radiant's zenith — real counts are usually lower. A dark, moonless sky greatly improves viewing, so check the moon phase. The radiant is the constellation the meteors appear to stream from.</span></span></div>
+              <div class="section-sub">Upcoming peaks · Annual calendar</div>
+            </div>
+            <div class="sg-card" id="meteorCard">
+              <div class="loading"><div class="loading-spinner"></div></div>
+            </div>
+          </div>
         </div>
 
         <!-- Bird/Weather Correlation -->
@@ -1482,7 +1531,6 @@
 
       document.getElementById('mainContent').innerHTML = html;
       refreshFellCam();
-      renderMoonCalendar();
 
       if (d.wind_dir !== null) {
         document.getElementById('compassArrow').style.transform =
@@ -2169,20 +2217,119 @@
     });
 
 
+    // ── ISS Passes ────────────────────────────────────────────
+    async function renderISS() {
+      const card = document.getElementById('issCard');
+      if (!card) return;
+      const lat = 54.616, lon = -3.056;
+      try {
+        const res = await fetch(`https://iss-in.space/api/passes/${lat}/${lon}`);
+        if (!res.ok) throw new Error('iss api ' + res.status);
+        const passes = await res.json();
+        if (!Array.isArray(passes) || passes.length === 0) {
+          card.innerHTML = '<div class="sg-score" style="font-size:28px">—</div><div class="sg-label">No visible passes soon</div>';
+          return;
+        }
+        const now = new Date();
+        const upcoming = passes
+          .map(p => ({
+            rise: new Date(p.rise.time),
+            set: new Date(p.set.time),
+            dir: p.rise.direction || '',
+            setDir: p.set.direction || '',
+            elev: Math.round(p.culminate ? p.culminate.degrees : 0),
+            mins: p.length_mins || (Math.round((p.length || 0) / 60) + ' min')
+          }))
+          .filter(p => p.rise > now)
+          .sort((a, b) => a.rise - b.rise)
+          .slice(0, 4);
+
+        if (upcoming.length === 0) {
+          card.innerHTML = '<div class="sg-score" style="font-size:28px">—</div><div class="sg-label">No upcoming passes</div>';
+          return;
+        }
+
+        const next = upcoming[0];
+        const quality = next.elev >= 40 ? 'excellent' : next.elev >= 20 ? 'good' : 'fair';
+        const qLabel = next.elev >= 40 ? 'Excellent pass' : next.elev >= 20 ? 'Good pass' : 'Low pass';
+        const dayLabel = d => {
+          const today = new Date(); today.setHours(0,0,0,0);
+          const dd = new Date(d); dd.setHours(0,0,0,0);
+          const diff = Math.round((dd - today) / 86400000);
+          if (diff === 0) return 'Tonight';
+          if (diff === 1) return 'Tomorrow';
+          return d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+        };
+        const tm = d => d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+
+        let facts = '';
+        upcoming.forEach(p => {
+          facts += `<div class="sg-fact"><span>${dayLabel(p.rise)} ${tm(p.rise)}</span><span>${p.dir}→${p.setDir} · ${p.elev}° · ${p.mins}</span></div>`;
+        });
+
+        card.innerHTML = `
+          <div class="sg-score ${quality}" style="font-size:40px">${next.elev}°</div>
+          <div class="sg-label ${quality}">${qLabel} · max elevation</div>
+          <div class="sg-facts">${facts}</div>`;
+      } catch (e) {
+        card.innerHTML = '<div class="sg-score" style="font-size:28px">—</div><div class="sg-label">Pass data unavailable</div>';
+      }
+    }
+
+    // ── Meteor Showers ────────────────────────────────────────
+    function renderMeteorShowers() {
+      const card = document.getElementById('meteorCard');
+      if (!card) return;
+      // Major annual showers: name, peak month (0-idx), peak day, ZHR, radiant
+      const showers = [
+        { name: 'Quadrantids',    m: 0,  d: 3,  zhr: 110, radiant: 'Boötes' },
+        { name: 'Lyrids',         m: 3,  d: 22, zhr: 18,  radiant: 'Lyra' },
+        { name: 'Eta Aquariids',  m: 4,  d: 6,  zhr: 50,  radiant: 'Aquarius' },
+        { name: 'Delta Aquariids',m: 6,  d: 30, zhr: 25,  radiant: 'Aquarius' },
+        { name: 'Perseids',       m: 7,  d: 12, zhr: 100, radiant: 'Perseus' },
+        { name: 'Draconids',      m: 9,  d: 8,  zhr: 10,  radiant: 'Draco' },
+        { name: 'Orionids',       m: 9,  d: 21, zhr: 20,  radiant: 'Orion' },
+        { name: 'Taurids',        m: 10, d: 5,  zhr: 5,   radiant: 'Taurus' },
+        { name: 'Leonids',        m: 10, d: 17, zhr: 15,  radiant: 'Leo' },
+        { name: 'Geminids',       m: 11, d: 14, zhr: 120, radiant: 'Gemini' },
+        { name: 'Ursids',         m: 11, d: 22, zhr: 10,  radiant: 'Ursa Minor' }
+      ];
+      const now = new Date();
+      const yr = now.getFullYear();
+      // Build dated peaks for this year and next, keep the next 4 upcoming
+      let peaks = [];
+      [yr, yr + 1].forEach(y => {
+        showers.forEach(s => peaks.push({ ...s, date: new Date(y, s.m, s.d, 12) }));
+      });
+      const upcoming = peaks.filter(p => p.date >= new Date(now.getFullYear(), now.getMonth(), now.getDate()))
+                            .sort((a, b) => a.date - b.date)
+                            .slice(0, 4);
+      const next = upcoming[0];
+      const daysTo = Math.round((next.date - new Date(now.getFullYear(), now.getMonth(), now.getDate())) / 86400000);
+      const intensity = next.zhr >= 80 ? 'excellent' : next.zhr >= 30 ? 'good' : 'fair';
+      const dayLabel = d => {
+        const diff = Math.round((d - new Date(now.getFullYear(), now.getMonth(), now.getDate())) / 86400000);
+        if (diff === 0) return 'Peaks tonight';
+        if (diff === 1) return 'Peaks tomorrow';
+        return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+      };
+      let facts = '';
+      upcoming.forEach(p => {
+        facts += `<div class="sg-fact"><span>${p.name}</span><span>${dayLabel(p.date)} · ~${p.zhr}/hr · ${p.radiant}</span></div>`;
+      });
+      card.innerHTML = `
+        <div class="sg-score ${intensity}" style="font-size:40px">~${next.zhr}</div>
+        <div class="sg-label ${intensity}">${next.name} · ${daysTo === 0 ? 'peaks tonight' : 'in ' + daysTo + ' days'}</div>
+        <div class="sg-facts">${facts}</div>`;
+    }
+
+    renderISS();
+    renderMeteorShowers();
+
     // Moon Phase Calendar
     function renderMoonCalendar() {
       const now = new Date();
-      const year = now.getFullYear();
-      const month = now.getMonth();
-      const monthName = now.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
       const monthLabel = document.getElementById('moonCalMonth');
-      if (monthLabel) monthLabel.textContent = monthName;
-
-      const firstDay = new Date(year, month, 1);
-      const lastDay = new Date(year, month + 1, 0);
-      const startDow = firstDay.getDay(); // 0=Sun
-      const daysInMonth = lastDay.getDate();
-      const todayDate = now.getDate();
 
       // Reference new moon: 6 Jan 2000
       const refNewMoon = new Date('2000-01-06T18:14:00Z');
@@ -2201,27 +2348,48 @@
         return { icon: '🌘', name: 'Waning Crescent' };
       }
 
+      // Rolling window centred on today: start from the Sunday of the week
+      // ~2 weeks before today, render 5 weeks (35 days).
+      const todayMid = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12);
+      const start = new Date(todayMid);
+      start.setDate(start.getDate() - 14);
+      start.setDate(start.getDate() - start.getDay()); // back to Sunday
+      const WEEKS = 5;
+
+      // Label shows the span, e.g. "May – June 2026"
+      const end = new Date(start);
+      end.setDate(end.getDate() + WEEKS * 7 - 1);
+      const sMon = start.toLocaleDateString('en-GB', { month: 'long' });
+      const eMon = end.toLocaleDateString('en-GB', { month: 'long' });
+      const yr = end.getFullYear();
+      const spanLabel = (sMon === eMon) ? `${sMon} ${yr}` : `${sMon} – ${eMon} ${yr}`;
+      if (monthLabel) monthLabel.textContent = spanLabel;
+
       const labels = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
       let html = labels.map(l => '<div class="moon-day-label">' + l + '</div>').join('');
 
-      // Empty cells before first day
-      for (let i = 0; i < startDow; i++) {
-        html += '<div class="moon-day empty"></div>';
-      }
-
-      for (let d = 1; d <= daysInMonth; d++) {
-        const date = new Date(year, month, d, 12);
+      const todayKey = todayMid.toDateString();
+      for (let i = 0; i < WEEKS * 7; i++) {
+        const date = new Date(start);
+        date.setDate(start.getDate() + i);
+        date.setHours(12, 0, 0, 0);
         const moon = getMoonPhase(date);
-        const isToday = d === todayDate;
-        html += '<div class="moon-day' + (isToday ? ' today' : '') + '" title="' + d + ' ' + monthName.split(' ')[0] + ': ' + moon.name + '">'
+        const isToday = date.toDateString() === todayKey;
+        const dayNum = date.getDate();
+        const monShort = date.toLocaleDateString('en-GB', { month: 'short' });
+        const full = date.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+        html += '<div class="moon-day' + (isToday ? ' today' : '') + '"'
+             + ' data-tip="' + full + ' · ' + moon.name + '">'
              + '<span class="moon-icon">' + moon.icon + '</span>'
-             + '<span class="moon-date">' + d + '</span>'
+             + '<span class="moon-date">' + (dayNum === 1 ? monShort + ' ' : '') + dayNum + '</span>'
              + '</div>';
       }
 
       const grid = document.getElementById('moonGrid');
       if (grid) grid.innerHTML = html;
     }
+    renderMoonCalendar();
+
     // Footer timestamp
     document.getElementById('footerUpdated') && (document.getElementById('footerUpdated').textContent =
       'Updated ' + new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) +
