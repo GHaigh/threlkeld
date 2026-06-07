@@ -704,6 +704,9 @@
           <span id="tickerBirdSpecies" hidden>—</span>
           <span id="tickerBatsLast" hidden>—</span>
           <span id="tickerBatSpecies" hidden>—</span>
+          <span id="tickerPlanesToday" hidden>—</span>
+          <span id="tickerTemp" hidden>—</span>
+          <span id="tickerRain" hidden>—</span>
         </div>
       </div>
       <div class="hero-credit">Photo · Threlkeld Village Hall</div>
@@ -948,6 +951,8 @@
     client.on('connect', function() {
       client.subscribe('birdnetpi/greg2026/stats');
       client.subscribe('birdnetpi/greg2026/bats/stats');
+      client.subscribe('birdnetpi/greg2026/flights');
+      client.subscribe('birdnetpi/greg2026/weather/current');
     });
     client.on('message', function(topic, message) {
       try {
@@ -963,6 +968,19 @@
           document.getElementById('tickerBatsLast').textContent = session.total || 0;
           document.getElementById('tickerBatSpecies').textContent = session.species || 0;
         }
+        if (topic === 'birdnetpi/greg2026/flights') {
+          const flights = Array.isArray(data) ? data : (data.flights || []);
+          const today = new Date().toDateString();
+          const planesToday = flights.filter(f => f.timestamp && new Date(f.timestamp).toDateString() === today).length;
+          document.getElementById('tickerPlanesToday').textContent = planesToday;
+        }
+        if (topic === 'birdnetpi/greg2026/weather/current') {
+          if (data.temperature !== undefined && data.temperature !== null) {
+            document.getElementById('tickerTemp').textContent = Number(data.temperature).toFixed(1) + '°C';
+          }
+          const rate = parseFloat(data.rain_rate);
+          document.getElementById('tickerRain').textContent = (!isNaN(rate) && rate > 0) ? 'Yes' : 'No';
+        }
       } catch(e) {}
     });
 
@@ -971,7 +989,10 @@
       () => `<span class="ticker-value">${document.getElementById('tickerBirdsToday').textContent}</span>birds detected today`,
       () => `<span class="ticker-value">${document.getElementById('tickerBirdSpecies').textContent}</span>bird species today`,
       () => `<span class="ticker-value">${document.getElementById('tickerBatsLast').textContent}</span>bats last night`,
-      () => `<span class="ticker-value">${document.getElementById('tickerBatSpecies').textContent}</span>bat species last night`
+      () => `<span class="ticker-value">${document.getElementById('tickerBatSpecies').textContent}</span>bat species last night`,
+      () => `<span class="ticker-value">${document.getElementById('tickerPlanesToday').textContent}</span>planes overhead today`,
+      () => `<span class="ticker-value">${document.getElementById('tickerTemp').textContent}</span>right now`,
+      () => `rain right now: <span class="ticker-value" style="margin-left:4px">${document.getElementById('tickerRain').textContent}</span>`
     ];
     let tickerIdx = 0;
     const tickerEl = document.getElementById('tickerRotator');
