@@ -965,32 +965,14 @@
         }
         if (topic === 'birdnetpi/greg2026/bats/stats') {
           const session = data.session || {};
-          const nightly = Array.isArray(data.nightly) ? data.nightly : [];
-          // Most recent completed night (sorted by date, newest first)
-          const sortedNights = [...nightly].sort((a, b) => new Date(b.date) - new Date(a.date));
-          const lastNight = sortedNights[0] || null;
-
-          // If a session is active (bats flying now), show tonight's running count.
-          // Otherwise show the most recent completed night.
-          const sessionActive = (session.total || 0) > 0;
-          let batCount, batSpecies, batLabel;
-          if (sessionActive) {
-            batCount = session.total || 0;
-            batSpecies = session.species || 0;
-            batLabel = 'bats tonight';
-          } else if (lastNight) {
-            batCount = lastNight.count || 0;
-            batSpecies = lastNight.species != null ? lastNight.species
-                        : (session.species || 0);
-            batLabel = 'bats last night';
-          } else {
-            batCount = 0; batSpecies = 0; batLabel = 'bats last night';
-          }
-          document.getElementById('tickerBatsLast').textContent = batCount;
-          document.getElementById('tickerBatSpecies').textContent = batSpecies;
-          document.getElementById('tickerBatsLast').dataset.label = batLabel;
-          document.getElementById('tickerBatSpecies').dataset.label =
-            sessionActive ? 'bat species tonight' : 'bat species last night';
+          // bat_stats.py makes `session` context-aware: tonight after dusk,
+          // otherwise last night (with automatic fallback to the last active night).
+          const isTonight = data.isTonight === true;
+          const when = isTonight ? 'tonight' : 'last night';
+          document.getElementById('tickerBatsLast').textContent = session.total || 0;
+          document.getElementById('tickerBatSpecies').textContent = session.species || 0;
+          document.getElementById('tickerBatsLast').dataset.label = 'bats ' + when;
+          document.getElementById('tickerBatSpecies').dataset.label = 'bat species ' + when;
         }
         if (topic === 'birdnetpi/greg2026/flights') {
           const flights = Array.isArray(data) ? data : (data.flights || []);
