@@ -886,6 +886,14 @@
       </div>
     </div>
 
+    <!-- Moon Phase Calendar (independent of live data) -->
+    <div class="moon-calendar">
+      <div class="section-header" style="margin-top:0">
+        <div class="section-title">Moon Calendar <span style="font-size:13px;color:var(--cream-dim);font-family:'Source Sans 3',sans-serif;font-weight:300" id="moonCalMonth"></span></div>
+      </div>
+      <div class="moon-grid" id="moonGrid"></div>
+    </div>
+
     <footer>
       <div class="footer-text"><span id="footerUpdated" style="margin-right:12px;color:var(--cream-dim)"></span>Threlkeld, Cumbria · Ecowitt GW2000A Weather Station</div>
       <div class="footer-brand">Part of Threlkeld Local Projects</div>
@@ -1468,18 +1476,9 @@
                 </div>
               </div>`).join('')}
           </div>
-        </div>
-
-        <!-- Moon Phase Calendar -->
-        <div class="moon-calendar">
-          <div class="section-header" style="margin-top:0">
-            <div class="section-title">Moon Calendar <span style="font-size:13px;color:var(--cream-dim);font-family:'Source Sans 3',sans-serif;font-weight:300" id="moonCalMonth"></span></div>
-          </div>
-          <div class="moon-grid" id="moonGrid"></div>
         </div>`;
 
       document.getElementById('mainContent').innerHTML = html;
-      renderMoonCalendar();
       refreshFellCam();
 
       if (d.wind_dir !== null) {
@@ -2220,6 +2219,8 @@
       const grid = document.getElementById('moonGrid');
       if (grid) grid.innerHTML = html;
     }
+    renderMoonCalendar();
+
     // Footer timestamp
     document.getElementById('footerUpdated') && (document.getElementById('footerUpdated').textContent =
       'Updated ' + new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) +
