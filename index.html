@@ -135,7 +135,7 @@
       border-left: 3px solid var(--sage);
       border-radius: 10px;
       padding: 22px 26px;
-      margin: 28px 0 8px;
+      margin: 0 0 32px;
     }
     .naturalist-head { display: flex; align-items: center; margin-bottom: 12px; }
     .naturalist-title { font-family: 'Playfair Display', Georgia, serif; font-size: 17px; color: var(--cream); letter-spacing: 0.01em; }
@@ -148,7 +148,8 @@
       letter-spacing: 0.2em;
       text-transform: uppercase;
       color: var(--sage);
-      margin-bottom: 20px;
+      margin-top: 8px;
+      margin-bottom: 16px;
     }
 
     .projects-grid {
@@ -441,7 +442,7 @@
       margin-right: -50vw;
       height: 480px;
       overflow: hidden;
-      margin-bottom: 40px;
+      margin-bottom: 32px;
     }
 
     .hero-img {
@@ -986,7 +987,7 @@
             const dateEl = document.getElementById('naturalistDate');
             if (data.date) {
               const d = new Date(data.date + 'T00:00:00');
-              dateEl.textContent = 'Summary for ' + d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+              dateEl.textContent = 'Summary for the morning of ' + d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
             }
             document.getElementById('naturalistCard').style.display = 'block';
           }
