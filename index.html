@@ -967,6 +967,25 @@
 
   <script>
     // Live ticker via MQTT
+    // Render the Naturalist card (shared by fast-fetch and MQTT fallback)
+    function renderNaturalist(data) {
+      if (!data || !data.summary) return;
+      document.getElementById('naturalistBody').textContent = data.summary;
+      const dateEl = document.getElementById('naturalistDate');
+      if (data.date) {
+        const d = new Date(data.date + 'T00:00:00');
+        dateEl.textContent = 'Summary for the morning of ' + d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+      }
+      document.getElementById('naturalistCard').style.display = 'block';
+    }
+
+    // Fast path: fetch the static summary immediately (no MQTT handshake wait).
+    // MQTT remains a live-update fallback below.
+    fetch('https://rlpzmepeautd1v5pgoumz9aa2qhd92xd.ui.nabu.casa/local/naturalist.json?t=' + Date.now())
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data) renderNaturalist(data); })
+      .catch(() => {});
+
     const client = mqtt.connect('wss://broker.hivemq.com:8884/mqtt', {
       reconnectPeriod: 5000,
       connectTimeout: 10000
@@ -982,15 +1001,7 @@
       try {
         const data = JSON.parse(message.toString());
         if (topic === 'birdnetpi/greg2026/naturalist') {
-          if (data && data.summary) {
-            document.getElementById('naturalistBody').textContent = data.summary;
-            const dateEl = document.getElementById('naturalistDate');
-            if (data.date) {
-              const d = new Date(data.date + 'T00:00:00');
-              dateEl.textContent = 'Summary for the morning of ' + d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
-            }
-            document.getElementById('naturalistCard').style.display = 'block';
-          }
+          renderNaturalist(data);
         }
         if (topic === 'birdnetpi/greg2026/stats') {
           const today = data.today || [];
