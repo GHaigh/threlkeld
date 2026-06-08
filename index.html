@@ -986,7 +986,7 @@
             const dateEl = document.getElementById('naturalistDate');
             if (data.date) {
               const d = new Date(data.date + 'T00:00:00');
-              dateEl.textContent = 'Summary from ' + d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+              dateEl.textContent = 'Summary for ' + d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
             }
             document.getElementById('naturalistCard').style.display = 'block';
           }
