@@ -1046,23 +1046,53 @@
       () => `<span class="ticker-value">${document.getElementById('tickerTemp').textContent}</span>right now`,
       () => `rain right now: <span class="ticker-value" style="margin-left:4px">${document.getElementById('tickerRain').textContent}</span>`
     ];
+    // Each slide's primary value element — used to tell if its data has loaded yet.
+    const tickerSources = ['tickerBirdsToday','tickerBirdSpecies','tickerBatsLast','tickerBatSpecies','tickerPlanesToday','tickerTemp','tickerRain'];
+    const PLACEHOLDER = '—';
+    function slideReady(i) {
+      const v = document.getElementById(tickerSources[i]);
+      return v && v.textContent && v.textContent !== PLACEHOLDER;
+    }
+    function anyReady() {
+      return tickerSources.some((_, i) => slideReady(i));
+    }
     let tickerIdx = 0;
     const tickerEl = document.getElementById('tickerRotator');
     function showTickerSlide() {
       if (!tickerEl) return;
       tickerEl.innerHTML = tickerSlides[tickerIdx]();
     }
+    function nextReadyIdx(from) {
+      // find the next slide (starting after `from`) that has real data
+      for (let step = 1; step <= tickerSlides.length; step++) {
+        const i = (from + step) % tickerSlides.length;
+        if (slideReady(i)) return i;
+      }
+      return from; // nothing ready yet
+    }
     function rotateTicker() {
-      if (!tickerEl) return;
+      if (!tickerEl || !anyReady()) return;
+      const next = nextReadyIdx(tickerIdx);
+      if (next === tickerIdx) return; // only one ready slide; leave it
       tickerEl.classList.add('fading');
       setTimeout(() => {
-        tickerIdx = (tickerIdx + 1) % tickerSlides.length;
+        tickerIdx = next;
         showTickerSlide();
         tickerEl.classList.remove('fading');
       }, 400);
     }
-    showTickerSlide();
-    setInterval(rotateTicker, 4000);
+    // Don't paint slide 0 blindly — wait until at least one slide has data,
+    // then show the first ready one. Poll briefly until data arrives.
+    function startTicker() {
+      if (anyReady()) {
+        if (!slideReady(tickerIdx)) tickerIdx = nextReadyIdx(tickerIdx);
+        showTickerSlide();
+        setInterval(rotateTicker, 4000);
+      } else {
+        setTimeout(startTicker, 200);
+      }
+    }
+    startTicker();
 
     // Subscribe form
     async function indexSubscribe() {
