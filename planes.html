@@ -702,6 +702,8 @@
               </div>
             </div>
           </div>
+          <div class="stat-box clickable" data-filter="lasthour" title="Flights in the last hour"><div class="stat-value" id="statLastHour">—</div><div class="stat-label">⏱ Last Hour</div></div>
+          <div class="stat-box" title="Most common route today"><div class="stat-value" id="statTopRoute" style="font-size:17px;line-height:1.2">—</div><div class="stat-label">Top Route Today</div></div>
         </div>
       </div>
     </div>
@@ -901,6 +903,28 @@
       document.getElementById('statHighest').textContent = highest > 0 ? Math.round(highest).toLocaleString() : '—';
       const uniqueTypes = new Set(flights.map(f => f.aircraft_model).filter(m => m && m !== 'Unknown')).size;
       document.getElementById('statAircraft').textContent = uniqueTypes || '—';
+
+      // Last hour: flights in the past 60 minutes
+      const hourAgo = Date.now() - 3600000;
+      const lastHour = flights.filter(f => new Date(f.timestamp).getTime() >= hourAgo).length;
+      const lhEl = document.getElementById('statLastHour');
+      if (lhEl) lhEl.textContent = lastHour;
+
+      // Top route today: most common origin -> destination among today's flights
+      const trEl = document.getElementById('statTopRoute');
+      if (trEl) {
+        const routes = {};
+        today.forEach(f => {
+          const o = (f.origin || '').trim();
+          const d = (f.destination || '').trim();
+          if (o && d && o !== '?' && d !== '?') {
+            const key = o + ' → ' + d;
+            routes[key] = (routes[key] || 0) + 1;
+          }
+        });
+        const top = Object.entries(routes).sort((a, b) => b[1] - a[1])[0];
+        trEl.textContent = top ? `${top[0]}${top[1] > 1 ? '  ×' + top[1] : ''}` : '—';
+      }
       const now = new Date();
       // Calculate sunrise/sunset for Threlkeld
       const lat = 54.616, lon = -3.056;
@@ -1213,6 +1237,9 @@
       } else if (filter === 'highest') {
         const sorted = [...allFlights].sort((a, b) => (b.altitude || 0) - (a.altitude || 0));
         showStatModal('Highest Flights', sorted.slice(0, 20));
+      } else if (filter === 'lasthour') {
+        const hourAgo = Date.now() - 3600000;
+        showStatModal('Flights — Last Hour', allFlights.filter(f => new Date(f.timestamp).getTime() >= hourAgo));
       } else if (filter === 'today') {
         showStatModal("Today's Flights", allFlights.filter(f => isToday(f.timestamp)));
       } else if (filter === 'all') {
