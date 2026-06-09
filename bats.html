@@ -394,17 +394,17 @@
     </div>
     <div class="weather-corr-card" id="weatherCorrCard">
       <div class="corr-item">
-        <div class="corr-label">🌡️ Best Temperature</div>
+        <div class="corr-label">🌡️ Best Temperature<span class="info-tooltip"><i class="info-icon">i</i><span class="info-box"><strong>Best Temperature</strong> — the average evening temperature on nights when bats were detected, weighted by how many detections each night had. Calculated by matching each active bat night to that night's maximum temperature from the garden weather station, so warmer, busier nights count for more. Bats are generally inactive below about 10°C.</span></span></div>
         <div class="corr-value" id="corrBestTemp">—</div>
         <div class="corr-sub" id="corrBestTempSub">Most active above this</div>
       </div>
       <div class="corr-item">
-        <div class="corr-label">🌧️ Rain Impact</div>
+        <div class="corr-label">🌧️ Rain Impact<span class="info-tooltip"><i class="info-icon">i</i><span class="info-box"><strong>Rain Impact</strong> — compares the average number of detections on dry nights versus wet nights (more than 1mm of rain). Each bat night is matched to that night's rainfall from the weather station. Bats hunt far less in rain, as it hampers their echolocation and grounds the insects they feed on.</span></span></div>
         <div class="corr-value" id="corrRain">—</div>
         <div class="corr-sub" id="corrRainSub">Detections on dry vs wet nights</div>
       </div>
       <div class="corr-item">
-        <div class="corr-label">🌙 Moon Impact</div>
+        <div class="corr-label">🌙 Moon Impact<span class="info-tooltip"><i class="info-icon">i</i><span class="info-box" style="right:0;left:auto"><strong>Moon Impact</strong> — compares average detections on dark nights (moon less than 30% lit) versus bright, moonlit nights. Each night's moon illumination is calculated from its date. Some bats show "lunar phobia" — avoiding bright nights when they're more visible to predators — though local factors like temperature can mask the effect.</span></span></div>
         <div class="corr-value" id="corrMoon">—</div>
         <div class="corr-sub" id="corrMoonSub">Lunar phobia effect</div>
       </div>
@@ -1116,8 +1116,15 @@
       const wh = weatherHistory || {};
       const tempSeries = wh.outdoor_temperature || [];
       const rainSeries = wh.daily_rain_rate_piezo || [];
-      const tempByDate = {}; tempSeries.forEach(e => { if (e && e.t) tempByDate[e.t.slice(0,10)] = e; });
-      const rainByDate = {}; rainSeries.forEach(e => { if (e && e.t) rainByDate[e.t.slice(0,10)] = e; });
+      // weather history 't' may be a ms timestamp (number) or an ISO string — normalise to YYYY-MM-DD
+      function dateKey(t) {
+        if (t == null) return null;
+        const d = (typeof t === 'number') ? new Date(t) : new Date(t);
+        if (isNaN(d.getTime())) return null;
+        return d.toISOString().slice(0, 10);
+      }
+      const tempByDate = {}; tempSeries.forEach(e => { if (e) { const k = dateKey(e.t); if (k) tempByDate[k] = e; } });
+      const rainByDate = {}; rainSeries.forEach(e => { if (e) { const k = dateKey(e.t); if (k) rainByDate[k] = e; } });
 
       // Best temperature: average max-temp on active vs quiet nights
       const tWarm = [], tCool = [];
