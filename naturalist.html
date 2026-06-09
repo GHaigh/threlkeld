@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Naturalist · Threlkeld</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400;1,600&family=Source+Sans+3:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --forest-deep: #0d1a0d;
+      --forest-dark: #1a2e1a;
+      --forest-mid: #243022;
+      --sage: #7ab87a;
+      --sage-light: #a8d4a8;
+      --cream: #e8f0e4;
+      --cream-dim: #b8c8b4;
+      --divider: rgba(122, 184, 122, 0.15);
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--forest-deep);
+      color: var(--cream);
+      font-family: 'Source Sans 3', sans-serif;
+      font-weight: 300;
+      min-height: 100vh;
+      line-height: 1.7;
+    }
+    .page { max-width: 760px; margin: 0 auto; padding: 32px 24px 64px; }
+    .back { display: inline-block; color: var(--sage); text-decoration: none; font-size: 14px; letter-spacing: 0.04em; margin-bottom: 28px; }
+    .back:hover { color: var(--sage-light); }
+    .masthead { border-bottom: 1px solid var(--divider); padding-bottom: 24px; margin-bottom: 36px; }
+    .eyebrow { font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--sage); margin-bottom: 10px; }
+    h1 { font-family: 'Playfair Display', serif; font-weight: 400; font-size: 44px; line-height: 1.05; margin-bottom: 12px; }
+    h1 em { font-style: italic; color: var(--sage-light); }
+    .standfirst { color: var(--cream-dim); font-size: 17px; max-width: 580px; }
+
+    .section-label { font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--sage); margin: 40px 0 18px; padding-bottom: 8px; border-bottom: 1px solid var(--divider); }
+
+    /* Review (hero) cards */
+    .review {
+      background: var(--forest-dark);
+      border: 1px solid var(--divider);
+      border-left: 3px solid var(--sage);
+      border-radius: 12px;
+      padding: 28px 30px;
+      margin-bottom: 22px;
+    }
+    .review-kicker { font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--sage); margin-bottom: 6px; }
+    .review-title { font-family: 'Playfair Display', serif; font-size: 28px; font-weight: 400; margin-bottom: 16px; }
+    .review-body { font-size: 17px; color: var(--cream); line-height: 1.8; }
+    .review-stats { display: flex; flex-wrap: wrap; gap: 20px; margin-top: 20px; padding-top: 18px; border-top: 1px solid var(--divider); }
+    .rstat { font-size: 13px; color: var(--cream-dim); }
+    .rstat b { display: block; font-family: 'Playfair Display', serif; font-size: 22px; color: var(--sage-light); font-weight: 400; }
+
+    /* Daily diary entries */
+    .diary-entry {
+      border-bottom: 1px solid var(--divider);
+      padding: 22px 0;
+    }
+    .diary-date {
+      font-family: 'Playfair Display', serif;
+      font-style: italic;
+      font-size: 18px;
+      color: var(--sage-light);
+      margin-bottom: 8px;
+    }
+    .diary-text { font-size: 16px; color: var(--cream); line-height: 1.8; }
+    .diary-data {
+      display: flex; flex-wrap: wrap; gap: 16px;
+      margin-top: 12px; font-size: 13px; color: var(--cream-dim);
+    }
+    .diary-data span b { color: var(--sage-light); font-weight: 500; }
+
+    .empty { background: var(--forest-dark); border: 1px solid var(--divider); border-radius: 12px; padding: 40px 24px; text-align: center; color: var(--cream-dim); }
+    .foot-note { font-size: 13px; color: var(--cream-dim); margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--divider); line-height: 1.7; }
+
+    @media (max-width: 600px) {
+      h1 { font-size: 34px; }
+      .review { padding: 22px 20px; }
+      .review-title { font-size: 23px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <a href="index.html" class="back">← Threlkeld Projects</a>
+
+    <div class="masthead">
+      <div class="eyebrow">Citizen Environmental Science · Threlkeld</div>
+      <h1>The <em>Naturalist</em></h1>
+      <p class="standfirst">A daily nature diary for the village beneath Blencathra, written each morning from the valley's own sensors — birds, bats, weather, river and sky — and gathered here into the seasons' longer story.</p>
+    </div>
+
+    <!-- Periodic reviews: the readable, reflective pieces -->
+    <div id="reviewsSection">
+      <div class="section-label">Reviews</div>
+      <div id="reviews"></div>
+    </div>
+
+    <!-- Daily diary: the source material -->
+    <div class="section-label">Daily Diary</div>
+    <div id="diary"></div>
+
+    <p class="foot-note">Each morning's entry is written automatically from the previous day's readings. Monthly and seasonal reviews look back across those entries to trace how the year unfolds in Threlkeld. The record grows richer with every passing season.</p>
+  </div>
+
+  <script>
+    const NABU = 'https://rlpzmepeautd1v5pgoumz9aa2qhd92xd.ui.nabu.casa';
+    const HISTORY_URL = NABU + '/local/naturalist_history.json';
+    const REVIEWS_URL = NABU + '/local/naturalist_reviews.json';
+
+    function fmtDate(iso) {
+      const d = new Date(iso + 'T12:00:00');
+      return d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    }
+
+    function renderReviews(reviews) {
+      const el = document.getElementById('reviews');
+      const all = []
+        .concat((reviews.annual || []).map(r => ({ ...r, _kicker: 'Year in Review' })))
+        .concat((reviews.seasonal || []).map(r => ({ ...r, _kicker: 'Season in Review' })))
+        .concat((reviews.monthly || []).map(r => ({ ...r, _kicker: 'Month in Review' })));
+      // newest first by period string
+      all.sort((a, b) => (a.period < b.period ? 1 : -1));
+
+      if (!all.length) {
+        document.getElementById('reviewsSection').style.display = 'none';
+        return;
+      }
+      el.innerHTML = all.map(r => {
+        let stats = '';
+        if (r.stats) {
+          const s = r.stats;
+          const bits = [];
+          if (s.birdSpecies != null) bits.push(`<span class="rstat"><b>${s.birdSpecies}</b>bird species</span>`);
+          if (s.topBird) bits.push(`<span class="rstat"><b>${s.topBird}</b>most heard</span>`);
+          if (s.batBestNight != null) bits.push(`<span class="rstat"><b>${s.batBestNight}</b>best bat night</span>`);
+          if (s.warmestDay != null) bits.push(`<span class="rstat"><b>${s.warmestDay}°C</b>warmest day</span>`);
+          if (s.totalRain != null) bits.push(`<span class="rstat"><b>${s.totalRain}mm</b>total rain</span>`);
+          if (bits.length) stats = `<div class="review-stats">${bits.join('')}</div>`;
+        }
+        return `
+          <div class="review">
+            <div class="review-kicker">${r._kicker}</div>
+            <div class="review-title">${r.label || r.period}</div>
+            <div class="review-body">${r.summary}</div>
+            ${stats}
+          </div>`;
+      }).join('');
+    }
+
+    function renderDiary(history) {
+      const el = document.getElementById('diary');
+      if (!Array.isArray(history) || !history.length) {
+        el.innerHTML = '<div class="empty">The diary is just beginning. The first entries will appear here as they are written each morning.</div>';
+        return;
+      }
+      const entries = history.slice().sort((a, b) => (a.date < b.date ? 1 : -1)); // newest first
+      el.innerHTML = entries.map(e => {
+        let data = '';
+        const d = e.data || {};
+        const bits = [];
+        if (d.birds && d.birds.total24h != null) bits.push(`<span><b>${d.birds.total24h}</b> bird detections</span>`);
+        if (d.bats && d.bats.lastNightTotal != null) bits.push(`<span><b>${d.bats.lastNightTotal}</b> bat passes</span>`);
+        if (d.weather && d.weather.tempMax != null) bits.push(`<span><b>${d.weather.tempMax}°C</b> high</span>`);
+        if (d.sky && d.sky.moonPhase) bits.push(`<span>${d.sky.moonPhase}</span>`);
+        if (bits.length) data = `<div class="diary-data">${bits.join('')}</div>`;
+        return `
+          <div class="diary-entry">
+            <div class="diary-date">${fmtDate(e.date)}</div>
+            <div class="diary-text">${e.summary}</div>
+            ${data}
+          </div>`;
+      }).join('');
+    }
+
+    // Load both files (static, fast). Page works with whatever exists.
+    fetch(REVIEWS_URL + '?t=' + Date.now())
+      .then(r => r.ok ? r.json() : { monthly: [], seasonal: [], annual: [] })
+      .then(renderReviews)
+      .catch(() => { document.getElementById('reviewsSection').style.display = 'none'; });
+
+    fetch(HISTORY_URL + '?t=' + Date.now())
+      .then(r => r.ok ? r.json() : [])
+      .then(renderDiary)
+      .catch(() => renderDiary([]));
+  </script>
+</body>
+</html>
