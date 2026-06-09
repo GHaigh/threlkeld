@@ -466,10 +466,12 @@
     const MQTT_PORT = 8884;
     const BAT_TOPIC = 'birdnetpi/greg2026/bats';
     const BAT_STATS_TOPIC = 'birdnetpi/greg2026/bats/stats';
+    const WEATHER_HISTORY_TOPIC = 'birdnetpi/greg2026/weather/history';
     const CACHE_KEY = 'threlkeld_bats_cache';
     let allDetections = [];
     let allSpeciesList = []; // populated from bat_stats.py stats topic
     let batSessionStats = null; // populated from bat_stats.py stats topic
+    let weatherHistory = null; // populated from weather/history topic, for correlations
     let activeFilter = null;
     let activityChart = null;
 
@@ -1079,50 +1081,83 @@
     }
 
     function renderWeatherCorrelation() {
-      if (allDetections.length < 3) return;
+      // Use the reliable per-night counts from bat_stats.py (nightly[]),
+      // joined with weather/history for real temperature & rain correlation.
+      const nightly = (batSessionStats && Array.isArray(batSessionStats.nightly)) ? batSessionStats.nightly : [];
+      const activeNights = nightly.filter(n => n.count > 0);
 
-      // Group by night
-      const nights = {};
-      allDetections.forEach(d => {
-        const date = new Date(d.timestamp);
-        const key = date.toISOString().split('T')[0];
-        if (!nights[key]) nights[key] = { count: 0, detections: [] };
-        nights[key].count++;
-        nights[key].detections.push(d);
+      // ---- MOON ---- (always computable from dates alone)
+      if (activeNights.length >= 2) {
+        let darkN = 0, darkT = 0, brightN = 0, brightT = 0;
+        activeNights.forEach(n => {
+          const illum = getMoonIllumination(new Date(n.date + 'T22:00:00'));
+          if (illum < 30) { darkN++; darkT += n.count; }
+          else { brightN++; brightT += n.count; }
+        });
+        const darkAvg = darkN ? Math.round(darkT / darkN) : 0;
+        const brightAvg = brightN ? Math.round(brightT / brightN) : 0;
+        if (darkN > 0 && brightN > 0) {
+          document.getElementById('corrMoon').textContent = `${darkAvg} vs ${brightAvg}`;
+          document.getElementById('corrMoonSub').textContent = darkAvg > brightAvg
+            ? 'More active on dark nights (avg dark vs bright)'
+            : darkAvg < brightAvg
+            ? 'More active on bright nights (avg dark vs bright)'
+            : 'Similar on dark and bright nights';
+        } else {
+          document.getElementById('corrMoon').textContent = '—';
+          document.getElementById('corrMoonSub').textContent = 'Need both dark & bright nights';
+        }
+      } else {
+        document.getElementById('corrMoon').textContent = '—';
+        document.getElementById('corrMoonSub').textContent = 'Need at least 2 active nights';
+      }
+
+      // ---- TEMPERATURE & RAIN ---- (need weather history joined per night)
+      const wh = weatherHistory || {};
+      const tempSeries = wh.outdoor_temperature || [];
+      const rainSeries = wh.daily_rain_rate_piezo || [];
+      const tempByDate = {}; tempSeries.forEach(e => { if (e && e.t) tempByDate[e.t.slice(0,10)] = e; });
+      const rainByDate = {}; rainSeries.forEach(e => { if (e && e.t) rainByDate[e.t.slice(0,10)] = e; });
+
+      // Best temperature: average max-temp on active vs quiet nights
+      const tWarm = [], tCool = [];
+      let dryTotal = 0, dryN = 0, wetTotal = 0, wetN = 0;
+      let haveTemp = false, haveRain = false;
+      nightly.forEach(n => {
+        const te = tempByDate[n.date];
+        if (te && te.max != null) {
+          haveTemp = true;
+          if (n.count > 0) tWarm.push({ t: te.max, c: n.count });
+        }
+        const re = rainByDate[n.date];
+        if (re && (re._daily != null || re.max != null)) {
+          haveRain = true;
+          const mm = re._daily != null ? re._daily : 0;
+          if (mm > 1) { wetTotal += n.count; wetN++; }     // wet night (>1mm)
+          else { dryTotal += n.count; dryN++; }
+        }
       });
 
-      const nightList = Object.entries(nights);
-      if (nightList.length < 2) return;
+      if (haveTemp && tWarm.length >= 2) {
+        // weighted average temperature of activity (detections-weighted)
+        const totC = tWarm.reduce((s,x)=>s+x.c,0);
+        const wAvg = totC ? (tWarm.reduce((s,x)=>s+x.t*x.c,0)/totC) : 0;
+        document.getElementById('corrBestTemp').textContent = wAvg.toFixed(1) + '°C';
+        document.getElementById('corrBestTempSub').textContent = 'Avg temperature when active';
+      } else {
+        document.getElementById('corrBestTemp').textContent = '—';
+        document.getElementById('corrBestTempSub').textContent = 'Awaiting more nights of data';
+      }
 
-      // Moon correlation — compare activity on bright vs dark nights
-      let darkNights = 0, darkTotal = 0, brightNights = 0, brightTotal = 0;
-      nightList.forEach(([key, data]) => {
-        const illum = getMoonIllumination(new Date(key));
-        if (illum < 30) { darkNights++; darkTotal += data.count; }
-        else { brightNights++; brightTotal += data.count; }
-      });
-
-      const darkAvg = darkNights > 0 ? Math.round(darkTotal / darkNights) : 0;
-      const brightAvg = brightNights > 0 ? Math.round(brightTotal / brightNights) : 0;
-      const moonImpact = darkAvg > brightAvg ? `${darkAvg} vs ${brightAvg}` : `${darkAvg} vs ${brightAvg}`;
-      const moonSub = darkAvg > brightAvg
-        ? `More active on dark nights (lunar phobia confirmed)`
-        : darkNights === 0 || brightNights === 0
-        ? `Not enough data yet`
-        : `No clear lunar phobia pattern yet`;
-
-      document.getElementById('corrMoon').textContent = moonImpact;
-      document.getElementById('corrMoonSub').textContent = moonSub;
-
-      // Best temperature — use current moon phase as proxy for now
-      const currentIllum = getMoonIllumination(new Date());
-      const currentPhase = getMoonPhase(new Date());
-      document.getElementById('corrBestTemp').textContent = '10°C+';
-      document.getElementById('corrBestTempSub').textContent = 'Bats typically inactive below 10°C';
-
-      // Rain — placeholder until weather data is available
-      document.getElementById('corrRain').textContent = 'Dry';
-      document.getElementById('corrRainSub').textContent = 'All detections on dry nights so far';
+      if (haveRain && dryN > 0 && wetN > 0) {
+        const dryAvg = Math.round(dryTotal / dryN);
+        const wetAvg = Math.round(wetTotal / wetN);
+        document.getElementById('corrRain').textContent = `${dryAvg} vs ${wetAvg}`;
+        document.getElementById('corrRainSub').textContent = 'Avg on dry vs wet nights';
+      } else {
+        document.getElementById('corrRain').textContent = '—';
+        document.getElementById('corrRainSub').textContent = 'Awaiting dry & wet nights';
+      }
     }
 
     let nightlyChart = null;
@@ -1347,6 +1382,7 @@
       document.getElementById('offlineBanner').style.display = 'none';
       client.subscribe(BAT_TOPIC);
       client.subscribe(BAT_STATS_TOPIC);
+      client.subscribe(WEATHER_HISTORY_TOPIC);
       // Render with whatever we have (may be empty on first visit)
       if (allDetections.length === 0) renderAll();
     });
@@ -1356,6 +1392,11 @@
 
     client.on('message', (topic, message) => {
       try {
+        if (topic === WEATHER_HISTORY_TOPIC) {
+          weatherHistory = JSON.parse(message.toString());
+          renderWeatherCorrelation();
+          return;
+        }
         if (topic === BAT_STATS_TOPIC) {
           const stats = JSON.parse(message.toString());
           batSessionStats = stats;
