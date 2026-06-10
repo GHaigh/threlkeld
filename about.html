@@ -156,14 +156,14 @@
     </div>
 
     <h2>Data Pipeline</h2>
-    <p>All data flows through the same pipeline — sensors and APIs feed into Home Assistant and Node-RED running on a Raspberry Pi at home, which publishes everything to a public MQTT broker. The website subscribes directly from the browser — no backend, no database, no server costs.</p>
+    <p>All data flows through the same pipeline — sensors and APIs feed into Home Assistant and Node-RED running at home, which publishes everything to a public MQTT broker. The website subscribes directly from the browser — no backend, no server costs. The bird and bat detectors each keep their own database as the source of truth, queried and published on a schedule, so the public site stays simple while the underlying records stay safe.</p>
 
     <div class="pipeline">
       <div class="pipeline-step"><div class="pipeline-icon">🎙️</div><div class="pipeline-name">Sensors</div><div class="pipeline-detail">BirdNET-Pi<br>Weather station<br>EA river API</div></div>
       <div class="pipeline-arrow">→</div>
       <div class="pipeline-step"><div class="pipeline-icon">🏠</div><div class="pipeline-name">Home Assistant</div><div class="pipeline-detail">HA OS 2026<br>Lenovo ThinkCentre<br>Proxmox VM</div></div>
       <div class="pipeline-arrow">→</div>
-      <div class="pipeline-step"><div class="pipeline-icon">⚙️</div><div class="pipeline-name">Node-RED</div><div class="pipeline-detail">v4.1 · Processing<br>Notifications<br>File storage</div></div>
+      <div class="pipeline-step"><div class="pipeline-icon">⚙️</div><div class="pipeline-name">Node-RED</div><div class="pipeline-detail">v4.1 · Relay<br>Notifications<br>Scheduled publish</div></div>
       <div class="pipeline-arrow">→</div>
       <div class="pipeline-step"><div class="pipeline-icon">📡</div><div class="pipeline-name">MQTT</div><div class="pipeline-detail">HiveMQ broker<br>Public · Free<br>Retained topics</div></div>
       <div class="pipeline-arrow">→</div>
@@ -258,6 +258,12 @@
 
     <h2>Recent Changes</h2>
     <div class="hardware-list" style="margin-bottom:28px">
+      <div class="hardware-item"><span class="hardware-name">📖 Valley Firsts, woven into the record</span><span class="hardware-spec">Jun 2026 · The Naturalist's daily diary now interleaves each species' first appearance of the year as markers in the timeline — one continuous record of the valley announcing itself, day by day</span></div>
+      <div class="hardware-item"><span class="hardware-name">🌅 Dawn chorus vs sunrise</span><span class="hardware-spec">Jun 2026 · Tracks the first confident birdsong each day relative to Threlkeld's sunrise · Robins and Reed Buntings reliably open the valley before first light</span></div>
+      <div class="hardware-item"><span class="hardware-name">🌧️ River level vs catchment rainfall</span><span class="hardware-spec">Jun 2026 · The Glenderamackin's level overlaid with rainfall in its upper catchment near Mungrisdale · Watch the river answer rain on the fells, hours later</span></div>
+      <div class="hardware-item"><span class="hardware-name">🧠 The AI Naturalist gathers everything</span><span class="hardware-spec">Jun 2026 · The daily summary now draws on dawn chorus, river and rainfall alongside birds, bats, weather and sky — weaving the day's threads into a single written account</span></div>
+      <div class="hardware-item"><span class="hardware-name">🦇 Bat detection calendar + per-night species</span><span class="hardware-spec">Jun 2026 · Year-grid heatmap matching the birds page, with each night's species breakdown on tap · Nightly species data published from the detector's own database</span></div>
+      <div class="hardware-item"><span class="hardware-name">🛡️ Detection data made bulletproof</span><span class="hardware-spec">Jun 2026 · Both bird and bat histories now read directly from each detector's own database as the single source of truth, published reliably and backed up nightly · Robust by design, no data at risk</span></div>
       <div class="hardware-item"><span class="hardware-name">🦇 Bat detector launched</span><span class="hardware-spec">Jun 2026 · acoupi + BatDetect2 on Raspberry Pi 4 · Live species detection, species summary, activity charts, time-expanded audio playback</span></div>
       <div class="hardware-item"><span class="hardware-name">📷 Fell &amp; Weather Cam + time-lapse</span><span class="hardware-spec">Jun 2026 · Reolink WiFi camera with live snapshot and full-day time-lapse viewer on both Fells and Weather pages · Updated every 5 minutes during daylight</span></div>
       <div class="hardware-item"><span class="hardware-name">📅 Bird species activity calendar</span><span class="hardware-spec">Jun 2026 · GitHub-style heatmap showing daily detection counts across the full year, powered by complete detection history</span></div>
