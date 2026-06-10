@@ -37,6 +37,18 @@
     .section-label { font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--sage); margin: 40px 0 18px; padding-bottom: 8px; border-bottom: 1px solid var(--divider); }
 
     /* Review (hero) cards */
+    /* Valley Firsts timeline */
+    .firsts-intro { font-size: 14px; color: var(--cream-dim); line-height: 1.7; margin-bottom: 24px; max-width: 60ch; }
+    .firsts-caveat { font-size: 12px; color: var(--cream-dim); font-style: italic; margin-bottom: 28px; padding: 12px 16px; background: rgba(122,184,122,0.06); border-left: 2px solid var(--sage); border-radius: 0 6px 6px 0; line-height: 1.6; }
+    .timeline { position: relative; padding-left: 28px; }
+    .timeline::before { content: ''; position: absolute; left: 7px; top: 6px; bottom: 6px; width: 2px; background: linear-gradient(var(--sage), var(--divider)); }
+    .tl-entry { position: relative; padding: 0 0 26px 0; }
+    .tl-entry::before { content: ''; position: absolute; left: -28px; top: 4px; width: 12px; height: 12px; border-radius: 50%; background: var(--forest-deep); border: 2px solid var(--sage); }
+    .tl-entry.bat::before { border-color: #b794d6; }
+    .tl-date { font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--sage); margin-bottom: 3px; }
+    .tl-species { font-family: 'Playfair Display', serif; font-size: 19px; color: var(--cream); line-height: 1.3; }
+    .tl-kind { font-size: 12px; color: var(--cream-dim); margin-top: 2px; }
+    .tl-month-head { font-family: 'Playfair Display', serif; font-size: 15px; color: var(--sage-light); margin: 4px 0 16px -28px; padding-left: 0; opacity: 0.85; }
     .review {
       background: var(--forest-dark);
       border: 1px solid var(--divider);
@@ -95,6 +107,14 @@
     <div id="reviewsSection">
       <div class="section-label">Reviews</div>
       <div id="reviews"></div>
+    </div>
+
+    <!-- Valley Firsts: the year's milestones, auto-detected -->
+    <div id="firstsSection">
+      <div class="section-label">Valley Firsts</div>
+      <p class="firsts-intro">The first time each species is heard in the valley through the year — the returning summer visitors, the first song of spring, the order in which Threlkeld's wildlife announces itself.</p>
+      <div class="firsts-caveat" id="firstsCaveat"></div>
+      <div class="timeline" id="firstsTimeline"></div>
     </div>
 
     <!-- Daily diary: the source material -->
@@ -175,6 +195,48 @@
     }
 
     // Load both files (static, fast). Page works with whatever exists.
+    const PHENOLOGY_URL = NABU + '/local/birdnet_phenology.json';
+
+    function renderFirsts(phenology) {
+      const sec = document.getElementById('firstsSection');
+      const tl = document.getElementById('firstsTimeline');
+      const cav = document.getElementById('firstsCaveat');
+      // phenology = { '2026': { 'Species': {date, timestamp}, ... }, ... }
+      const years = Object.keys(phenology || {}).sort().reverse();
+      if (!years.length) { sec.style.display = 'none'; return; }
+      const year = years[0];
+      const species = phenology[year] || {};
+      const entries = Object.entries(species)
+        .map(([name, info]) => ({ name, date: info.date, ts: info.timestamp || (info.date + 'T12:00:00'), kind: 'bird' }))
+        .filter(e => e.date)
+        .sort((a, b) => (a.date < b.date ? 1 : -1)); // newest first
+      if (!entries.length) { sec.style.display = 'none'; return; }
+
+      cav.textContent = 'Monitoring at Threlkeld began part-way through ' + year + ', so these are first detections since recording started, not necessarily the first arrivals of the year. From a full year of listening onward, the dates tell the true story of the valley\u2019s calendar.';
+
+      // group by month
+      const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+      let html = '';
+      let lastMonth = '';
+      entries.forEach(e => {
+        const d = new Date(e.ts);
+        const mk = months[d.getMonth()] + ' ' + d.getFullYear();
+        if (mk !== lastMonth) { html += '<div class="tl-month-head">' + mk + '</div>'; lastMonth = mk; }
+        const dateStr = d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+        html += '<div class="tl-entry ' + e.kind + '">' +
+          '<div class="tl-date">' + dateStr + '</div>' +
+          '<div class="tl-species">' + e.name + '</div>' +
+          '<div class="tl-kind">First heard this year</div>' +
+          '</div>';
+      });
+      tl.innerHTML = html;
+    }
+
+    fetch(PHENOLOGY_URL + '?t=' + Date.now())
+      .then(r => r.ok ? r.json() : {})
+      .then(renderFirsts)
+      .catch(() => { document.getElementById('firstsSection').style.display = 'none'; });
+
     fetch(REVIEWS_URL + '?t=' + Date.now())
       .then(r => r.ok ? r.json() : { monthly: [], seasonal: [], annual: [] })
       .then(renderReviews)
