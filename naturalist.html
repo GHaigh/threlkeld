@@ -37,6 +37,12 @@
     .section-label { font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--sage); margin: 40px 0 18px; padding-bottom: 8px; border-bottom: 1px solid var(--divider); }
 
     /* Review (hero) cards */
+    /* First-appearance markers woven into the record */
+    .first-marker { position: relative; margin: 0 0 24px 0; padding: 14px 18px 14px 20px; background: rgba(122,184,122,0.07); border-left: 3px solid var(--sage); border-radius: 0 8px 8px 0; }
+    .first-marker .fm-tag { font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--sage); margin-bottom: 5px; display: flex; align-items: center; gap: 6px; }
+    .first-marker .fm-date { font-size: 12px; color: var(--cream-dim); margin-bottom: 6px; }
+    .first-marker .fm-species { font-family: 'Playfair Display', serif; font-size: 17px; color: var(--cream); line-height: 1.4; }
+    .first-marker.cluster .fm-species { font-size: 15px; line-height: 1.6; }
     /* Valley Firsts timeline */
     .firsts-intro { font-size: 14px; color: var(--cream-dim); line-height: 1.7; margin-bottom: 24px; max-width: 60ch; }
     .firsts-caveat { font-size: 12px; color: var(--cream-dim); font-style: italic; margin-bottom: 28px; padding: 12px 16px; background: rgba(122,184,122,0.06); border-left: 2px solid var(--sage); border-radius: 0 6px 6px 0; line-height: 1.6; }
@@ -109,16 +115,10 @@
       <div id="reviews"></div>
     </div>
 
-    <!-- Valley Firsts: the year's milestones, auto-detected -->
-    <div id="firstsSection">
-      <div class="section-label">Valley Firsts</div>
-      <p class="firsts-intro">The first time each species is heard in the valley through the year — the returning summer visitors, the first song of spring, the order in which Threlkeld's wildlife announces itself.</p>
-      <div class="firsts-caveat" id="firstsCaveat"></div>
-      <div class="timeline" id="firstsTimeline"></div>
-    </div>
-
-    <!-- Daily diary: the source material -->
-    <div class="section-label">Daily Diary</div>
+    <!-- The Record: daily diary with species firsts woven in as markers -->
+    <div class="section-label">The Record</div>
+    <p class="firsts-intro">The valley's daily diary, with the first appearance of each species marked through the year — the returning summer visitors and the order in which Threlkeld's wildlife announces itself, woven into the days as they pass.</p>
+    <div class="firsts-caveat" id="firstsCaveat"></div>
     <div id="diary"></div>
 
     <p class="foot-note">Each morning's entry is written automatically from the previous day's readings. Monthly and seasonal reviews look back across those entries to trace how the year unfolds in Threlkeld. The record grows richer with every passing season.</p>
@@ -197,45 +197,81 @@
     // Load both files (static, fast). Page works with whatever exists.
     const PHENOLOGY_URL = NABU + '/local/birdnet_phenology.json';
 
-    function renderFirsts(phenology) {
-      const sec = document.getElementById('firstsSection');
-      const tl = document.getElementById('firstsTimeline');
-      const cav = document.getElementById('firstsCaveat');
-      // phenology = { '2026': { 'Species': {date, timestamp}, ... }, ... }
+    let _firstsData = null;
+    let _historyData = null;
+
+    function buildFirstMarkers(phenology) {
+      // phenology = { '2026': { 'Species': {date, timestamp}, ... } }
       const years = Object.keys(phenology || {}).sort().reverse();
-      if (!years.length) { sec.style.display = 'none'; return; }
+      if (!years.length) return { markers: [], year: null };
       const year = years[0];
       const species = phenology[year] || {};
-      const entries = Object.entries(species)
-        .map(([name, info]) => ({ name, date: info.date, ts: info.timestamp || (info.date + 'T12:00:00'), kind: 'bird' }))
-        .filter(e => e.date)
-        .sort((a, b) => (a.date < b.date ? 1 : -1)); // newest first
-      if (!entries.length) { sec.style.display = 'none'; return; }
-
-      cav.textContent = 'Monitoring at Threlkeld began part-way through ' + year + ', so these are first detections since recording started, not necessarily the first arrivals of the year. From a full year of listening onward, the dates tell the true story of the valley\u2019s calendar.';
-
-      // group by month
-      const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-      let html = '';
-      let lastMonth = '';
-      entries.forEach(e => {
-        const d = new Date(e.ts);
-        const mk = months[d.getMonth()] + ' ' + d.getFullYear();
-        if (mk !== lastMonth) { html += '<div class="tl-month-head">' + mk + '</div>'; lastMonth = mk; }
-        const dateStr = d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
-        html += '<div class="tl-entry ' + e.kind + '">' +
-          '<div class="tl-date">' + dateStr + '</div>' +
-          '<div class="tl-species">' + e.name + '</div>' +
-          '<div class="tl-kind">First heard this year</div>' +
-          '</div>';
+      // group species by date
+      const byDate = {};
+      Object.entries(species).forEach(([name, info]) => {
+        if (!info || !info.date) return;
+        (byDate[info.date] = byDate[info.date] || []).push(name);
       });
-      tl.innerHTML = html;
+      const markers = Object.entries(byDate).map(([date, names]) => ({
+        type: 'first', date, species: names.sort()
+      }));
+      return { markers, year };
     }
 
-    fetch(PHENOLOGY_URL + '?t=' + Date.now())
+    function renderJournal() {
+      const el = document.getElementById('diary');
+      const cav = document.getElementById('firstsCaveat');
+      const history = Array.isArray(_historyData) ? _historyData : [];
+      const fb = buildFirstMarkers(_firstsData || {});
+      const firstMarkers = fb.markers;
+
+      if (fb.year) {
+        cav.textContent = 'Monitoring at Threlkeld began part-way through ' + fb.year + ', so first appearances are dated from when recording started, not necessarily the first arrival of the year. From a full year of listening onward, the dates tell the true story of the valley\u2019s calendar.';
+        cav.style.display = '';
+      } else { cav.style.display = 'none'; }
+
+      // Merge diary entries and first-markers into one stream
+      const diaryItems = history.map(e => ({ type: 'diary', date: e.date, entry: e }));
+      const all = diaryItems.concat(firstMarkers)
+        .sort((a, b) => {
+          if (a.date !== b.date) return a.date < b.date ? 1 : -1; // newest first
+          // same date: first-marker appears after the diary entry
+          return a.type === 'first' ? 1 : -1;
+        });
+
+      if (!all.length) {
+        el.innerHTML = '<div class="empty">The record is just beginning. Entries will appear here as they are written each morning.</div>';
+        return;
+      }
+
+      const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+      el.innerHTML = all.map(item => {
+        if (item.type === 'diary') {
+          const e = item.entry, d = e.data || {};
+          const bits = [];
+          if (d.birds && d.birds.total24h != null) bits.push(`<span><b>${d.birds.total24h}</b> bird detections</span>`);
+          if (d.bats && d.bats.lastNightTotal != null) bits.push(`<span><b>${d.bats.lastNightTotal}</b> bat passes</span>`);
+          if (d.weather && d.weather.tempMax != null) bits.push(`<span><b>${d.weather.tempMax}°C</b> high</span>`);
+          if (d.sky && d.sky.moonPhase) bits.push(`<span>${d.sky.moonPhase}</span>`);
+          const data = bits.length ? `<div class="diary-data">${bits.join('')}</div>` : '';
+          return `<div class="diary-entry"><div class="diary-date">${fmtDate(e.date)}</div><div class="diary-text">${e.summary}</div>${data}</div>`;
+        } else {
+          // first-marker
+          const dt = new Date(item.date + 'T12:00:00');
+          const dateStr = dt.toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long' });
+          const isCluster = item.species.length > 1;
+          const label = isCluster
+            ? `${item.species.length} species first heard: ${item.species.join(', ')}`
+            : `First heard: ${item.species[0]}`;
+          return `<div class="first-marker${isCluster?' cluster':''}"><div class="fm-tag">\u2726 First of the year</div><div class="fm-date">${dateStr}</div><div class="fm-species">${label}</div></div>`;
+        }
+      }).join('');
+    }
+
+        fetch(PHENOLOGY_URL + '?t=' + Date.now())
       .then(r => r.ok ? r.json() : {})
-      .then(renderFirsts)
-      .catch(() => { document.getElementById('firstsSection').style.display = 'none'; });
+      .then(p => { _firstsData = p; renderJournal(); })
+      .catch(() => { _firstsData = {}; renderJournal(); });
 
     fetch(REVIEWS_URL + '?t=' + Date.now())
       .then(r => r.ok ? r.json() : { monthly: [], seasonal: [], annual: [] })
@@ -244,8 +280,8 @@
 
     fetch(HISTORY_URL + '?t=' + Date.now())
       .then(r => r.ok ? r.json() : [])
-      .then(renderDiary)
-      .catch(() => renderDiary([]));
+      .then(h => { _historyData = h; renderJournal(); })
+      .catch(() => { _historyData = []; renderJournal(); });
   </script>
 </body>
 </html>
