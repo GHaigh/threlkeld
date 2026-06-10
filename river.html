@@ -186,6 +186,15 @@
     .level-pct { font-size: 11px; color: var(--cream-dim); text-align: center; }
 
     /* 5 day chart */
+    .info-tooltip { position: relative; display: inline-flex; align-items: center; margin-left: 8px; cursor: help; vertical-align: middle; }
+    .info-tooltip .info-icon { width: 16px; height: 16px; border-radius: 50%; background: rgba(74,144,164,0.2); border: 1px solid rgba(74,144,164,0.4); color: #6eaad2; font-size: 10px; font-style: normal; font-family: serif; display: flex; align-items: center; justify-content: center; line-height: 1; flex-shrink: 0; }
+    .info-tooltip .info-box { display: none; position: absolute; top: 24px; left: 0; width: 280px; background: #16242e; border: 1px solid rgba(74,144,164,0.3); border-radius: 8px; padding: 10px 14px; font-size: 12px; color: var(--cream-dim); line-height: 1.7; z-index: 100; box-shadow: 0 4px 20px rgba(0,0,0,0.5); font-weight: 400; }
+    .info-tooltip:hover .info-box { display: block; }
+    .info-box strong { color: var(--cream); font-weight: 500; }
+    .chart-legend-rain { display: flex; gap: 18px; margin-top: 10px; font-size: 11px; color: var(--cream-dim); flex-wrap: wrap; }
+    .chart-legend-rain span { display: flex; align-items: center; gap: 6px; }
+    .lk-line { width: 16px; height: 0; border-top: 2px solid #4a90a4; }
+    .lk-bar { width: 9px; height: 11px; background: rgba(110,170,210,0.55); border-radius: 1px; }
     .chart-container {
       background: var(--forest-dark);
       border: 1px solid var(--divider);
@@ -519,13 +528,17 @@
 
     <!-- 5 day chart -->
     <div class="section-header">
-      <div class="section-title">Last 5 Days</div>
+      <div class="section-title">Last 5 Days<span class="info-tooltip"><i class="info-icon">i</i><span class="info-box"><strong>River level &amp; rainfall</strong> — the blue line is the Glenderamackin's height at Threlkeld. The bars hanging from the top show rainfall in the river's upper catchment (Environment Agency gauge near Mungrisdale), so you can see the river rise in the hours after rain falls on the fells. Heavier, longer bars mean more rain.</span></span></div>
       <div class="section-subtitle">River Glenderamackin at Threlkeld</div>
     </div>
     <div class="chart-container">
       <div class="chart-area" id="chartArea">
         <div class="loading"><div class="spinner"></div></div>
       </div>
+    </div>
+    <div class="chart-legend-rain">
+      <span><span class="lk-line"></span> River level (m)</span>
+      <span><span class="lk-bar"></span> Catchment rainfall</span>
     </div>
 
     <!-- Historical context -->
@@ -597,6 +610,8 @@
     const MQTT_HOST = 'broker.hivemq.com';
     const MQTT_PORT = 8884;
     const RIVER_TOPIC = 'birdnetpi/greg2026/river';
+    const RAIN_TOPIC = 'birdnetpi/greg2026/rainfall';
+    let rainfallData = null;  // {rainfall:[{dateTime,value}], total48h, ...}
 
     function trendArrow(trend) {
       if (!trend) return '';
@@ -814,12 +829,39 @@
         if (day !== lastDay && i % 8 === 0) { dayLabels.push({ x: xPos(t), label: day }); lastDay = day; }
       });
 
+      // ── Rainfall overlay (bars from top, shared time axis) ──
+      let rainBars = '';
+      let rainAxis = '';
+      if (rainfallData && Array.isArray(rainfallData.rainfall) && rainfallData.rainfall.length) {
+        // Only bars within the chart's visible time window
+        const rf = rainfallData.rainfall.filter(r => {
+          const t = new Date(r.dateTime).getTime();
+          return t >= minTime.getTime() && t <= maxTime.getTime();
+        });
+        if (rf.length) {
+          const maxRain = Math.max(0.5, ...rf.map(r => r.value));
+          const rainZoneH = chartH * 0.35;   // rain occupies top 35% of chart
+          // bar width based on 15-min spacing
+          const barW = Math.max(1.5, (chartW / Math.max(rf.length, 1)) * 0.7);
+          rainBars = rf.map(r => {
+            const x = xPos(new Date(r.dateTime));
+            const h = (r.value / maxRain) * rainZoneH;
+            if (h <= 0) return '';
+            return `<rect x="${(x - barW/2).toFixed(1)}" y="${PAD.top}" width="${barW.toFixed(1)}" height="${h.toFixed(1)}" fill="rgba(110,170,210,0.55)"/>`;
+          }).join('');
+          // rain scale label (top-right)
+          rainAxis = `<text x="${W - PAD.right}" y="${PAD.top + 10}" text-anchor="end" fill="rgba(110,170,210,0.8)" font-size="10" font-family="Source Sans 3">${maxRain.toFixed(1)}mm rain</text>`;
+        }
+      }
+
       document.getElementById('chartArea').innerHTML = `
         <svg viewBox="0 0 ${W} ${H}" class="chart-svg" preserveAspectRatio="none">
           <rect x="${PAD.left}" y="${y2m}" width="${chartW}" height="${y05m - y2m}" fill="rgba(122,184,122,0.06)"/>
           <line x1="${PAD.left}" y1="${y2m}" x2="${PAD.left + chartW}" y2="${y2m}" stroke="rgba(200,74,74,0.3)" stroke-width="1" stroke-dasharray="4,4"/>
           <path d="${fillPath}" fill="rgba(74,144,164,0.15)"/>
           <path d="${points}" fill="none" stroke="#4a90a4" stroke-width="1.5" stroke-linejoin="round"/>
+          ${rainBars}
+          ${rainAxis}
           <text x="${PAD.left - 4}" y="${yPos(main.normal[1]) + 4}" text-anchor="end" fill="rgba(200,74,74,0.6)" font-size="10" font-family="Source Sans 3">${main.normal[1]}m</text>
           <text x="${PAD.left - 4}" y="${yPos(main.normal[0]) + 4}" text-anchor="end" fill="rgba(184,200,180,0.4)" font-size="10" font-family="Source Sans 3">${main.normal[0]}m</text>
           ${dayLabels.map(d => `<text x="${d.x}" y="${H - 6}" text-anchor="middle" fill="rgba(184,200,180,0.5)" font-size="10" font-family="Source Sans 3">${d.label}</text>`).join('')}
@@ -1107,6 +1149,7 @@
     client.on('connect', () => {
       document.getElementById('headerUpdated').textContent = 'Connected — waiting for data...';
       client.subscribe(RIVER_TOPIC);
+      client.subscribe(RAIN_TOPIC);
     });
 
     client.on('error', () => {
@@ -1114,8 +1157,18 @@
     });
 
     client.on('message', (topic, message) => {
+        try {
+          if (topic === RAIN_TOPIC) {
+            rainfallData = JSON.parse((message||'').toString());
+            // re-render chart if we already have river data
+            if (window._lastRiverData) render(window._lastRiverData);
+            return;
+          }
+        } catch(e) { console.warn('rain parse', e); }
+
       try {
         const data = JSON.parse(message.toString());
+        window._lastRiverData = data;
         render(data);
         hideOfflineBanner(); saveCache(data);
       } catch(e) { console.error('Parse error:', e); }
