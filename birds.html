@@ -1063,7 +1063,7 @@
         const [y,m,d]=date.split('-').map(Number);
         const sr=sunriseLocalMin(y,m,d,LAT,LON); if(sr==null)return;
         const offset=hhmmToMin(info.first)-sr;
-        if(offset<-180)return;
+        if(offset<-180||offset>180)return;  // keep only plausible dawn-window first songs
         pts.push({date,offset:Math.round(offset),first:info.first,species:info.species});
       });
       pts.sort((a,b)=>a.date<b.date?-1:1);
