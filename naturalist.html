@@ -38,30 +38,40 @@
 
     /* Review (hero) cards */
     /* First-appearance markers woven into the record */
-    /* Recent firsts strip — always visible, never buried */
-    .firsts-strip { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 22px; align-items: center; }
-    .firsts-strip-label { font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--sage); margin-right: 4px; }
-    .first-chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--cream); background: rgba(122,184,122,0.1); border: 1px solid rgba(122,184,122,0.25); border-radius: 999px; padding: 5px 12px; cursor: pointer; transition: background 0.15s; }
-    .first-chip:hover { background: rgba(122,184,122,0.2); }
-    .first-chip .fc-date { color: var(--cream-dim); font-size: 11px; }
-
     /* Month filter chips */
     .month-filter { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 26px; }
     .month-chip { font-size: 12px; color: var(--cream-dim); background: var(--forest-dark); border: 1px solid var(--divider); border-radius: 6px; padding: 5px 12px; cursor: pointer; transition: all 0.15s; }
     .month-chip:hover { color: var(--cream); border-color: var(--sage); }
     .month-chip.active { color: var(--forest-deep); background: var(--sage); border-color: var(--sage); font-weight: 500; }
 
-    /* The Worm — winding timeline spine */
-    .worm-wrap { position: relative; padding-left: 44px; }
-    .worm-svg { position: absolute; left: 0; top: 0; width: 44px; height: 100%; overflow: visible; pointer-events: none; }
-    .worm-path { fill: none; stroke: var(--divider); stroke-width: 2; }
-    .worm-path-grad { fill: none; stroke: url(#wormGrad); stroke-width: 2.5; }
-    .worm-node { position: relative; margin-bottom: 4px; }
-    .worm-node .wn-dot { position: absolute; left: -44px; width: 13px; height: 13px; border-radius: 50%; background: var(--forest-deep); border: 2px solid var(--sage); top: 6px; z-index: 2; }
-    .worm-node.first .wn-dot { width: 18px; height: 18px; left: -46px; top: 4px; border-width: 3px; box-shadow: 0 0 0 4px rgba(122,184,122,0.12); }
-    .worm-node.bat .wn-dot { border-color: #b794d6; }
+    /* Two-column record: diary (right) + firsts worm (left) */
+    .record-cols { display: grid; grid-template-columns: 260px 1fr; gap: 36px; align-items: start; }
 
-    .first-marker { position: relative; margin: 0 0 24px 0; padding: 14px 18px 14px 20px; background: rgba(122,184,122,0.07); border-left: 3px solid var(--sage); border-radius: 0 8px 8px 0; }
+    /* Left column: the firsts worm */
+    .worm-col { position: relative; }
+    .worm-col-label { font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--sage); margin-bottom: 18px; }
+    .worm-wrap { position: relative; padding-left: 34px; }
+    .worm-svg { position: absolute; left: 0; top: 0; width: 34px; height: 100%; overflow: visible; pointer-events: none; }
+    .worm-path-grad { fill: none; stroke: url(#wormGrad); stroke-width: 2.5; }
+    .worm-node { position: relative; margin-bottom: 22px; }
+    .worm-node .wn-dot { position: absolute; left: -34px; width: 16px; height: 16px; border-radius: 50%; background: var(--forest-deep); border: 3px solid var(--sage); top: 3px; z-index: 2; box-shadow: 0 0 0 4px rgba(122,184,122,0.12); }
+    .worm-node.bat .wn-dot { border-color: #b794d6; }
+    .wn-date { font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--sage); margin-bottom: 2px; }
+    .wn-species { font-family: 'Playfair Display', serif; font-size: 15px; color: var(--cream); line-height: 1.4; }
+    .wn-cluster-extra { font-size: 12px; color: var(--cream-dim); margin-top: 2px; }
+    .worm-empty { font-size: 13px; color: var(--cream-dim); font-style: italic; padding-left: 34px; }
+
+    /* Right column: diary */
+    .diary-col-label { font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--sage); margin-bottom: 18px; }
+
+    @media (max-width: 760px) {
+      .record-cols { grid-template-columns: 1fr; gap: 8px; }
+      /* mobile: DIARY FIRST, worm below */
+      .diary-col { order: 1; }
+      .worm-col { order: 2; margin-top: 36px; padding-top: 28px; border-top: 1px solid var(--divider); }
+    }
+
+    .first-marker {    .first-marker { position: relative; margin: 0 0 24px 0; padding: 14px 18px 14px 20px; background: rgba(122,184,122,0.07); border-left: 3px solid var(--sage); border-radius: 0 8px 8px 0; }
     .first-marker .fm-tag { font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--sage); margin-bottom: 5px; display: flex; align-items: center; gap: 6px; }
     .first-marker .fm-date { font-size: 12px; color: var(--cream-dim); margin-bottom: 6px; }
     .first-marker .fm-species { font-family: 'Playfair Display', serif; font-size: 17px; color: var(--cream); line-height: 1.4; }
@@ -146,9 +156,17 @@
     <div class="section-label">The Record</div>
     <p class="firsts-intro">The valley's daily diary, with the first appearance of each species marked through the year — the returning summer visitors and the order in which Threlkeld's wildlife announces itself, woven into the days as they pass.</p>
     <div class="firsts-caveat" id="firstsCaveat"></div>
-    <div class="firsts-strip" id="firstsStrip"></div>
     <div class="month-filter" id="monthFilter"></div>
-    <div id="diary"></div>
+    <div class="record-cols">
+      <div class="worm-col">
+        <div class="worm-col-label">Firsts of the year</div>
+        <div id="wormFirsts"></div>
+      </div>
+      <div class="diary-col">
+        <div class="diary-col-label">Daily diary</div>
+        <div id="diary"></div>
+      </div>
+    </div>
 
     <p class="foot-note">Each morning's entry is written automatically from the previous day's readings. Monthly and seasonal reviews look back across those entries to trace how the year unfolds in Threlkeld. The record grows richer with every passing season.</p>
   </div>
@@ -247,14 +265,13 @@
       return { markers, year };
     }
 
-    let _activeMonth = null; // null = all (most recent month default)
-
-    function monthKey(dateStr) { return dateStr.slice(0,7); } // YYYY-MM
+    let _activeMonth = null;
+    function monthKey(d) { return d.slice(0,7); }
 
     function renderJournal() {
-      const el = document.getElementById('diary');
+      const diaryEl = document.getElementById('diary');
+      const wormEl = document.getElementById('wormFirsts');
       const cav = document.getElementById('firstsCaveat');
-      const strip = document.getElementById('firstsStrip');
       const mf = document.getElementById('monthFilter');
       const history = Array.isArray(_historyData) ? _historyData : [];
       const fb = buildFirstMarkers(_firstsData || {});
@@ -265,74 +282,52 @@
         cav.style.display = '';
       } else { cav.style.display = 'none'; }
 
-      // Build merged stream, newest first
-      const diaryItems = history.map(e => ({ type: 'diary', date: e.date, entry: e }));
-      const all = diaryItems.concat(firstMarkers).sort((a, b) => {
-        if (a.date !== b.date) return a.date < b.date ? 1 : -1;
-        return a.type === 'first' ? 1 : -1;
-      });
-
-      if (!all.length) {
-        el.innerHTML = '<div class="empty">The record is just beginning. Entries will appear here as they are written each morning.</div>';
-        strip.style.display = 'none'; mf.style.display = 'none';
+      // months present across BOTH streams
+      const allDates = history.map(e=>e.date).concat(firstMarkers.map(f=>f.date));
+      if (!allDates.length) {
+        diaryEl.innerHTML = '<div class="empty">The record is just beginning. Entries will appear here as they are written each morning.</div>';
+        wormEl.innerHTML = ''; mf.style.display = 'none';
         return;
       }
-
-      // --- Recent firsts strip (last 5 firsts, newest first) ---
-      const recentFirsts = firstMarkers.slice().sort((a,b)=> a.date<b.date?1:-1).slice(0,5);
-      if (recentFirsts.length) {
-        strip.style.display = '';
-        strip.innerHTML = '<span class="firsts-strip-label">Latest firsts</span>' + recentFirsts.map(f => {
-          const name = f.species.length>1 ? (f.species[0]+' +'+(f.species.length-1)) : f.species[0];
-          const d = new Date(f.date+'T12:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'});
-          return `<span class="first-chip" data-month="${monthKey(f.date)}">\u2726 ${name} <span class="fc-date">${d}</span></span>`;
-        }).join('');
-      } else { strip.style.display = 'none'; }
-
-      // --- Month filter chips (only months that have entries) ---
-      const monthsPresent = [...new Set(all.map(i => monthKey(i.date)))].sort().reverse();
+      const monthsPresent = [...new Set(allDates.map(monthKey))].sort().reverse();
       const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
       const fmtMonth = mk => { const [y,m]=mk.split('-'); return monthNames[+m-1].slice(0,3)+" '"+y.slice(2); };
-      // default active month = most recent
       if (_activeMonth === null || !monthsPresent.includes(_activeMonth)) _activeMonth = monthsPresent[0];
+
       if (monthsPresent.length > 1) {
         mf.style.display = '';
-        mf.innerHTML = monthsPresent.map(mk =>
-          `<span class="month-chip${mk===_activeMonth?' active':''}" data-month="${mk}">${fmtMonth(mk)}</span>`
-        ).join('');
+        mf.innerHTML = monthsPresent.map(mk => `<span class="month-chip${mk===_activeMonth?' active':''}" data-month="${mk}">${fmtMonth(mk)}</span>`).join('');
+        mf.querySelectorAll('.month-chip').forEach(c => c.addEventListener('click', () => { _activeMonth = c.getAttribute('data-month'); renderJournal(); }));
       } else { mf.style.display = 'none'; }
 
-      // --- Filter to active month ---
-      const shown = all.filter(i => monthKey(i.date) === _activeMonth);
+      // ---- RIGHT: diary entries for active month, newest first ----
+      const diaryShown = history.filter(e => monthKey(e.date) === _activeMonth).sort((a,b)=> a.date<b.date?1:-1);
+      diaryEl.innerHTML = diaryShown.length ? diaryShown.map(e => {
+        const d = e.data || {}; const bits = [];
+        if (d.birds && d.birds.total24h != null) bits.push(`<span><b>${d.birds.total24h}</b> bird detections</span>`);
+        if (d.bats && d.bats.lastNightTotal != null) bits.push(`<span><b>${d.bats.lastNightTotal}</b> bat passes</span>`);
+        if (d.weather && d.weather.tempMax != null) bits.push(`<span><b>${d.weather.tempMax}\u00b0C</b> high</span>`);
+        if (d.sky && d.sky.moonPhase) bits.push(`<span>${d.sky.moonPhase}</span>`);
+        const data = bits.length ? `<div class="diary-data">${bits.join('')}</div>` : '';
+        return `<div class="diary-entry"><div class="diary-date">${fmtDate(e.date)}</div><div class="diary-text">${e.summary}</div>${data}</div>`;
+      }).join('') : '<div class="worm-empty">No diary entries this month yet.</div>';
 
-      // --- Render the worm: SVG winding spine + nodes ---
-      const renderNode = (item) => {
-        if (item.type === 'diary') {
-          const e = item.entry, d = e.data || {};
-          const bits = [];
-          if (d.birds && d.birds.total24h != null) bits.push(`<span><b>${d.birds.total24h}</b> bird detections</span>`);
-          if (d.bats && d.bats.lastNightTotal != null) bits.push(`<span><b>${d.bats.lastNightTotal}</b> bat passes</span>`);
-          if (d.weather && d.weather.tempMax != null) bits.push(`<span><b>${d.weather.tempMax}\u00b0C</b> high</span>`);
-          if (d.sky && d.sky.moonPhase) bits.push(`<span>${d.sky.moonPhase}</span>`);
-          const data = bits.length ? `<div class="diary-data">${bits.join('')}</div>` : '';
-          return `<div class="worm-node"><span class="wn-dot"></span><div class="diary-entry" style="border-bottom:none;padding:6px 0 22px"><div class="diary-date">${fmtDate(e.date)}</div><div class="diary-text">${e.summary}</div>${data}</div></div>`;
-        } else {
-          const dt = new Date(item.date + 'T12:00:00');
-          const dateStr = dt.toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long' });
-          const isCluster = item.species.length > 1;
-          const label = isCluster ? `${item.species.length} species first heard: ${item.species.join(', ')}` : `First heard: ${item.species[0]}`;
-          return `<div class="worm-node first"><span class="wn-dot"></span><div class="first-marker${isCluster?' cluster':''}" style="margin-left:0"><div class="fm-tag">\u2726 First of the year</div><div class="fm-date">${dateStr}</div><div class="fm-species">${label}</div></div></div>`;
-        }
-      };
-
-      const nodesHtml = shown.map(renderNode).join('');
-      // winding SVG path sized to content (built after layout via JS below)
-      el.innerHTML = `<div class="worm-wrap"><svg class="worm-svg" id="wormSvg" preserveAspectRatio="none"><defs><linearGradient id="wormGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--sage)"/><stop offset="100%" stop-color="var(--divider)"/></linearGradient></defs><path class="worm-path-grad" id="wormPath"/></svg>${nodesHtml}</div>`;
-      requestAnimationFrame(drawWorm);
-
-      // wire chips
-      strip.querySelectorAll('.first-chip').forEach(c => c.addEventListener('click', () => { _activeMonth = c.getAttribute('data-month'); renderJournal(); window.scrollTo({top: document.getElementById('diary').offsetTop-80, behavior:'smooth'}); }));
-      mf.querySelectorAll('.month-chip').forEach(c => c.addEventListener('click', () => { _activeMonth = c.getAttribute('data-month'); renderJournal(); }));
+      // ---- LEFT: firsts worm for active month, newest first ----
+      const firstsShown = firstMarkers.filter(f => monthKey(f.date) === _activeMonth).sort((a,b)=> a.date<b.date?1:-1);
+      if (firstsShown.length) {
+        const nodes = firstsShown.map(f => {
+          const dt = new Date(f.date+'T12:00:00');
+          const dateStr = dt.toLocaleDateString('en-GB',{ day:'numeric', month:'short' });
+          const cluster = f.species.length>1;
+          const main = f.species[0];
+          const extra = cluster ? `<div class="wn-cluster-extra">+ ${f.species.slice(1).join(', ')}</div>` : '';
+          return `<div class="worm-node"><span class="wn-dot"></span><div class="wn-date">\u2726 ${dateStr}</div><div class="wn-species">${main}</div>${extra}</div>`;
+        }).join('');
+        wormEl.innerHTML = `<div class="worm-wrap"><svg class="worm-svg" id="wormSvg" preserveAspectRatio="none"><defs><linearGradient id="wormGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--sage)"/><stop offset="100%" stop-color="var(--divider)"/></linearGradient></defs><path class="worm-path-grad" id="wormPath"/></svg>${nodes}</div>`;
+        requestAnimationFrame(drawWorm);
+      } else {
+        wormEl.innerHTML = '<div class="worm-empty">No new species firsts this month.</div>';
+      }
     }
 
     function drawWorm() {
@@ -341,13 +336,13 @@
       const path = document.getElementById('wormPath');
       if (!wrap || !svg || !path) return;
       const h = wrap.offsetHeight;
-      const w = 44;
+      const w = 34;
       svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
       svg.style.height = h + 'px';
-      // gentle meander down the centre-left (a winding beck)
-      const cx = 20, amp = 12;
+      // gentle meander down the spine (a winding beck)
+      const cx = 14, amp = 9;
       let dpath = `M ${cx} 0`;
-      const seg = 80; // wavelength
+      const seg = 70; // wavelength
       for (let y = 0; y <= h; y += seg) {
         const x1 = cx + (Math.floor(y/seg) % 2 === 0 ? amp : -amp);
         dpath += ` Q ${x1} ${y + seg/2}, ${cx} ${Math.min(y + seg, h)}`;
