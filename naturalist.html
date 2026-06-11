@@ -61,6 +61,7 @@
     .worm-node.bat .wn-dot { border-color: #b794d6; }
     .wn-date { font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--sage); margin-bottom: 2px; }
     .wn-species { font-family: 'Playfair Display', serif; font-size: 15px; color: var(--cream); line-height: 1.4; }
+    .wn-species + .wn-species { margin-top: 4px; }
     .wn-cluster-extra { font-size: 12px; color: var(--cream-dim); margin-top: 2px; }
     .worm-empty { font-size: 13px; color: var(--cream-dim); font-style: italic; padding-left: 34px; }
 
@@ -375,10 +376,8 @@
         const nodes = firstsShown.map(f => {
           const dt = new Date(f.date+'T12:00:00');
           const dateStr = dt.toLocaleDateString('en-GB',{ day:'numeric', month:'short' });
-          const cluster = f.species.length>1;
-          const main = f.species[0];
-          const extra = cluster ? `<div class="wn-cluster-extra">+ ${f.species.slice(1).join(', ')}</div>` : '';
-          return `<div class="worm-node"><span class="wn-dot"></span><div class="wn-date">\u2726 ${dateStr}</div><div class="wn-species">${main}</div>${extra}</div>`;
+          const speciesLines = f.species.map(s => `<div class="wn-species">${s}</div>`).join('');
+          return `<div class="worm-node"><span class="wn-dot"></span><div class="wn-date">\u2726 ${dateStr}</div>${speciesLines}</div>`;
         }).join('');
         wormEl.innerHTML = `<div class="worm-wrap"><svg class="worm-svg" id="wormSvg" preserveAspectRatio="none"><defs><linearGradient id="wormGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--sage)"/><stop offset="100%" stop-color="var(--divider)"/></linearGradient></defs><path class="worm-path-grad" id="wormPath"/></svg>${nodes}</div>`;
         requestAnimationFrame(drawWorm);
