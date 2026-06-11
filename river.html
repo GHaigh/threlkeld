@@ -978,13 +978,13 @@
       // Recent rainfall proxy
       if (recentRainMm !== null) {
         if (recentRainMm > 10) {
-          factors.push({ label: 'Recent rainfall', value: `${recentRainMm.toFixed(0)}mm — elevated runoff risk`, cls: 'poor' });
+          factors.push({ label: 'Catchment rain (24h)', value: `${recentRainMm.toFixed(0)}mm — elevated runoff risk`, cls: 'poor' });
           score -= 35;
         } else if (recentRainMm > 3) {
-          factors.push({ label: 'Recent rainfall', value: `${recentRainMm.toFixed(0)}mm — some runoff possible`, cls: 'fair' });
+          factors.push({ label: 'Catchment rain (24h)', value: `${recentRainMm.toFixed(0)}mm — some runoff possible`, cls: 'fair' });
           score -= 15;
         } else {
-          factors.push({ label: 'Recent rainfall', value: recentRainMm > 0 ? `${recentRainMm.toFixed(1)}mm — low risk` : 'Dry — low risk', cls: 'good' });
+          factors.push({ label: 'Catchment rain (24h)', value: recentRainMm > 0 ? `${recentRainMm.toFixed(1)}mm — low risk` : 'Dry — low risk', cls: 'good' });
         }
       }
 
