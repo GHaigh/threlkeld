@@ -194,7 +194,7 @@
     .chart-legend-rain { display: flex; gap: 18px; margin-top: 10px; font-size: 11px; color: var(--cream-dim); flex-wrap: wrap; }
     .chart-legend-rain span { display: flex; align-items: center; gap: 6px; }
     .lk-line { width: 16px; height: 0; border-top: 2px solid #4a90a4; }
-    .lk-bar { width: 9px; height: 11px; background: rgba(110,170,210,0.55); border-radius: 1px; }
+    .lk-bar { width: 9px; height: 11px; background: #6eaad2; opacity: 0.9; border-radius: 1px; }
     .chart-container {
       background: var(--forest-dark);
       border: 1px solid var(--divider);
@@ -482,6 +482,7 @@
       <a href="index.html" class="nav-home">← Threlkeld Projects</a>
       <span class="nav-divider">|</span>
       <div class="nav-links">
+        <a href="naturalist.html" class="nav-link">📖 Naturalist</a>
         <a href="birds.html" class="nav-link">🐦 Birds</a>
         <a href="bats.html" class="nav-link">🦇 Bats</a>
         <a href="fells.html" class="nav-link">🏔️ Fells</a>
@@ -839,18 +840,21 @@
           return t >= minTime.getTime() && t <= maxTime.getTime();
         });
         if (rf.length) {
-          const maxRain = Math.max(0.5, ...rf.map(r => r.value));
-          const rainZoneH = chartH * 0.35;   // rain occupies top 35% of chart
-          // bar width based on 15-min spacing
-          const barW = Math.max(1.5, (chartW / Math.max(rf.length, 1)) * 0.7);
+          // Fixed-ish scale so light rain still shows clearly: at least 4mm full-scale,
+          // growing only if a heavier downpour needs the headroom.
+          const peak = Math.max(...rf.map(r => r.value));
+          const maxRain = Math.max(4, Math.ceil(peak));
+          const rainZoneH = chartH * 0.4;   // rain occupies top 40% of chart
+          const barW = Math.max(2, (chartW / Math.max(rf.length, 1)) * 0.8);
           rainBars = rf.map(r => {
+            if (r.value <= 0) return '';
             const x = xPos(new Date(r.dateTime));
-            const h = (r.value / maxRain) * rainZoneH;
-            if (h <= 0) return '';
-            return `<rect x="${(x - barW/2).toFixed(1)}" y="${PAD.top}" width="${barW.toFixed(1)}" height="${h.toFixed(1)}" fill="rgba(110,170,210,0.55)"/>`;
+            // give any real rain a visible minimum height, scaling up from there
+            const h = Math.max(3, (r.value / maxRain) * rainZoneH);
+            return `<rect x="${(x - barW/2).toFixed(1)}" y="${PAD.top}" width="${barW.toFixed(1)}" height="${h.toFixed(1)}" fill="#6eaad2" opacity="0.9" rx="0.5"/>`;
           }).join('');
           // rain scale label (top-right)
-          rainAxis = `<text x="${W - PAD.right}" y="${PAD.top + 10}" text-anchor="end" fill="rgba(110,170,210,0.8)" font-size="10" font-family="Source Sans 3">${maxRain.toFixed(1)}mm rain</text>`;
+          rainAxis = `<text x="${W - PAD.right}" y="${PAD.top + 10}" text-anchor="end" fill="#6eaad2" font-size="10" font-family="Source Sans 3">rain to ${maxRain}mm</text>`;
         }
       }
 

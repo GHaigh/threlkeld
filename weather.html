@@ -869,6 +869,7 @@
       <a href="index.html" class="nav-home">← Threlkeld Projects</a>
       <span class="nav-divider">|</span>
       <div class="nav-links">
+        <a href="naturalist.html" class="nav-link">📖 Naturalist</a>
         <a href="birds.html" class="nav-link">🐦 Birds</a>
         <a href="bats.html" class="nav-link">🦇 Bats</a>
         <a href="fells.html" class="nav-link">🏔️ Fells</a>
@@ -1953,7 +1954,7 @@
       const days = t30.length;
       if (days === 0) return;
 
-      const rainyDays = r30.filter(d => (d._daily || 0) > 2).length;
+      const rainyDays = r30.filter(d => (d.max || 0) > 2).length;
       const dryDays = days - rainyDays;
       const windyDays = w30.filter(d => (d.mean || 0) >= 10).length;
       const calmDays = days - windyDays;
@@ -1963,7 +1964,7 @@
       const pressureDir = pressureTrend > 2 ? '📈 Rising — improving' : pressureTrend < -2 ? '📉 Falling — deteriorating' : '➡️ Stable';
 
       const idealCount = t30.filter((t, i) => {
-        const rv = r30[i]?._daily || 0;
+        const rv = r30[i]?.max || 0;
         const wv = w30[i]?.mean || 0;
         return rv < 1 && wv < 15 && (t.max || 0) > 8;
       }).length;
@@ -1972,22 +1973,22 @@
 
       el.innerHTML = `
         <div class="correlation-card">
-          <div class="correlation-title">☀️ Dry vs Rainy Days<span class="info-tooltip"><i class="info-icon">i</i><span class="info-box"><strong>How it's worked out</strong> — counts each of the last 30 days as rainy if more than 2mm of rain fell, using daily totals from the garden weather station. Rainfall figures depend on the rain gauge, which is currently being recalibrated, so the dry/wet split will firm up once that's done.</span></span></div>
+          <div class="correlation-title">☀️ Dry vs Rainy Days</div>
           <div class="correlation-stat">${dryDays} / ${rainyDays}</div>
           <div class="correlation-desc">Dry vs rainy days (over 2mm) in the last 30 days. Dry mornings typically produce the best dawn chorus activity.</div>
         </div>
         <div class="correlation-card">
-          <div class="correlation-title">💨 Calm vs Windy Days<span class="info-tooltip"><i class="info-icon">i</i><span class="info-box"><strong>How it's worked out</strong> — counts each of the last 30 days as windy if the average wind speed exceeded 10mph, from the weather station's daily wind readings. Calm air lets birdsong carry further, so still mornings tend to record more.</span></span></div>
+          <div class="correlation-title">💨 Calm vs Windy Days</div>
           <div class="correlation-stat">${calmDays} / ${windyDays}</div>
           <div class="correlation-desc">Calm days (under 10mph average) vs windy in the last 30 days. Calm mornings favour bird song carrying further.</div>
         </div>
         <div class="correlation-card">
-          <div class="correlation-title">🔵 Pressure Trend<span class="info-tooltip"><i class="info-icon">i</i><span class="info-box"><strong>How it's worked out</strong> — the change in average barometric pressure over the last 7 days (difference between the 7-day-ago and most recent daily means). Rising pressure usually brings settled, clearer weather; falling pressure signals approaching fronts.</span></span></div>
+          <div class="correlation-title">🔵 Pressure Trend</div>
           <div class="correlation-stat">${Math.abs(pressureTrend).toFixed(1)} hPa</div>
           <div class="correlation-desc">${pressureDir} over the last 7 days. Rising pressure generally brings clearer, calmer conditions — good for birding.</div>
         </div>
         <div class="correlation-card">
-          <div class="correlation-title">🐦 Ideal Birding Days<span class="info-tooltip"><i class="info-icon">i</i><span class="info-box" style="right:0;left:auto"><strong>How it's worked out</strong> — counts days in the last 30 that had under 1mm rain, average wind under 15mph, and a daytime high above 8°C — the conditions that tend to produce the most bird activity. The rainfall element depends on the gauge currently being recalibrated, so this figure will settle once that's done.</span></span></div>
+          <div class="correlation-title">🐦 Ideal Birding Days</div>
           <div class="correlation-stat">${idealCount} / 30</div>
           <div class="correlation-desc">Days under 1mm rain, under 15mph wind, above 8°C in the last 30 days. Average daytime high: ${avgMaxTemp}°C.</div>
         </div>`;
