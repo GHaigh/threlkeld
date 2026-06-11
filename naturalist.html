@@ -106,14 +106,15 @@
     /* Daily diary entries */
     .diary-entry {
       border-bottom: 1px solid var(--divider);
-      padding: 22px 0;
+      padding: 34px 0;
     }
+    .diary-entry:first-child { padding-top: 0; }
     .diary-date {
       font-family: 'Playfair Display', serif;
-      font-style: italic;
-      font-size: 18px;
-      color: var(--sage-light);
-      margin-bottom: 8px;
+      font-weight: 700;
+      font-size: 19px;
+      color: var(--sage);
+      margin-bottom: 12px;
     }
     .diary-text { font-size: 16px; color: var(--cream); line-height: 1.8; }
     .diary-data {
@@ -123,7 +124,7 @@
     .diary-data span b { color: var(--sage-light); font-weight: 500; }
 
     .empty { background: var(--forest-dark); border: 1px solid var(--divider); border-radius: 12px; padding: 40px 24px; text-align: center; color: var(--cream-dim); }
-    .foot-note { font-size: 13px; color: var(--cream-dim); margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--divider); line-height: 1.7; }
+    .foot-note { font-size: 13px; color: var(--cream-dim); margin-top: 64px; padding-top: 28px; border-top: 1px solid var(--divider); line-height: 1.7; }
 
     @media (max-width: 600px) {
       .worm-wrap { padding-left: 30px; }
