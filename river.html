@@ -659,6 +659,7 @@
     }
 
     function render(data) {
+      window._lastRiverData = data;
       const { stations, chart, updated } = data;
       const main = stations.find(s => s.main);
       const nearby = stations.filter(s => !s.main);
