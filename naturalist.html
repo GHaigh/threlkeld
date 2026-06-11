@@ -235,7 +235,7 @@
         if (d.birds && d.birds.total24h != null) bits.push(`<span><b>${d.birds.total24h}</b> bird detections</span>`);
         if (d.bats && d.bats.lastNightTotal != null) bits.push(`<span><b>${d.bats.lastNightTotal}</b> bat passes</span>`);
         if (d.weather && d.weather.tempMax != null) bits.push(`<span><b>${d.weather.tempMax}°C</b> high</span>`);
-        if (d.sky && d.sky.moonPhase) bits.push(`<span>${d.sky.moonPhase}</span>`);
+        if (d.sky && d.sky.moonPhase) bits.push(`<span>${moonSVG(d.sky.moonPhase)}${d.sky.moonPhase}</span>`);
         if (bits.length) data = `<div class="diary-data">${bits.join('')}</div>`;
         return `
           <div class="diary-entry">
@@ -268,6 +268,58 @@
         type: 'first', date, species: names.sort()
       }));
       return { markers, year };
+    }
+
+
+    // Small themed moon glyph matching the named phase (cream lit, forest shadow).
+    function moonSVG(phase) {
+      if (!phase) return '';
+      const p = phase.toLowerCase();
+      const r = 7, cx = 8, cy = 8;
+      const lit = 'var(--cream)';
+      const dark = '#1a2a1a';
+      const ring = 'rgba(232,240,228,0.35)';
+      // helper to build a half-disc + ellipse terminator
+      // illum: 0=new ... 0.5=quarter ... 1=full ; waxing => lit on right
+      let illum = 0.5, waxing = true, full = false, isNew = false;
+      if (p.includes('new')) { isNew = true; }
+      else if (p.includes('full')) { full = true; }
+      else if (p.includes('first quarter')) { illum = 0.5; waxing = true; }
+      else if (p.includes('last quarter') || p.includes('third quarter')) { illum = 0.5; waxing = false; }
+      else if (p.includes('waxing crescent')) { illum = 0.25; waxing = true; }
+      else if (p.includes('waxing gibbous')) { illum = 0.75; waxing = true; }
+      else if (p.includes('waning gibbous')) { illum = 0.75; waxing = false; }
+      else if (p.includes('waning crescent')) { illum = 0.25; waxing = false; }
+
+      let inner;
+      if (isNew) {
+        inner = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${dark}"/>`;
+      } else if (full) {
+        inner = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${lit}"/>`;
+      } else {
+        // Draw full dark disc, then the lit shape on top.
+        // The terminator is an ellipse whose x-radius = r*|cos(theta)|; lit side depends on phase.
+        const t = (illum - 0.5) * Math.PI; // -pi/2..pi/2
+        const ex = Math.abs(r * Math.sin(illum * Math.PI)) ; // ellipse half-width of terminator
+        // Simplify with the standard moon construction:
+        const k = Math.cos(illum * Math.PI); // 1 (new) .. -1 (full)
+        const rx = Math.abs(r * k);
+        // Which side is lit
+        const litRight = waxing;
+        // Build path: a half circle (lit limb) + half ellipse (terminator)
+        // Lit limb is the right half if waxing, else left half.
+        const big = illum > 0.5; // gibbous
+        // Outer semicircle on lit side
+        const sweepLimb = litRight ? 1 : 0;
+        const topX = cx, topY = cy - r, botY = cy + r;
+        // terminator ellipse: curves toward dark side if crescent, toward lit side if gibbous
+        // sweep for terminator
+        let sweepTerm;
+        if (litRight) sweepTerm = big ? 1 : 0; else sweepTerm = big ? 0 : 1;
+        inner = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${dark}"/>` +
+          `<path d="M ${topX} ${topY} A ${r} ${r} 0 0 ${sweepLimb} ${cx} ${botY} A ${rx} ${r} 0 0 ${sweepTerm} ${topX} ${topY} Z" fill="${lit}"/>`;
+      }
+      return `<svg width="15" height="15" viewBox="0 0 16 16" style="vertical-align:-2px;margin-right:5px" aria-hidden="true"><circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${ring}" stroke-width="0.75"/>${inner}</svg>`;
     }
 
     let _activeMonth = null;
@@ -312,7 +364,7 @@
         if (d.birds && d.birds.total24h != null) bits.push(`<span><b>${d.birds.total24h}</b> bird detections</span>`);
         if (d.bats && d.bats.lastNightTotal != null) bits.push(`<span><b>${d.bats.lastNightTotal}</b> bat passes</span>`);
         if (d.weather && d.weather.tempMax != null) bits.push(`<span><b>${d.weather.tempMax}\u00b0C</b> high</span>`);
-        if (d.sky && d.sky.moonPhase) bits.push(`<span>${d.sky.moonPhase}</span>`);
+        if (d.sky && d.sky.moonPhase) bits.push(`<span>${moonSVG(d.sky.moonPhase)}${d.sky.moonPhase}</span>`);
         const data = bits.length ? `<div class="diary-data">${bits.join('')}</div>` : '';
         return `<div class="diary-entry"><div class="diary-date">${fmtDate(e.date)}</div><div class="diary-text">${e.summary}</div>${data}</div>`;
       }).join('') : '<div class="worm-empty">No diary entries this month yet.</div>';
