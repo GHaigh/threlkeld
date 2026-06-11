@@ -141,6 +141,8 @@
     .naturalist-title { font-family: 'Playfair Display', Georgia, serif; font-size: 17px; color: var(--cream); letter-spacing: 0.01em; }
     .naturalist-date { font-size: 12px; color: var(--cream-dim); font-weight: 300; font-family: 'Source Sans 3', sans-serif; margin-left: 8px; }
     .naturalist-body { font-size: 15px; line-height: 1.7; color: var(--cream); font-weight: 300; }
+    .naturalist-link { display: inline-flex; align-items: center; gap: 6px; margin-top: 16px; font-size: 13px; font-weight: 500; letter-spacing: 0.04em; color: var(--sage); text-decoration: none; transition: gap 0.15s, color 0.15s; }
+    .naturalist-link:hover { color: var(--sage-light, #9fd49f); gap: 10px; }
     @media(max-width:600px) { .naturalist-card { padding: 18px 18px; } .naturalist-date { display: none; } }
 
     .projects-label {
@@ -735,6 +737,7 @@
         <span class="naturalist-title">The AI Threlkeld Naturalist <span class="naturalist-date" id="naturalistDate"></span></span>
       </div>
       <div class="naturalist-body" id="naturalistBody"></div>
+      <a href="naturalist.html" class="naturalist-link">Read the full record <span aria-hidden="true">→</span></a>
     </div>
 
     <div class="projects-grid">
