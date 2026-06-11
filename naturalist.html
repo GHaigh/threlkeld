@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>The Naturalist · Threlkeld</title>
+  <title>The Naturalist · Threlkeld Nature Watch</title>
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <meta property="og:image" content="https://threlkeld.info/favicon.svg">
@@ -139,11 +139,113 @@
       .review { padding: 22px 20px; }
       .review-title { font-size: 23px; }
     }
-  </style>
+  
+    /* ── Site nav (matched to other pages) ── */
+    nav {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      padding: 16px 0;
+      border-bottom: 1px solid var(--divider);
+      margin-bottom: 28px;
+    }
+
+    .nav-home {
+      font-size: 11px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--sage);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: color 0.2s;
+    }
+
+    .nav-home:hover { color: var(--cream); }
+
+    .nav-divider { color: var(--divider); font-size: 12px; }
+
+    .nav-links {
+      display: flex;
+      gap: 20px;
+      margin-left: auto;
+    }
+
+    .nav-link {
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--cream-dim);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .nav-link:hover { color: var(--cream); }
+    .nav-link.active { color: var(--sage); }
+    .nav-hamburger {
+      display: none;
+      flex-direction: column;
+      gap: 5px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 4px;
+      margin-left: auto;
+    }
+    .nav-hamburger span {
+      display: block;
+      width: 22px;
+      height: 2px;
+      background: var(--cream-dim);
+      border-radius: 2px;
+      transition: all 0.25s;
+    }
+    .nav-hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+    .nav-hamburger.open span:nth-child(2) { opacity: 0; }
+    .nav-hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+    @media (max-width: 700px) {
+      .nav-hamburger { display: flex; }
+      .nav-links {
+        display: none;
+        position: absolute;
+        top: 56px;
+        left: 0;
+        right: 0;
+        background: var(--forest-dark);
+        border-bottom: 1px solid var(--divider);
+        padding: 12px 24px;
+        flex-direction: column;
+        gap: 14px;
+        z-index: 100;
+      }
+      .nav-links.open { display: flex; }
+      .nav-divider { display: none; }
+      nav { position: relative; }
+    }
+</style>
 </head>
 <body>
   <div class="page">
-    <a href="index.html" class="back">← Threlkeld Projects</a>
+    <nav>
+      <a href="index.html" class="nav-home">← Threlkeld Nature Watch</a>
+      <span class="nav-divider">|</span>
+      <div class="nav-links">
+        <a href="naturalist.html" class="nav-link active">📖 Naturalist</a>
+        <a href="birds.html" class="nav-link">🐦 Birds</a>
+        <a href="bats.html" class="nav-link">🦇 Bats</a>
+        <a href="fells.html" class="nav-link">🏔️ Fells</a>
+        <a href="planes.html" class="nav-link">✈️ Planes</a>
+        <a href="river.html" class="nav-link">🌊 Rivers</a>
+        <a href="weather.html" class="nav-link">🌤️ Weather</a>
+        <a href="wildlife.html" class="nav-link">🦔 Wildlife</a>
+        <a href="about.html" class="nav-link">ℹ️ About</a>
+      </div>
+      <button class="nav-hamburger" id="navHamburger" aria-label="Menu">
+        <span></span><span></span><span></span>
+      </button>
+    </nav>
 
     <div class="masthead">
       <div class="eyebrow">Citizen Environmental Science · Threlkeld</div>
@@ -420,6 +522,17 @@
       .then(r => r.ok ? r.json() : [])
       .then(h => { _historyData = h; renderJournal(); })
       .catch(() => { _historyData = []; renderJournal(); });
-  </script>
+  
+    // Mobile nav toggle
+    (function(){
+      var h = document.getElementById('navHamburger');
+      if (h) {
+        h.addEventListener('click', function() {
+          this.classList.toggle('open');
+          document.querySelector('.nav-links').classList.toggle('open');
+        });
+      }
+    })();
+</script>
 </body>
 </html>
