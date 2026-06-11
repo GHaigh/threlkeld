@@ -807,8 +807,10 @@
 
       const minVal = 0;
       const maxVal = Math.max(main.record, ...values);
-      const minTime = times[times.length - 1];
-      const maxTime = times[0];
+      // Robust against either ordering: compute true earliest/latest.
+      const timeMs = times.map(t => t.getTime());
+      const minTime = new Date(Math.min(...timeMs));
+      const maxTime = new Date(Math.max(...timeMs));
       const timeRange = maxTime - minTime;
       const valRange = maxVal - minVal;
 
