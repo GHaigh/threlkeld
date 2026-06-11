@@ -727,10 +727,14 @@
         renderChart(chart, main);
       }
 
-      // Swim conditions — pass recent rainfall from chart data
-      const recentRain = chart.length > 0
-        ? chart.slice(-96).reduce((sum, r) => sum + (r.value || 0), 0) // last 24h readings
-        : null;
+      // Swim conditions — use REAL catchment rainfall (last 24h) from the rainfall gauge.
+      let recentRain = null;
+      if (rainfallData && Array.isArray(rainfallData.rainfall)) {
+        const cutoff = Date.now() - 24 * 60 * 60 * 1000;
+        recentRain = rainfallData.rainfall
+          .filter(r => new Date(r.dateTime).getTime() >= cutoff)
+          .reduce((sum, r) => sum + (r.value || 0), 0);
+      }
       renderSwim(stations, recentRain);
 
       // Split into rivers and lakes
