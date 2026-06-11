@@ -840,21 +840,20 @@
           return t >= minTime.getTime() && t <= maxTime.getTime();
         });
         if (rf.length) {
-          // Fixed-ish scale so light rain still shows clearly: at least 4mm full-scale,
-          // growing only if a heavier downpour needs the headroom.
+          // Per-15min rain is usually small (0.1-1mm); scale so light steady rain reads clearly.
+          // Full-scale = 1mm per reading (moderate); heavier bursts clip to full height.
           const peak = Math.max(...rf.map(r => r.value));
-          const maxRain = Math.max(4, Math.ceil(peak));
-          const rainZoneH = chartH * 0.4;   // rain occupies top 40% of chart
-          const barW = Math.max(2, (chartW / Math.max(rf.length, 1)) * 0.8);
+          const maxRain = Math.max(1, peak);   // at least 1mm full-scale
+          const rainZoneH = chartH * 0.45;     // rain occupies top 45% of chart
+          const barW = Math.max(2.5, (chartW / Math.max(rf.length, 1)) * 0.85);
           rainBars = rf.map(r => {
             if (r.value <= 0) return '';
             const x = xPos(new Date(r.dateTime));
-            // give any real rain a visible minimum height, scaling up from there
-            const h = Math.max(3, (r.value / maxRain) * rainZoneH);
-            return `<rect x="${(x - barW/2).toFixed(1)}" y="${PAD.top}" width="${barW.toFixed(1)}" height="${h.toFixed(1)}" fill="#6eaad2" opacity="0.9" rx="0.5"/>`;
+            const h = Math.max(4, Math.min(rainZoneH, (r.value / maxRain) * rainZoneH));
+            return `<rect x="${(x - barW/2).toFixed(1)}" y="${PAD.top}" width="${barW.toFixed(1)}" height="${h.toFixed(1)}" fill="#7ec4ec" opacity="0.95" rx="0.5"/>`;
           }).join('');
-          // rain scale label (top-right)
-          rainAxis = `<text x="${W - PAD.right}" y="${PAD.top + 10}" text-anchor="end" fill="#6eaad2" font-size="10" font-family="Source Sans 3">rain to ${maxRain}mm</text>`;
+          const total = rf.reduce((s,r)=>s+r.value,0);
+          rainAxis = `<text x="${W - PAD.right}" y="${PAD.top + 10}" text-anchor="end" fill="#7ec4ec" font-size="10" font-family="Source Sans 3">${total.toFixed(1)}mm rain · 48h</text>`;
         }
       }
 
