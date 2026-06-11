@@ -613,6 +613,12 @@
     const RIVER_TOPIC = 'birdnetpi/greg2026/river';
     const RAIN_TOPIC = 'birdnetpi/greg2026/rainfall';
     let rainfallData = null;  // {rainfall:[{dateTime,value}], total48h, ...}
+    const NABU = 'https://rlpzmepeautd1v5pgoumz9aa2qhd92xd.ui.nabu.casa';
+    // Reliable path: fetch rainfall as static JSON (retained MQTT over WebSocket is flaky on public HiveMQ).
+    fetch(NABU + '/local/rainfall.json?t=' + Date.now())
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d && Array.isArray(d.rainfall)) { rainfallData = d; if (window._lastRiverData) render(window._lastRiverData); } })
+      .catch(() => {});
 
     function trendArrow(trend) {
       if (!trend) return '';
