@@ -48,7 +48,7 @@
     .month-chip.active { color: var(--forest-deep); background: var(--sage); border-color: var(--sage); font-weight: 500; }
 
     /* Two-column record: diary (right) + firsts worm (left) */
-    .record-cols { display: grid; grid-template-columns: 300px 1fr; gap: 48px; align-items: stretch; }
+    .record-cols { display: grid; grid-template-columns: 300px 1fr; gap: 48px; align-items: start; }
 
     /* Left column: the firsts worm */
     .worm-col { position: relative; }
@@ -492,14 +492,12 @@
       const svg = document.getElementById('wormSvg');
       const path = document.getElementById('wormPath');
       if (!wrap || !svg || !path) return;
-      // Extend the worm the full height of the record row (the diary column is usually
-      // taller than the few firsts), so the spine runs all the way down rather than
-      // stopping short and looking truncated.
-      const cols = document.querySelector('.record-cols');
+      // Extend the worm to match the diary column's height so the spine runs the full
+      // length, but DON'T change the wrap height (that would move the nodes). Just draw
+      // the SVG path taller; the nodes stay anchored at the top where they belong.
       const diaryCol = document.querySelector('.diary-col');
-      const h = Math.max(wrap.offsetHeight, diaryCol ? diaryCol.offsetHeight : 0, cols ? cols.offsetHeight : 0);
-      // let the wrap grow so the SVG (absolute, height:100%) has room
-      wrap.style.minHeight = h + 'px';
+      const contentH = wrap.offsetHeight;
+      const h = Math.max(contentH, diaryCol ? diaryCol.offsetHeight : contentH);
       const w = 34;
       svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
       svg.style.height = h + 'px';
