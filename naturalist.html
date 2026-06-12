@@ -261,12 +261,12 @@
 
     <!-- The Record: daily diary with species firsts woven in as markers -->
     <div class="section-label">The Record</div>
-    <p class="firsts-intro">The daily diary, with first appearances of the year marked along the way. Filter by month below.</p>
+    <p class="firsts-intro">The daily diary, with the first appearance of each <strong>bird species</strong> marked along the way as it\u2019s heard. Filter by month below.</p>
     <div class="firsts-caveat" id="firstsCaveat"></div>
     <div class="month-filter" id="monthFilter"></div>
     <div class="record-cols">
       <div class="worm-col">
-        <div class="worm-col-label">Firsts of the year</div>
+        <div class="worm-col-label">Bird firsts of the year</div>
         <div id="wormFirsts"></div>
       </div>
       <div class="diary-col">
@@ -437,7 +437,7 @@
       const firstMarkers = fb.markers;
 
       if (fb.year) {
-        cav.textContent = 'Monitoring at Threlkeld began part-way through ' + fb.year + ', so first appearances are dated from when recording started, not necessarily the first arrival of the year. From a full year of listening onward, the dates tell the true story of the valley\u2019s calendar.';
+        cav.textContent = 'Bird monitoring at Threlkeld began part-way through ' + fb.year + ', so first appearances are dated from when recording started, not necessarily the first arrival of the year. From a full year of listening onward, the dates will tell the true story of the valley\u2019s calendar.';
         cav.style.display = '';
       } else { cav.style.display = 'none'; }
 

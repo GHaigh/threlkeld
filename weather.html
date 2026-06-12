@@ -63,7 +63,7 @@
     }
 
     .page {
-      max-width: 1400px;
+      max-width: 1200px;
       margin: 0 auto;
       padding: 0 24px;
       position: relative;
@@ -1948,13 +1948,13 @@
       if (temps.length < 7) return;
 
       const t30 = temps.slice(-30);
-      const r30 = rain.slice(-30);
+      const r30 = calcDailyDiff(rain).slice(-30);  // _daily = real daily total (mm)
       const w30 = winds.slice(-30);
       const p30 = pressure.slice(-30);
       const days = t30.length;
       if (days === 0) return;
 
-      const rainyDays = r30.filter(d => (d.max || 0) > 2).length;
+      const rainyDays = r30.filter(d => (d._daily || 0) > 2).length;
       const dryDays = days - rainyDays;
       const windyDays = w30.filter(d => (d.mean || 0) >= 10).length;
       const calmDays = days - windyDays;
@@ -1964,7 +1964,7 @@
       const pressureDir = pressureTrend > 2 ? '📈 Rising — improving' : pressureTrend < -2 ? '📉 Falling — deteriorating' : '➡️ Stable';
 
       const idealCount = t30.filter((t, i) => {
-        const rv = r30[i]?.max || 0;
+        const rv = r30[i]?._daily || 0;
         const wv = w30[i]?.mean || 0;
         return rv < 1 && wv < 15 && (t.max || 0) > 8;
       }).length;
