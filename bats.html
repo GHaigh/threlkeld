@@ -247,6 +247,10 @@
     .corr-label { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--cream-dim); }
     .corr-value { font-family: 'Playfair Display', serif; font-size: 24px; color: var(--cream); line-height: 1; }
     .corr-sub { font-size: 11px; color: var(--cream-dim); }
+    .corr-live { font-size: 12px; color: var(--sage-light, #a8d4a8); margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(122,184,122,0.12); display: none; align-items: center; gap: 6px; }
+    .corr-live.show { display: flex; }
+    .corr-live svg { vertical-align: -2px; }
+    .corr-live .now-label { color: var(--cream-dim); text-transform: uppercase; letter-spacing: 0.08em; font-size: 10px; }
     .corr-bar { height: 4px; background: var(--forest-mid); border-radius: 2px; overflow: hidden; margin-top: 4px; }
     .corr-bar-fill { height: 100%; border-radius: 2px; background: var(--bat); }
 
@@ -432,16 +436,19 @@
         <div class="corr-label">🌡️ Best Temperature<span class="info-tooltip"><i class="info-icon">i</i><span class="info-box"><strong>Best Temperature</strong> — the average evening temperature on nights when bats were detected, weighted by how many detections each night had. Calculated by matching each active bat night to that night's maximum temperature from the garden weather station, so warmer, busier nights count for more. Bats are generally inactive below about 10°C.</span></span></div>
         <div class="corr-value" id="corrBestTemp">—</div>
         <div class="corr-sub" id="corrBestTempSub">Most active above this</div>
+        <div class="corr-live" id="liveTemp"></div>
       </div>
       <div class="corr-item">
         <div class="corr-label">🌧️ Rain Impact<span class="info-tooltip"><i class="info-icon">i</i><span class="info-box"><strong>Rain Impact</strong> — compares the average number of detections on dry nights versus wet nights (more than 1mm of rain). Each bat night is matched to that night's rainfall from the weather station. Bats hunt far less in rain, as it hampers their echolocation and grounds the insects they feed on.</span></span></div>
         <div class="corr-value" id="corrRain">—</div>
         <div class="corr-sub" id="corrRainSub">Detections on dry vs wet nights</div>
+        <div class="corr-live" id="liveRain"></div>
       </div>
       <div class="corr-item">
         <div class="corr-label">🌙 Moon Impact<span class="info-tooltip"><i class="info-icon">i</i><span class="info-box" style="right:0;left:auto"><strong>Moon Impact</strong> — compares average detections on dark nights (moon less than 30% lit) versus bright, moonlit nights. Each night's moon illumination is calculated from its date. Some bats show "lunar phobia" — avoiding bright nights when they're more visible to predators — though local factors like temperature can mask the effect.</span></span></div>
         <div class="corr-value" id="corrMoon">—</div>
         <div class="corr-sub" id="corrMoonSub">Lunar phobia effect</div>
+        <div class="corr-live" id="liveMoon"></div>
       </div>
     </div>
 
@@ -1108,6 +1115,75 @@
       return '🌑 New Moon';
     }
 
+    // Themed moon glyph (matches the Naturalist page style)
+    function moonSVG(phase, size) {
+      size = size || 16;
+      const p = (phase || '').toLowerCase();
+      const r = 7, cx = 8, cy = 8;
+      const lit = '#e8f0e4', dark = '#1a2a1a', ring = 'rgba(232,240,228,0.35)';
+      let illum = 0.5, waxing = true, full = false, isNew = false;
+      if (p.includes('new')) isNew = true;
+      else if (p.includes('full')) full = true;
+      else if (p.includes('first quarter')) { illum = 0.5; waxing = true; }
+      else if (p.includes('last quarter')) { illum = 0.5; waxing = false; }
+      else if (p.includes('waxing crescent')) { illum = 0.25; waxing = true; }
+      else if (p.includes('waxing gibbous')) { illum = 0.75; waxing = true; }
+      else if (p.includes('waning gibbous')) { illum = 0.75; waxing = false; }
+      else if (p.includes('waning crescent')) { illum = 0.25; waxing = false; }
+      let inner;
+      if (isNew) inner = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${dark}"/>`;
+      else if (full) inner = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${lit}"/>`;
+      else {
+        const k = Math.cos(illum * Math.PI), rx = Math.abs(r * k);
+        const litRight = waxing, big = illum > 0.5;
+        const topY = cy - r, botY = cy + r, sweepLimb = litRight ? 1 : 0;
+        let sweepTerm; if (litRight) sweepTerm = big ? 1 : 0; else sweepTerm = big ? 0 : 1;
+        inner = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${dark}"/>` +
+          `<path d="M ${cx} ${topY} A ${r} ${r} 0 0 ${sweepLimb} ${cx} ${botY} A ${rx} ${r} 0 0 ${sweepTerm} ${cx} ${topY} Z" fill="${lit}"/>`;
+      }
+      return `<svg width="${size}" height="${size}" viewBox="0 0 16 16" aria-hidden="true"><circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${ring}" stroke-width="0.75"/>${inner}</svg>`;
+    }
+
+    // Live "tonight" conditions in the three boxes — only during active hours (dusk-dawn).
+    async function renderLiveConditions() {
+      const elT = document.getElementById('liveTemp');
+      const elR = document.getElementById('liveRain');
+      const elM = document.getElementById('liveMoon');
+      if (!elT || !elR || !elM) return;
+
+      await getSunTimes();           // ensure sun times cached
+      if (isDaytime()) {             // bats not active — hide live lines, show only the stats
+        [elT, elR, elM].forEach(e => e.classList.remove('show'));
+        return;
+      }
+
+      // Moon (always available, computed)
+      const phase = getMoonPhase(new Date());           // e.g. "🌒 Waxing Crescent"
+      const phaseName = phase.replace(/^[^A-Za-z]+/, '').trim();
+      elM.innerHTML = `<span class="now-label">Tonight</span> ${moonSVG(phaseName)} ${phaseName}`;
+      elM.classList.add('show');
+
+      // Live temp + rain from Open-Meteo current weather
+      try {
+        const r = await fetch('https://api.open-meteo.com/v1/forecast?latitude=54.616&longitude=-3.056&current=temperature_2m,precipitation&timezone=Europe%2FLondon');
+        const d = await r.json();
+        const t = d.current && d.current.temperature_2m;
+        const pr = d.current && d.current.precipitation;
+        if (t !== undefined && t !== null) {
+          elT.innerHTML = `<span class="now-label">Now</span> ${Math.round(t)}\u00b0C`;
+          elT.classList.add('show');
+        }
+        if (pr !== undefined && pr !== null) {
+          elR.innerHTML = pr > 0
+            ? `<span class="now-label">Now</span> \ud83c\udf27\ufe0f raining (${pr.toFixed(1)}mm)`
+            : `<span class="now-label">Now</span> dry`;
+          elR.classList.add('show');
+        }
+      } catch(e) {
+        // network issue — leave temp/rain hidden, moon still shows
+      }
+    }
+
     function getMoonIllumination(date) {
       const known = new Date(2000, 0, 6);
       const diff = (date - known) / (1000 * 60 * 60 * 24);
@@ -1534,6 +1610,8 @@
 
     // Fetch sun times early so isTonight() works correctly
     getSunTimes().then(function(sun) {
+      renderLiveConditions();
+      setInterval(renderLiveConditions, 10 * 60 * 1000);
       var h = Math.floor(sun.sunset);
       var m = Math.round((sun.sunset % 1) * 60);
       var label = String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0') + ' BST';
