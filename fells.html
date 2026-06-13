@@ -1250,7 +1250,7 @@
         document.getElementById('fellcamTimelapse').style.display = 'none';
         refreshFellCam();
         setInterval(refreshFellCam, 5 * 60 * 1000);
-        if (sub) sub.textContent = 'Live · Updated every 5 minutes';
+        if (sub) sub.textContent = 'Live · Updated ' + new Date().toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'});
       } else {
         // Show today\'s timelapse automatically
         document.getElementById('fellcamLive').style.display = 'none';
@@ -1284,6 +1284,7 @@
 
     // Fell cam refresh every 5 minutes
     function refreshFellCam() {
+      { const _s = document.getElementById('fellcamSub'); if (_s && _s.textContent.indexOf('Live') === 0) _s.textContent = 'Live · Updated ' + new Date().toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'}); }
       const img = document.getElementById('fellcamImg');
       const sub = document.getElementById('fellcamUpdated');
       if (!img) return;
