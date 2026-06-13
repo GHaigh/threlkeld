@@ -1396,6 +1396,20 @@
       try { localStorage.removeItem(CACHE_KEY); } catch(e) {}
     }
 
+    // Reliable first-load: fetch static flights.json (retained MQTT over WebSocket
+    // can fail to deliver on initial load with the public broker). MQTT then provides
+    // live updates. The flights flow also writes this file to /homeassistant/www/.
+    const NABU = 'https://rlpzmepeautd1v5pgoumz9aa2qhd92xd.ui.nabu.casa';
+    fetch(NABU + '/local/flights.json?t=' + Date.now())
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        if (!d) return;
+        const flights = Array.isArray(d) ? d : (d.flights || []);
+        const total = d.total || flights.length;
+        if (flights.length) { render(flights, total); hideOfflineBanner(); saveCache(flights, total); }
+      })
+      .catch(() => {});
+
     const client = mqtt.connect(`wss://${MQTT_HOST}:${MQTT_PORT}/mqtt`);
 
     client.on('connect', () => {
