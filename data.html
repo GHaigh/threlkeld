@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <meta name="theme-color" content="#0d1a0d">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Threlkeld">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Data & How-To · Threlkeld Nature Watch">
+  <meta property="og:description" content="Download the raw data behind Threlkeld Nature Watch, and a full guide to how the whole system is built — sensors, pipeline and code.">
+  <meta property="og:url" content="https://threlkeld.info/data.html">
+  <meta property="og:image" content="https://threlkeld.info/favicon.svg">
+  <meta property="og:site_name" content="Threlkeld Nature Watch">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Data & How-To · Threlkeld Nature Watch">
+  <meta name="twitter:description" content="Download the raw data and learn how the whole nature-monitoring system is built.">
+  <meta name="description" content="Download the raw data behind Threlkeld Nature Watch, and a full guide to how the whole system is built — sensors, pipeline and code.">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Data &amp; How-To · Threlkeld Nature Watch</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Source+Sans+3:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --forest-deep: #0d1a0d;
+      --forest-dark: #1a2e1a;
+      --forest-mid: #243022;
+      --forest-light: #3b6d11;
+      --sage: #7ab87a;
+      --sage-light: #a8d4a8;
+      --cream: #e8f0e4;
+      --cream-dim: #b8c8b4;
+      --divider: rgba(122, 184, 122, 0.15);
+      --mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+    }
+
+    body {
+      background: var(--forest-deep);
+      color: var(--cream);
+      font-family: 'Source Sans 3', sans-serif;
+      font-weight: 300;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        radial-gradient(ellipse at 20% 50%, rgba(59, 109, 17, 0.08) 0%, transparent 60%),
+        radial-gradient(ellipse at 80% 20%, rgba(122, 184, 122, 0.05) 0%, transparent 50%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .page {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Nav */
+    nav {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      padding: 16px 0;
+      border-bottom: 1px solid var(--divider);
+      margin-bottom: 28px;
+    }
+    .nav-home {
+      font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase;
+      color: var(--sage); text-decoration: none;
+      display: flex; align-items: center; gap: 6px; transition: color 0.2s;
+    }
+    .nav-home:hover { color: var(--cream); }
+    .nav-divider { color: var(--divider); font-size: 12px; }
+    .nav-links { display: flex; gap: 20px; margin-left: auto; }
+    .nav-link {
+      font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase;
+      color: var(--cream-dim); text-decoration: none; transition: color 0.2s;
+    }
+    .nav-link:hover { color: var(--cream); }
+    .nav-link.active { color: var(--sage); }
+
+    .nav-hamburger {
+      display: none; flex-direction: column; gap: 5px;
+      background: none; border: none; cursor: pointer; padding: 4px; margin-left: auto;
+    }
+    .nav-hamburger span {
+      display: block; width: 22px; height: 2px;
+      background: var(--cream-dim); border-radius: 2px; transition: all 0.25s;
+    }
+    .nav-hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+    .nav-hamburger.open span:nth-child(2) { opacity: 0; }
+    .nav-hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+    /* Header */
+    .header-eyebrow {
+      font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase;
+      color: var(--sage); margin-bottom: 10px;
+    }
+    h1 {
+      font-family: 'Playfair Display', serif; font-weight: 400;
+      font-size: 44px; line-height: 1.05; margin-bottom: 16px; color: var(--cream);
+    }
+    .standfirst { color: var(--cream-dim); font-size: 17px; max-width: 760px; line-height: 1.5; }
+
+    /* Section scaffolding */
+    section { margin: 56px 0; }
+    .section-eyebrow {
+      font-family: var(--mono); font-size: 11px; letter-spacing: 0.18em;
+      text-transform: uppercase; color: var(--sage);
+      display: flex; align-items: center; gap: 10px; margin-bottom: 6px;
+    }
+    .section-eyebrow::before {
+      content: ''; width: 18px; height: 1px; background: var(--sage); display: inline-block;
+    }
+    h2 {
+      font-family: 'Playfair Display', serif; font-weight: 400;
+      font-size: 30px; color: var(--cream); margin-bottom: 10px;
+    }
+    h3 {
+      font-family: 'Source Sans 3', sans-serif; font-weight: 600;
+      font-size: 17px; color: var(--cream); margin: 24px 0 8px;
+    }
+    section > p, .lead { color: var(--cream-dim); font-size: 15px; line-height: 1.6; max-width: 760px; margin-bottom: 14px; }
+    a.inline { color: var(--sage); text-decoration: none; border-bottom: 1px solid var(--divider); }
+    a.inline:hover { color: var(--cream); }
+
+    /* Export grid */
+    .export-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px; margin-top: 24px;
+    }
+    .data-card {
+      background: var(--forest-dark); border: 1px solid var(--divider);
+      border-radius: 12px; padding: 20px; display: flex; flex-direction: column;
+      transition: border-color 0.2s;
+    }
+    .data-card:hover { border-color: rgba(122,184,122,0.35); }
+    .data-card-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 4px; }
+    .data-card-title { font-size: 17px; font-weight: 600; color: var(--cream); display: flex; align-items: center; gap: 8px; }
+    .data-card-count {
+      font-family: var(--mono); font-size: 12px; color: var(--sage);
+      background: rgba(122,184,122,0.08); padding: 2px 8px; border-radius: 6px; white-space: nowrap;
+    }
+    .data-card-desc { font-size: 13px; color: var(--cream-dim); line-height: 1.5; margin: 6px 0 16px; flex: 1; }
+    .data-card-actions { display: flex; gap: 10px; }
+    .btn {
+      font-family: var(--mono); font-size: 12px; letter-spacing: 0.04em;
+      padding: 9px 16px; border-radius: 8px; cursor: pointer; border: 1px solid var(--divider);
+      background: transparent; color: var(--cream); transition: all 0.18s; text-decoration: none;
+      display: inline-flex; align-items: center; gap: 7px;
+    }
+    .btn:hover { border-color: var(--sage); color: var(--sage); }
+    .btn:disabled { opacity: 0.4; cursor: default; }
+    .btn-primary { background: rgba(122,184,122,0.12); border-color: rgba(122,184,122,0.3); }
+    .btn svg { width: 13px; height: 13px; }
+
+    .export-note {
+      margin-top: 20px; font-size: 13px; color: var(--cream-dim);
+      padding: 14px 16px; border-left: 2px solid var(--divider); background: rgba(36,48,34,0.4); border-radius: 0 8px 8px 0;
+    }
+
+    /* Pipeline */
+    .pipeline {
+      display: flex; align-items: stretch; gap: 0; flex-wrap: wrap;
+      background: var(--forest-dark); border: 1px solid var(--divider);
+      border-radius: 12px; padding: 22px; margin: 24px 0; overflow-x: auto;
+    }
+    .pipe-stage {
+      flex: 1; min-width: 130px; padding: 4px 14px; position: relative;
+    }
+    .pipe-stage:not(:last-child)::after {
+      content: '→'; position: absolute; right: -8px; top: 18px;
+      color: var(--sage); font-size: 18px;
+    }
+    .pipe-stage-label { font-family: var(--mono); font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--sage); margin-bottom: 6px; }
+    .pipe-stage-name { font-size: 14px; font-weight: 600; color: var(--cream); margin-bottom: 4px; }
+    .pipe-stage-detail { font-size: 12px; color: var(--cream-dim); line-height: 1.45; }
+
+    /* How-to steps */
+    .steps { counter-reset: step; margin-top: 20px; }
+    .step {
+      display: grid; grid-template-columns: 44px 1fr; gap: 18px;
+      padding: 22px 0; border-top: 1px solid var(--divider);
+    }
+    .step:last-child { border-bottom: 1px solid var(--divider); }
+    .step-num {
+      counter-increment: step; font-family: 'Playfair Display', serif;
+      font-size: 26px; color: var(--sage); line-height: 1;
+    }
+    .step-num::before { content: counter(step, decimal-leading-zero); }
+    .step-body h3 { margin-top: 0; }
+    .step-body p { font-size: 14px; color: var(--cream-dim); line-height: 1.6; max-width: 720px; margin-bottom: 8px; }
+    .step-body ul { margin: 8px 0 8px 18px; color: var(--cream-dim); font-size: 14px; line-height: 1.6; }
+    .step-body li { margin-bottom: 4px; }
+
+    code {
+      font-family: var(--mono); font-size: 0.88em;
+      background: rgba(122,184,122,0.1); color: var(--sage-light);
+      padding: 1px 6px; border-radius: 5px;
+    }
+
+    /* Parts table */
+    .parts { width: 100%; border-collapse: collapse; margin-top: 18px; font-size: 14px; }
+    .parts th {
+      text-align: left; font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em;
+      text-transform: uppercase; color: var(--sage); padding: 8px 12px; border-bottom: 1px solid var(--divider);
+    }
+    .parts td { padding: 10px 12px; border-bottom: 1px solid var(--divider); color: var(--cream-dim); vertical-align: top; }
+    .parts td:first-child { color: var(--cream); font-weight: 500; }
+
+    /* Future / roadmap */
+    .roadmap { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-top: 20px; }
+    .roadmap-card {
+      background: var(--forest-dark); border: 1px dashed var(--divider);
+      border-radius: 12px; padding: 20px;
+    }
+    .roadmap-tag { font-family: var(--mono); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--sage); margin-bottom: 8px; }
+    .roadmap-card h3 { margin-top: 0; }
+    .roadmap-card p { font-size: 13px; color: var(--cream-dim); line-height: 1.5; }
+
+    footer {
+      border-top: 1px solid var(--divider); padding: 24px 0 40px;
+      display: flex; justify-content: space-between; align-items: center;
+      flex-wrap: wrap; gap: 12px; margin-top: 48px;
+    }
+    .footer-text { font-size: 12px; color: var(--cream-dim); }
+    .footer-brand { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--sage); }
+
+    .toast {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px);
+      background: var(--forest-mid); border: 1px solid var(--sage); color: var(--cream);
+      padding: 12px 22px; border-radius: 10px; font-size: 14px; z-index: 200;
+      transition: transform 0.3s ease; box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+
+    @media (max-width: 700px) {
+      .nav-hamburger { display: flex; }
+      .nav-links {
+        display: none; position: absolute; top: 56px; left: 0; right: 0;
+        background: var(--forest-dark); border-bottom: 1px solid var(--divider);
+        padding: 12px 24px; flex-direction: column; gap: 14px; z-index: 100;
+      }
+      .nav-links.open { display: flex; }
+      nav { position: relative; }
+      h1 { font-size: 34px; }
+      .step { grid-template-columns: 32px 1fr; gap: 12px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <nav>
+      <a href="index.html" class="nav-home">← Threlkeld Nature Watch</a>
+      <span class="nav-divider">|</span>
+      <div class="nav-links">
+        <a href="naturalist.html" class="nav-link">📖 Naturalist</a>
+        <a href="birds.html" class="nav-link">🐦 Birds</a>
+        <a href="bats.html" class="nav-link">🦇 Bats</a>
+        <a href="fells.html" class="nav-link">🏔️ Fells</a>
+        <a href="planes.html" class="nav-link">✈️ Planes</a>
+        <a href="river.html" class="nav-link">🌊 Rivers</a>
+        <a href="weather.html" class="nav-link">🌤️ Weather</a>
+        <a href="wildlife.html" class="nav-link">🦔 Wildlife</a>
+        <a href="about.html" class="nav-link">ℹ️ About</a>
+        <a href="data.html" class="nav-link active">⚙️ Data</a>
+      </div>
+      <button class="nav-hamburger" id="navHamburger" aria-label="Menu">
+        <span></span><span></span><span></span>
+      </button>
+    </nav>
+
+    <header>
+      <div class="header-eyebrow">⚙️ Under the hood · Threlkeld Nature Watch</div>
+      <h1>Data &amp; How-To</h1>
+      <p class="standfirst">Everything this site measures is open. Download the raw records below in JSON or CSV, then read exactly how the whole thing is built — the sensors in the garden, the code that moves the data, and how you could put your own version on your own patch.</p>
+    </header>
+
+    <!-- ============ EXPORT ============ -->
+    <section id="export">
+      <div class="section-eyebrow">Export</div>
+      <h2>Take the data</h2>
+      <p class="lead">Each feed below is pulled live from the same files the site itself reads. <strong>JSON</strong> is the raw record exactly as stored; <strong>CSV</strong> is flattened for spreadsheets. Nothing is paywalled and nothing is tracked — it's the valley's data.</p>
+
+      <div class="export-grid" id="exportGrid">
+        <!-- cards injected -->
+      </div>
+
+      <div class="export-note">
+        Counts update live when the page loads. Some feeds (weather, river level) also stream over MQTT in real time — see the build guide below for the broker details if you'd rather subscribe to the live stream than download a snapshot.
+      </div>
+    </section>
+
+    <!-- ============ HOW IT WORKS ============ -->
+    <section id="how">
+      <div class="section-eyebrow">How it works</div>
+      <h2>From a sound in the garden to a line on a chart</h2>
+      <p class="lead">Every feed follows the same shape: a sensor captures something, a small computer makes sense of it, a message bus carries it, and a static file lands where the website can read it. No cloud database, no server farm — just a couple of Raspberry Pis and a Home Assistant box doing steady work.</p>
+
+      <div class="pipeline">
+        <div class="pipe-stage">
+          <div class="pipe-stage-label">Capture</div>
+          <div class="pipe-stage-name">Sensors</div>
+          <div class="pipe-stage-detail">Garden mic, ultrasonic bat detector, rooftop weather station, EA river gauge, ADS-B flight feed.</div>
+        </div>
+        <div class="pipe-stage">
+          <div class="pipe-stage-label">Interpret</div>
+          <div class="pipe-stage-name">Raspberry Pi</div>
+          <div class="pipe-stage-detail">BirdNET-Pi identifies birdsong; a second Pi runs bat-call analysis. Each writes its own database.</div>
+        </div>
+        <div class="pipe-stage">
+          <div class="pipe-stage-label">Move</div>
+          <div class="pipe-stage-name">Node-RED + MQTT</div>
+          <div class="pipe-stage-detail">Flows gather, tidy and publish each feed to an MQTT topic, and write static JSON snapshots.</div>
+        </div>
+        <div class="pipe-stage">
+          <div class="pipe-stage-label">Show</div>
+          <div class="pipe-stage-name">Static site</div>
+          <div class="pipe-stage-detail">Plain HTML on GitHub Pages reads the JSON and the live MQTT stream. No backend.</div>
+        </div>
+      </div>
+
+      <p class="lead">A few principles hold it together: data is sourced as locally as possible; everything is backed up off-site nightly (databases, scripts and the flows themselves); and a watchdog keeps an eye on the feeds and sends a message if any of them fall quiet.</p>
+    </section>
+
+    <!-- ============ BUILD YOUR OWN ============ -->
+    <section id="build">
+      <div class="section-eyebrow">Build your own</div>
+      <h2>Put one on your own patch</h2>
+      <p class="lead">If you fancy doing this where you live, here's the honest route from nothing to a working bird page. You don't need all of it — the birdsong half stands alone and is the best place to start.</p>
+
+      <div class="steps">
+        <div class="step">
+          <div class="step-num"></div>
+          <div class="step-body">
+            <h3>Start with birdsong</h3>
+            <p>Get a Raspberry Pi (a 4 with 4GB is plenty) and a decent USB microphone, then install <a class="inline" href="https://github.com/Nachtzuster/BirdNET-Pi" target="_blank" rel="noopener">BirdNET-Pi</a>. It listens continuously, identifies species from their calls using a neural network, and stores every detection in a small database with a confidence score. This alone is genuinely magical — within a day you'll have a list of what's singing in your garden.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num"></div>
+          <div class="step-body">
+            <h3>Give it somewhere to send data</h3>
+            <p>Run <a class="inline" href="https://www.home-assistant.io/" target="_blank" rel="noopener">Home Assistant</a> (a Pi or a small mini-PC works). Add the <strong>Node-RED</strong> add-on — this is where the wiring happens. Node-RED is a visual, drag-the-boxes tool; you don't have to be a programmer to get a long way with it.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num"></div>
+          <div class="step-body">
+            <h3>Move the data with MQTT</h3>
+            <p>MQTT is a lightweight message bus — one thing publishes, others subscribe. A Node-RED flow reads the BirdNET database every few minutes and <strong>publishes</strong> the latest detections to a topic. For a hobby setup the free public broker <code>broker.hivemq.com</code> is fine; for anything you care about, run your own (Mosquitto is the usual choice).</p>
+            <ul>
+              <li>Publish a small JSON payload per feed (e.g. <code>{ "species": "...", "count": 12 }</code>)</li>
+              <li>Use <em>retained</em> messages so a fresh page load gets the last value immediately</li>
+              <li>Also write a static <code>.json</code> file — it's the reliable fallback when a retained message is slow to arrive</li>
+            </ul>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num"></div>
+          <div class="step-body">
+            <h3>Put a page in front of it</h3>
+            <p>A single HTML file can do the lot: <code>fetch()</code> the static JSON on load for instant data, then connect to MQTT over websockets for live updates. Host it free on GitHub Pages. No server, no database, no running costs — the page is just a reader of files the Pi produces.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num"></div>
+          <div class="step-body">
+            <h3>Add more senses</h3>
+            <p>Once the bird half works, the same pattern extends to everything else: an ultrasonic detector for bats, a weather station on the roof, your local river gauge from the Environment Agency's open <a class="inline" href="https://environment.data.gov.uk/flood-monitoring/doc/reference" target="_blank" rel="noopener">flood-monitoring API</a>, ADS-B for aircraft overhead. Each is just another sensor → Pi → MQTT → file → page.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num"></div>
+          <div class="step-body">
+            <h3>Make it robust</h3>
+            <p>The unglamorous part that matters most. Back up the databases <em>and</em> your scripts and flows somewhere off the Pi (a private Git repo works well, scrubbed of any keys). Add a watchdog that checks each feed is still arriving and messages you if one goes silent. A microSD card will fail eventually — plan for the day it does.</p>
+          </div>
+        </div>
+      </div>
+
+      <h3 style="margin-top:34px">The parts list at Threlkeld</h3>
+      <p class="lead">For reference, here's what's actually running here. None of it is exotic.</p>
+      <table class="parts">
+        <thead>
+          <tr><th>Part</th><th>What it does</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Raspberry Pi 4 (4GB)</td><td>Runs BirdNET-Pi with a USB microphone in the garden</td></tr>
+          <tr><td>Second Pi + ultrasonic mic</td><td>Records and classifies bat echolocation calls overnight</td></tr>
+          <tr><td>Rooftop weather station</td><td>Temperature, wind, pressure, humidity, rainfall</td></tr>
+          <tr><td>Home Assistant box</td><td>Hosts Node-RED, MQTT plumbing and the watchdog</td></tr>
+          <tr><td>EA flood-monitoring API</td><td>River Glenderamackin level from a gauge ~500m away</td></tr>
+          <tr><td>ADS-B / FlightRadar24 feed</td><td>Aircraft passing overhead, logged and mapped</td></tr>
+          <tr><td>GitHub Pages</td><td>Hosts the static site — free, no backend</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- ============ COMING SOON ============ -->
+    <section id="soon">
+      <div class="section-eyebrow">On the workbench</div>
+      <h2>Coming next</h2>
+      <p class="lead">Two things are planned for this page but not built yet — flagged honestly rather than promised.</p>
+      <div class="roadmap">
+        <div class="roadmap-card">
+          <div class="roadmap-tag">Planned</div>
+          <h3>Data digest by email</h3>
+          <p>Subscribe to a daily or weekly dump of the valley's data, delivered to your inbox — built on the same system that already sends the weekly nature email.</p>
+        </div>
+        <div class="roadmap-card">
+          <div class="roadmap-tag">Later</div>
+          <h3>A proper API</h3>
+          <p>Stable, documented endpoints you can query directly — so you can build your own things on top of Threlkeld's data, not just download snapshots.</p>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      <div class="footer-text"><span id="footerUpdated" style="margin-right:12px;color:var(--cream-dim)"></span>Threlkeld, Cumbria · Open data, openly built</div>
+      <div class="footer-brand">Part of Threlkeld Local Projects</div>
+    </footer>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // ── Nav hamburger ──
+    document.getElementById('navHamburger').addEventListener('click', function() {
+      this.classList.toggle('open');
+      document.querySelector('.nav-links').classList.toggle('open');
+    });
+
+    const NABU = 'https://rlpzmepeautd1v5pgoumz9aa2qhd92xd.ui.nabu.casa';
+
+    // ── Data feeds available for export ──
+    // url: live source (NABU /local). label/desc for the card. arrayPath: where the records live in the JSON.
+    const FEEDS = [
+      { id: 'birds',   icon: '🐦', title: 'Bird detections', file: 'birdnet_detections.json',
+        desc: 'Every bird identified by the garden microphone, with species, confidence and timestamp.', arrayKey: 'auto' },
+      { id: 'phenology', icon: '📅', title: 'First arrivals', file: 'birdnet_phenology.json',
+        desc: 'The first date each bird species was heard this year — the valley\u2019s phenology record.', arrayKey: 'year' },
+      { id: 'bats',    icon: '🦇', title: 'Bat detections', file: 'bat_detections.json',
+        desc: 'Echolocation passes recorded overnight, by species, from the ultrasonic detector.', arrayKey: 'auto' },
+      { id: 'river',   icon: '🌊', title: 'Rainfall & river', file: 'rainfall.json',
+        desc: 'Catchment rainfall feeding the River Glenderamackin, from the EA monitoring network.', arrayKey: 'auto' },
+      { id: 'flights', icon: '✈️', title: 'Flights overhead', file: 'flights.json',
+        desc: 'Aircraft logged passing over Threlkeld — callsign, type, route, altitude and speed.', arrayKey: 'flights' }
+    ];
+
+    const cache = {};  // id -> parsed json
+
+    function flatten(obj, prefix, out) {
+      out = out || {}; prefix = prefix || '';
+      for (const k in obj) {
+        const v = obj[k];
+        const key = prefix ? prefix + '_' + k : k;
+        if (v !== null && typeof v === 'object' && !Array.isArray(v)) flatten(v, key, out);
+        else out[key] = Array.isArray(v) ? JSON.stringify(v) : v;
+      }
+      return out;
+    }
+
+    function toRows(feed, data) {
+      // Return an array of flat record objects for CSV.
+      if (feed.arrayKey === 'year') {
+        // phenology: { "2026": { "Species": {date, timestamp}, ... } }
+        const rows = [];
+        for (const yr in data) {
+          for (const sp in data[yr]) {
+            rows.push(Object.assign({ year: yr, species: sp }, data[yr][sp]));
+          }
+        }
+        return rows;
+      }
+      if (feed.arrayKey && feed.arrayKey !== 'auto' && data[feed.arrayKey]) return data[feed.arrayKey];
+      if (Array.isArray(data)) return data;
+      if (data.flights && Array.isArray(data.flights)) return data.flights;
+      // find first array property
+      for (const k in data) if (Array.isArray(data[k])) return data[k];
+      return [data]; // single object
+    }
+
+    function countOf(feed, data) {
+      const rows = toRows(feed, data);
+      return Array.isArray(rows) ? rows.length : 0;
+    }
+
+    function csvFrom(rows) {
+      if (!rows.length) return '';
+      const flat = rows.map(r => (typeof r === 'object' && r !== null) ? flatten(r) : { value: r });
+      const cols = [];
+      flat.forEach(r => Object.keys(r).forEach(k => { if (cols.indexOf(k) < 0) cols.push(k); }));
+      const esc = v => {
+        if (v === null || v === undefined) return '';
+        const s = String(v);
+        return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+      };
+      const lines = [cols.join(',')];
+      flat.forEach(r => lines.push(cols.map(c => esc(r[c])).join(',')));
+      return lines.join('\n');
+    }
+
+    function download(filename, text, mime) {
+      const blob = new Blob([text], { type: mime });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = filename;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+    let toastTimer;
+    function toast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg; t.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
+    }
+
+    function exportFeed(feed, fmt) {
+      const data = cache[feed.id];
+      if (!data) { toast('Data not loaded yet — try again in a moment'); return; }
+      const stamp = new Date().toISOString().slice(0, 10);
+      if (fmt === 'json') {
+        download('threlkeld_' + feed.id + '_' + stamp + '.json', JSON.stringify(data, null, 2), 'application/json');
+        toast('Downloaded ' + feed.title + ' (JSON)');
+      } else {
+        const rows = toRows(feed, data);
+        const csv = csvFrom(Array.isArray(rows) ? rows : [rows]);
+        if (!csv) { toast('Nothing to export'); return; }
+        download('threlkeld_' + feed.id + '_' + stamp + '.csv', csv, 'text/csv');
+        toast('Downloaded ' + feed.title + ' (CSV)');
+      }
+    }
+
+    // ── Build the export cards ──
+    function buildCards() {
+      const grid = document.getElementById('exportGrid');
+      FEEDS.forEach(feed => {
+        const card = document.createElement('div');
+        card.className = 'data-card';
+        card.innerHTML =
+          '<div class="data-card-head">' +
+            '<div class="data-card-title">' + feed.icon + ' ' + feed.title + '</div>' +
+            '<div class="data-card-count" id="count-' + feed.id + '">…</div>' +
+          '</div>' +
+          '<div class="data-card-desc">' + feed.desc + '</div>' +
+          '<div class="data-card-actions">' +
+            '<button class="btn btn-primary" data-feed="' + feed.id + '" data-fmt="csv">CSV</button>' +
+            '<button class="btn" data-feed="' + feed.id + '" data-fmt="json">JSON</button>' +
+          '</div>';
+        grid.appendChild(card);
+      });
+      grid.addEventListener('click', e => {
+        const b = e.target.closest('button[data-feed]');
+        if (!b) return;
+        const feed = FEEDS.find(f => f.id === b.dataset.feed);
+        exportFeed(feed, b.dataset.fmt);
+      });
+    }
+
+    // ── Load each feed to populate counts ──
+    function loadFeeds() {
+      FEEDS.forEach(feed => {
+        fetch(NABU + '/local/' + feed.file + '?t=' + Date.now())
+          .then(r => r.ok ? r.json() : null)
+          .then(data => {
+            const el = document.getElementById('count-' + feed.id);
+            if (!data) { if (el) el.textContent = 'live'; return; }
+            cache[feed.id] = data;
+            const n = countOf(feed, data);
+            if (el) el.textContent = n ? n.toLocaleString() + ' records' : 'ready';
+          })
+          .catch(() => {
+            const el = document.getElementById('count-' + feed.id);
+            if (el) el.textContent = 'live';
+          });
+      });
+    }
+
+    buildCards();
+    loadFeeds();
+
+    // footer stamp
+    document.getElementById('footerUpdated').textContent =
+      'Loaded ' + new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+  </script>
+</body>
+</html>
