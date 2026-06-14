@@ -452,7 +452,7 @@
       { id: 'phenology', icon: '📅', title: 'First arrivals', file: 'birdnet_phenology.json',
         desc: 'The first date each bird species was heard this year — the valley\u2019s phenology record.', arrayKey: 'year' },
       { id: 'bats',    icon: '🦇', title: 'Bat detections', file: 'bat_detections.json',
-        desc: 'Echolocation passes recorded overnight, by species, from the ultrasonic detector.', arrayKey: 'auto' },
+        desc: 'Recent echolocation passes from the ultrasonic detector, filling overnight as bats fly. The full archive lives in the detector database.', arrayKey: 'auto' },
       { id: 'river',   icon: '🌊', title: 'Rainfall & river', file: 'rainfall.json',
         desc: 'Catchment rainfall feeding the River Glenderamackin, from the EA monitoring network.', arrayKey: 'auto' },
       { id: 'flights', icon: '✈️', title: 'Flights overhead', file: 'flights.json',
@@ -539,7 +539,7 @@
       } else {
         const rows = toRows(feed, data);
         const csv = csvFrom(Array.isArray(rows) ? rows : [rows]);
-        if (!csv) { toast('Nothing to export'); return; }
+        if (!csv) { toast(feed.title + ': no records yet \u2014 fills as new detections arrive'); return; }
         download('threlkeld_' + feed.id + '_' + stamp + '.csv', csv, 'text/csv');
         toast('Downloaded ' + feed.title + ' (CSV)');
       }
