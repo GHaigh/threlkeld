@@ -581,7 +581,11 @@
             if (!data) { if (el) el.textContent = 'live'; return; }
             cache[feed.id] = data;
             const n = countOf(feed, data);
-            if (el) el.textContent = n ? n.toLocaleString() + ' records' : 'ready';
+            if (el) {
+              if (!n) { el.textContent = 'ready'; }
+              else if (feed.id === 'birds' || feed.id === 'bats') { el.textContent = 'latest ' + n.toLocaleString(); }
+              else { el.textContent = n.toLocaleString() + ' records'; }
+            }
           })
           .catch(() => {
             const el = document.getElementById('count-' + feed.id);
