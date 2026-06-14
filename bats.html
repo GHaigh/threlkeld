@@ -501,8 +501,8 @@
     </div>
 
     <footer>
-      <span>🦇 Bat detection via AudioMoth + BatDetect2 · Threlkeld, Cumbria</span>
-      <span id="footerUpdated"></span>
+      <div class="footer-text">Bat detection via AudioMoth + BatDetect2 &middot; Threlkeld, Cumbria</div>
+      <div class="footer-brand">Threlkeld Nature Watch &middot; Updated 14 Jun 2026, 14:28</div>
     </footer>
   </div>
 
@@ -1727,8 +1727,6 @@
       this.classList.toggle('open');
       document.getElementById('navLinks').classList.toggle('open');
     });
-
-    document.getElementById('footerUpdated').textContent = 'Updated ' + new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}) + ' · ' + new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
   </script>
 
   <!-- PWA Install Banner -->
