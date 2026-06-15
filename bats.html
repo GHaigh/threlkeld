@@ -502,7 +502,7 @@
 
     <footer>
       <div class="footer-text">Bat detection via AudioMoth + BatDetect2 &middot; Threlkeld, Cumbria</div>
-      <div class="footer-brand">Threlkeld Nature Watch &middot; Updated 15 Jun 2026 (b)</div>
+      <div class="footer-brand">Threlkeld Nature Watch &middot; Updated 15 Jun 2026 (c)</div>
     </footer>
   </div>
 
@@ -847,14 +847,20 @@
       //  claimed "Bat of the Night" with stale data.)
       const _statsTonight = !!(batSessionStats && batSessionStats.isTonight === true);
       const _statsFallback = !!(batSessionStats && batSessionStats.isFallback === true);
-      let eyebrowLabel, titleLabel;
+      const _batHoursNow = !isDaytime();   // currently within bat-active hours (dusk..dawn)
+      let eyebrowLabel, titleLabel, listeningNote = '';
       if (selectedNight) {
         eyebrowLabel = 'Selected Night'; titleLabel = 'Bat of the Night';
       } else if (_statsTonight && !_statsFallback) {
+        // Genuine confident detections tonight.
         eyebrowLabel = 'Bat of the Night'; titleLabel = 'Bat of the Night';
+      } else if (_batHoursNow) {
+        // It's bat hours and the detector is listening, but no confident detections tonight yet.
+        // Convey that the site is LIVE right now, while still showing the most recent night for context.
+        eyebrowLabel = 'Listening Tonight'; titleLabel = 'Listening Tonight';
+        listeningNote = 'No bats detected yet tonight \u2014 the detector is listening. Most recently:';
       } else {
-        // fallback, or no current session yet, or just-after-sunset-with-no-data:
-        // show the most recent night's bat, labelled honestly.
+        // Daytime (or otherwise) — just showing the most recent active night from the archive.
         eyebrowLabel = 'Most Recent Bat'; titleLabel = 'Most Recent Bat';
       }
       const _bt = document.getElementById('botdTitle');
@@ -866,6 +872,7 @@
           <img class="botd-image" id="botdPhoto" alt="${common}" style="background:var(--forest-mid);display:none">
           <div class="botd-info">
             <div class="botd-eyebrow">🦇 ${eyebrowLabel}</div>
+            ${listeningNote ? `<div class="botd-listening" style="font-size:13px;color:var(--sage);margin:0 0 10px;line-height:1.5">${listeningNote}</div>` : ''}
             <div class="botd-name">${common}</div>
             <div class="botd-latin">${species}</div>
             <div class="botd-facts">
