@@ -251,6 +251,22 @@
       </div>
     </div>
 
+    <!-- Browser / OS / Device -->
+    <div class="three-col" style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-bottom:8px">
+      <div>
+        <div class="section-header"><div class="section-title">Browser</div><div class="section-subtitle">All time</div></div>
+        <div class="chart-container" id="browserBreakdown" style="padding:0"><div style="padding:20px;color:var(--cream-dim);font-style:italic">Loading...</div></div>
+      </div>
+      <div>
+        <div class="section-header"><div class="section-title">Operating System</div><div class="section-subtitle">All time</div></div>
+        <div class="chart-container" id="osBreakdown" style="padding:0"><div style="padding:20px;color:var(--cream-dim);font-style:italic">Loading...</div></div>
+      </div>
+      <div>
+        <div class="section-header"><div class="section-title">Device</div><div class="section-subtitle">All time</div></div>
+        <div class="chart-container" id="deviceBreakdown" style="padding:0"><div style="padding:20px;color:var(--cream-dim);font-style:italic">Loading...</div></div>
+      </div>
+    </div>
+
     <!-- Recent visits -->
     <div class="section-header">
       <div class="section-title">Recent Visits</div>
@@ -297,6 +313,40 @@
       if (!ua) return '?';
       if (/Mobile|Android|iPhone|iPad/.test(ua)) return '📱 Mobile';
       return '🖥️ Desktop';
+    }
+
+    function getDeviceType(ua) {
+      if (!ua) return 'Unknown';
+      if (/iPad|Tablet/.test(ua)) return 'Tablet';
+      if (/Mobile|Android|iPhone|iPod/.test(ua)) return 'Phone';
+      return 'Desktop';
+    }
+    function getBrowser(ua) {
+      if (!ua) return 'Unknown';
+      if (/Edg\//.test(ua)) return 'Edge';
+      if (/OPR\/|Opera/.test(ua)) return 'Opera';
+      if (/SamsungBrowser/.test(ua)) return 'Samsung';
+      if (/Firefox\//.test(ua)) return 'Firefox';
+      if (/Chrome\//.test(ua) && !/Edg\//.test(ua)) return 'Chrome';
+      if (/Safari\//.test(ua) && /Version\//.test(ua)) return 'Safari';
+      if (/MSIE|Trident/.test(ua)) return 'Internet Explorer';
+      return 'Other';
+    }
+    function getOS(ua) {
+      if (!ua) return 'Unknown';
+      if (/Windows NT/.test(ua)) return 'Windows';
+      if (/iPhone|iPad|iPod/.test(ua)) return 'iOS';
+      if (/Mac OS X/.test(ua)) return 'macOS';
+      if (/Android/.test(ua)) return 'Android';
+      if (/Linux/.test(ua)) return 'Linux';
+      return 'Other';
+    }
+    function fmtDuration(ms) {
+      if (ms == null || isNaN(ms)) return '—';
+      const s = Math.round(ms/1000);
+      if (s < 60) return s + 's';
+      const m = Math.floor(s/60), r = s % 60;
+      return m + 'm ' + (r<10?'0':'') + r + 's';
     }
 
     function cleanPage(page) {
@@ -365,6 +415,23 @@
       document.getElementById('hourlyLabels').innerHTML = hours.map((_, h) =>
         `<div class="chart-label">${h % 4 === 0 ? String(h).padStart(2,'0') : ''}</div>`
       ).join('');
+
+      // Browser / OS / Device breakdowns
+      function renderBreakdown(elId, keyFn) {
+        const counts = {};
+        visits.forEach(function(v){ const k = keyFn(v.userAgent); counts[k] = (counts[k]||0)+1; });
+        const sorted = Object.entries(counts).sort(function(a,b){ return b[1]-a[1]; });
+        const max = sorted[0] ? sorted[0][1] : 1;
+        const el = document.getElementById(elId);
+        if (el) el.innerHTML = sorted.length ? sorted.map(function(e){
+          return '<div class="page-bar-row"><div class="page-bar-label" style="width:90px">'+e[0]+'</div>'
+            + '<div class="page-bar-track"><div class="page-bar-fill" style="width:'+(e[1]/max*100)+'%"></div></div>'
+            + '<div class="page-bar-count">'+e[1]+'</div></div>';
+        }).join('') : '<div style="padding:20px;color:var(--cream-dim);font-style:italic">No data yet</div>';
+      }
+      renderBreakdown('browserBreakdown', getBrowser);
+      renderBreakdown('osBreakdown', getOS);
+      renderBreakdown('deviceBreakdown', getDeviceType);
 
       // Recent visits table
       document.getElementById('recentCount').textContent = `${visits.length} total`;
