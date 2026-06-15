@@ -485,19 +485,27 @@
         return rows;
       }
       if (feed.arrayKey === 'bats') {
-        // bat stats: { nightly: [ { date, species:[{species,count}] | speciesBreakdown:[...], count } ] }
+        // bat stats: per-species-per-night lives in nightlySpecies { "YYYY-MM-DD": [ {species|name, count}, ... ] }
+        // nightly[] holds per-night totals only. Prefer nightlySpecies for real species detail.
         const rows = [];
-        const nights = (data && Array.isArray(data.nightly)) ? data.nightly : [];
-        nights.forEach(function(n){
-          const list = n.species || n.speciesBreakdown || n.breakdown || [];
-          if (Array.isArray(list) && list.length) {
-            list.forEach(function(s){
-              rows.push({ date: n.date, species: s.species || s.name || '', count: s.count != null ? s.count : (s.n != null ? s.n : '') });
-            });
-          } else if (n.count != null) {
-            rows.push({ date: n.date, species: 'all species', count: n.count });
-          }
-        });
+        const ns = (data && data.nightlySpecies) ? data.nightlySpecies : null;
+        if (ns && typeof ns === 'object') {
+          const dates = Object.keys(ns).sort();
+          dates.forEach(function(date){
+            const list = ns[date];
+            if (Array.isArray(list)) {
+              list.forEach(function(s){
+                const name = s.species || s.name || s.common || s.latin || '';
+                const cnt  = (s.count != null) ? s.count : (s.n != null ? s.n : (s.total != null ? s.total : ''));
+                rows.push({ date: date, species: name, count: cnt });
+              });
+            }
+          });
+        }
+        // fall back to nightly totals only if no per-species data at all
+        if (!rows.length && data && Array.isArray(data.nightly)) {
+          data.nightly.forEach(function(n){ rows.push({ date: n.date, species: 'all species', count: n.count }); });
+        }
         return rows;
       }
       if (feed.arrayKey && feed.arrayKey !== 'auto' && data[feed.arrayKey]) return data[feed.arrayKey];
