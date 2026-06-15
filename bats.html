@@ -378,7 +378,7 @@
 
     <!-- Bat of the Day -->
     <div class="section-header" style="margin-top:0">
-      <div class="section-title">Bat of the Night</div>
+      <div class="section-title" id="botdTitle">Bat of the Night</div>
       <div class="section-sub" id="botdSub">Most detected species</div>
     </div>
     <div class="bat-of-day" id="botdCard">
@@ -840,12 +840,27 @@
       }
       document.getElementById('botdSub').textContent = subText;
 
+      // Honest headline: only call it "Bat of the Night" when it's genuinely tonight's data.
+      // When showing a fallback (a previous active night), say so in the headline itself.
+      let eyebrowLabel, titleLabel;
+      if (selectedNight) {
+        eyebrowLabel = 'Selected Night'; titleLabel = 'Bat of the Night';
+      } else if (isTonight) {
+        eyebrowLabel = 'Bat of the Night'; titleLabel = 'Bat of the Night';
+      } else if (isFallback) {
+        eyebrowLabel = 'Most Recent Bat'; titleLabel = 'Most Recent Bat';
+      } else {
+        eyebrowLabel = "Last Night's Bat"; titleLabel = 'Bat of the Night';
+      }
+      const _bt = document.getElementById('botdTitle');
+      if (_bt) _bt.textContent = titleLabel;
+
       // Render card immediately, photo loads async after
       document.getElementById('botdCard').innerHTML = `
         <div class="botd-card">
           <img class="botd-image" id="botdPhoto" alt="${common}" style="background:var(--forest-mid);display:none">
           <div class="botd-info">
-            <div class="botd-eyebrow">🦇 Bat of the Night</div>
+            <div class="botd-eyebrow">🦇 ${eyebrowLabel}</div>
             <div class="botd-name">${common}</div>
             <div class="botd-latin">${species}</div>
             <div class="botd-facts">
