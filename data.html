@@ -451,8 +451,8 @@
         desc: 'The most recent bird detections from the garden microphone (live window). The full archive lives in the BirdNET database.', arrayKey: 'auto' },
       { id: 'phenology', icon: '📅', title: 'First arrivals', file: 'birdnet_phenology.json',
         desc: 'The first date each bird species was heard this year — the valley\u2019s phenology record.', arrayKey: 'year' },
-      { id: 'bats',    icon: '🦇', title: 'Bat detections', file: 'bat_detections.json',
-        desc: 'Recent echolocation passes from the ultrasonic detector, filling overnight as bats fly. The full archive lives in the detector database.', arrayKey: 'auto' },
+      { id: 'bats',    icon: '🦇', title: 'Bat activity by night', file: 'bat_stats.json',
+        desc: 'Nightly echolocation counts by species from the ultrasonic detector — the form bat records are actually used in. Updated each night bats are active.', arrayKey: 'bats' },
       { id: 'river',   icon: '🌊', title: 'Rainfall & river', file: 'rainfall.json',
         desc: 'Catchment rainfall feeding the River Glenderamackin, from the EA monitoring network.', arrayKey: 'auto' },
       { id: 'flights', icon: '✈️', title: 'Flights overhead', file: 'flights.json',
@@ -482,6 +482,22 @@
             rows.push(Object.assign({ year: yr, species: sp }, data[yr][sp]));
           }
         }
+        return rows;
+      }
+      if (feed.arrayKey === 'bats') {
+        // bat stats: { nightly: [ { date, species:[{species,count}] | speciesBreakdown:[...], count } ] }
+        const rows = [];
+        const nights = (data && Array.isArray(data.nightly)) ? data.nightly : [];
+        nights.forEach(function(n){
+          const list = n.species || n.speciesBreakdown || n.breakdown || [];
+          if (Array.isArray(list) && list.length) {
+            list.forEach(function(s){
+              rows.push({ date: n.date, species: s.species || s.name || '', count: s.count != null ? s.count : (s.n != null ? s.n : '') });
+            });
+          } else if (n.count != null) {
+            rows.push({ date: n.date, species: 'all species', count: n.count });
+          }
+        });
         return rows;
       }
       if (feed.arrayKey && feed.arrayKey !== 'auto' && data[feed.arrayKey]) return data[feed.arrayKey];
@@ -583,7 +599,7 @@
             const n = countOf(feed, data);
             if (el) {
               if (!n) { el.textContent = 'ready'; }
-              else if (feed.id === 'birds' || feed.id === 'bats') { el.textContent = 'latest ' + n.toLocaleString(); }
+              else if (feed.id === 'birds') { el.textContent = 'latest ' + n.toLocaleString(); }
               else { el.textContent = n.toLocaleString() + ' records'; }
             }
           })
