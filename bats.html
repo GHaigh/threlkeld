@@ -840,17 +840,22 @@
       }
       document.getElementById('botdSub').textContent = subText;
 
-      // Honest headline: only call it "Bat of the Night" when it's genuinely tonight's data.
-      // When showing a fallback (a previous active night), say so in the headline itself.
+      // Honest headline. Only claim "Bat of the Night" when the stats genuinely represent
+      // tonight's real, current session — NOT merely because it's after sunset, and NOT when
+      // bat_stats.py is serving a previous night as a fallback.
+      // (Bug fix: at dusk before any detections, isTonight was !isDaytime()=true, which wrongly
+      //  claimed "Bat of the Night" with stale data.)
+      const _statsTonight = !!(batSessionStats && batSessionStats.isTonight === true);
+      const _statsFallback = !!(batSessionStats && batSessionStats.isFallback === true);
       let eyebrowLabel, titleLabel;
       if (selectedNight) {
         eyebrowLabel = 'Selected Night'; titleLabel = 'Bat of the Night';
-      } else if (isTonight) {
+      } else if (_statsTonight && !_statsFallback) {
         eyebrowLabel = 'Bat of the Night'; titleLabel = 'Bat of the Night';
-      } else if (isFallback) {
-        eyebrowLabel = 'Most Recent Bat'; titleLabel = 'Most Recent Bat';
       } else {
-        eyebrowLabel = "Last Night's Bat"; titleLabel = 'Bat of the Night';
+        // fallback, or no current session yet, or just-after-sunset-with-no-data:
+        // show the most recent night's bat, labelled honestly.
+        eyebrowLabel = 'Most Recent Bat'; titleLabel = 'Most Recent Bat';
       }
       const _bt = document.getElementById('botdTitle');
       if (_bt) _bt.textContent = titleLabel;
