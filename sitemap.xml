@@ -1,11 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://threlkeld.info/</loc><changefreq>hourly</changefreq><priority>1.0</priority></url>
-  <url><loc>https://threlkeld.info/birds.html</loc><changefreq>hourly</changefreq><priority>0.9</priority></url>
-  <url><loc>https://threlkeld.info/fells.html</loc><changefreq>hourly</changefreq><priority>0.9</priority></url>
-  <url><loc>https://threlkeld.info/planes.html</loc><changefreq>hourly</changefreq><priority>0.9</priority></url>
-  <url><loc>https://threlkeld.info/river.html</loc><changefreq>hourly</changefreq><priority>0.9</priority></url>
-  <url><loc>https://threlkeld.info/weather.html</loc><changefreq>hourly</changefreq><priority>0.9</priority></url>
-  <url><loc>https://threlkeld.info/wildlife.html</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
-  <url><loc>https://threlkeld.info/about.html</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://www.threlkeld.info/index.html</loc><lastmod>2026-06-16</lastmod><priority>1.0</priority></url>
+  <url><loc>https://www.threlkeld.info/naturalist.html</loc><lastmod>2026-06-16</lastmod><priority>0.9</priority></url>
+  <url><loc>https://www.threlkeld.info/birds.html</loc><lastmod>2026-06-16</lastmod><priority>0.9</priority></url>
+  <url><loc>https://www.threlkeld.info/bats.html</loc><lastmod>2026-06-16</lastmod><priority>0.9</priority></url>
+  <url><loc>https://www.threlkeld.info/fells.html</loc><lastmod>2026-06-16</lastmod><priority>0.8</priority></url>
+  <url><loc>https://www.threlkeld.info/planes.html</loc><lastmod>2026-06-16</lastmod><priority>0.7</priority></url>
+  <url><loc>https://www.threlkeld.info/river.html</loc><lastmod>2026-06-16</lastmod><priority>0.7</priority></url>
+  <url><loc>https://www.threlkeld.info/weather.html</loc><lastmod>2026-06-16</lastmod><priority>0.8</priority></url>
+  <url><loc>https://www.threlkeld.info/wildlife.html</loc><lastmod>2026-06-16</lastmod><priority>0.7</priority></url>
+  <url><loc>https://www.threlkeld.info/phenology.html</loc><lastmod>2026-06-16</lastmod><priority>0.6</priority></url>
+  <url><loc>https://www.threlkeld.info/data.html</loc><lastmod>2026-06-16</lastmod><priority>0.5</priority></url>
+  <url><loc>https://www.threlkeld.info/about.html</loc><lastmod>2026-06-16</lastmod><priority>0.6</priority></url>
 </urlset>
