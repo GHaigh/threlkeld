@@ -313,7 +313,7 @@
     </div>
 
     <footer>
-      <div class="footer-text">Threlkeld, Cumbria · Private Administration · Not linked publicly · Updated 16 Jun 2026 (d)</div>
+      <div class="footer-text">Threlkeld, Cumbria · Private Administration · Not linked publicly · Updated 16 Jun 2026 (e)</div>
       <div class="footer-brand">www.threlkeld.info</div>
     </footer>
   </div>
@@ -327,7 +327,8 @@
       { id: 'birds',   label: '🐦 Birds',    topic: 'birdnetpi/greg2026/detections' },
       { id: 'bats',    label: '🦇 Bats',     topic: 'birdnetpi/greg2026/bats/stats' },
       { id: 'weather', label: '🌤️ Weather',  topic: 'birdnetpi/greg2026/weather/current' },
-      { id: 'river',   label: '🌊 River',    topic: 'birdnetpi/greg2026/river' }
+      { id: 'river',   label: '🌊 River',    topic: 'birdnetpi/greg2026/river' },
+      { id: 'backup',  label: '💾 Backup',   topic: 'threlkeld/backup/flows' }
     ];
     const feedLastSeen = {};   // id -> timestamp(ms)
 
@@ -424,7 +425,8 @@
         birds:   [15*MIN, 2*HOUR],
         bats:    [18*HOUR, 36*HOUR],   // bats are nightly; 'live' if heard within ~18h
         weather: [30*MIN, 3*HOUR],
-        river:   [60*MIN, 6*HOUR]
+        river:   [60*MIN, 6*HOUR],
+        backup:  [26*HOUR, 50*HOUR]   // daily backup; green if within ~26h, red if >2 days
       };
       function fmtAgo(ms) {
         if (ms == null) return 'no data yet';
@@ -580,9 +582,14 @@
       const feed = HEALTH_FEEDS.find(function(f){ return f.topic === topic; });
       if (feed) {
         // For bats, ignore fallback re-sends so a quiet night doesn't look 'live'.
-        let isFallback = false;
-        try { const p = JSON.parse(message.toString()); isFallback = (p && p.isFallback === true); } catch(e) {}
-        if (!(feed.id === 'bats' && isFallback)) { feedLastSeen[feed.id] = Date.now(); }
+        let isFallback = false, beatTs = null;
+        try {
+          const p = JSON.parse(message.toString());
+          isFallback = (p && p.isFallback === true);
+          if (feed.id === 'backup' && p && p.ts) beatTs = p.ts;   // use the backup's own timestamp
+        } catch(e) {}
+        if (feed.id === 'backup') { feedLastSeen[feed.id] = beatTs || Date.now(); }
+        else if (!(feed.id === 'bats' && isFallback)) { feedLastSeen[feed.id] = Date.now(); }
         renderHealth();
         return;
       }
