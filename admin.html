@@ -184,13 +184,16 @@
       <a href="index.html" class="nav-home">← Threlkeld Projects</a>
       <span class="nav-divider">|</span>
       <div class="nav-links">
+        <a href="naturalist.html" class="nav-link">📖 Naturalist</a>
         <a href="birds.html" class="nav-link">🐦 Birds</a>
+        <a href="bats.html" class="nav-link">🦇 Bats</a>
         <a href="fells.html" class="nav-link">🏔️ Fells</a>
         <a href="planes.html" class="nav-link">✈️ Planes</a>
         <a href="river.html" class="nav-link">🌊 Rivers</a>
         <a href="weather.html" class="nav-link">🌤️ Weather</a>
         <a href="wildlife.html" class="nav-link">🦔 Wildlife</a>
         <a href="about.html" class="nav-link">ℹ️ About</a>
+        <a href="data.html" class="nav-link">⚙️ Data</a>
       </div>
       <button class="nav-hamburger" id="navHamburger" aria-label="Menu">
         <span></span><span></span><span></span>
@@ -207,6 +210,17 @@
         <span id="statusText">Connecting...</span>
       </div>
     </header>
+
+    <!-- Health / status strip -->
+    <div style="margin-bottom:24px">
+      <div class="section-header">
+        <div class="section-title">Site Health</div>
+        <div class="section-subtitle">Live feed status</div>
+      </div>
+      <div id="healthStrip" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px">
+        <div style="padding:14px;color:var(--cream-dim);font-style:italic">Waiting for feeds…</div>
+      </div>
+    </div>
 
     <!-- Stats -->
     <div class="stats-row">
@@ -267,6 +281,15 @@
       </div>
     </div>
 
+    <!-- Where visitors come from -->
+    <div style="margin-bottom:8px">
+      <div class="section-header">
+        <div class="section-title">Where Visitors Come From</div>
+        <div class="section-subtitle">How people are finding the site</div>
+      </div>
+      <div class="chart-container" id="referrerBreakdown" style="padding:0"><div style="padding:20px;color:var(--cream-dim);font-style:italic">Loading...</div></div>
+    </div>
+
     <!-- Recent visits -->
     <div class="section-header">
       <div class="section-title">Recent Visits</div>
@@ -290,7 +313,7 @@
     </div>
 
     <footer>
-      <div class="footer-text">Threlkeld, Cumbria · Private Administration · Not linked publicly · Updated 15 Jun 2026 (b)</div>
+      <div class="footer-text">Threlkeld, Cumbria · Private Administration · Not linked publicly · Updated 16 Jun 2026 (d)</div>
       <div class="footer-brand">www.threlkeld.info</div>
     </footer>
   </div>
@@ -299,6 +322,14 @@
     const MQTT_HOST = 'broker.hivemq.com';
     const MQTT_PORT = 8884;
     const ANALYTICS_TOPIC = 'birdnetpi/greg2026/analytics';
+    // Feeds to monitor for the health strip — last-seen freshness per data source.
+    const HEALTH_FEEDS = [
+      { id: 'birds',   label: '🐦 Birds',    topic: 'birdnetpi/greg2026/detections' },
+      { id: 'bats',    label: '🦇 Bats',     topic: 'birdnetpi/greg2026/bats/stats' },
+      { id: 'weather', label: '🌤️ Weather',  topic: 'birdnetpi/greg2026/weather/current' },
+      { id: 'river',   label: '🌊 River',    topic: 'birdnetpi/greg2026/river' }
+    ];
+    const feedLastSeen = {};   // id -> timestamp(ms)
 
     function isToday(ts) { return new Date(ts).toDateString() === new Date().toDateString(); }
     function isThisWeek(ts) { return Date.now() - new Date(ts).getTime() < 7 * 24 * 60 * 60 * 1000; }
@@ -365,6 +396,64 @@
         return url.hostname.replace('www.', '');
       } catch(e) { return ref; }
     }
+
+    // Categorise where a visitor came from — tuned for a village nature site launch.
+    function referrerCategory(ref) {
+      if (!ref) return { cat: 'Direct / typed', detail: 'Direct', hint: 'Typed the address or magazine readers' };
+      let host;
+      try { host = new URL(ref).hostname.replace('www.', '').toLowerCase(); }
+      catch(e) { return { cat: 'Other', detail: ref, hint: '' }; }
+      const has = (s) => host.indexOf(s) !== -1;
+      if (has('google') || has('bing') || has('duckduckgo') || has('yahoo') || has('ecosia'))
+        return { cat: 'Search', detail: host, hint: 'Found via a search engine' };
+      if (has('facebook') || has('fb.com') || has('instagram') || has('t.co') || has('twitter') ||
+          has('x.com') || has('nextdoor') || has('whatsapp') || has('reddit') || has('linkedin'))
+        return { cat: 'Social / shared', detail: host, hint: 'Shared on social or a village group' };
+      if (has('threlkeld.info'))
+        return { cat: 'Internal', detail: host, hint: 'Another page on the site' };
+      return { cat: 'Other site', detail: host, hint: 'Linked from another website' };
+    }
+
+    // Health strip: per-feed freshness (green live / amber stale / red silent).
+    // Thresholds differ by feed cadence: weather/river publish often; bats only at night.
+    function renderHealth() {
+      const now = Date.now();
+      const MIN = 60*1000, HOUR = 60*MIN;
+      // [liveWithin, staleWithin] — beyond staleWithin = silent/red
+      const THRESH = {
+        birds:   [15*MIN, 2*HOUR],
+        bats:    [18*HOUR, 36*HOUR],   // bats are nightly; 'live' if heard within ~18h
+        weather: [30*MIN, 3*HOUR],
+        river:   [60*MIN, 6*HOUR]
+      };
+      function fmtAgo(ms) {
+        if (ms == null) return 'no data yet';
+        const s = Math.round((now - ms)/1000);
+        if (s < 60) return s + 's ago';
+        const m = Math.floor(s/60); if (m < 60) return m + 'm ago';
+        const hr = Math.floor(m/60); if (hr < 24) return hr + 'h ago';
+        return Math.floor(hr/24) + 'd ago';
+      }
+      const el = document.getElementById('healthStrip');
+      if (!el) return;
+      el.innerHTML = HEALTH_FEEDS.map(function(f){
+        const seen = feedLastSeen[f.id];
+        const t = THRESH[f.id] || [15*MIN, 2*HOUR];
+        let color, dot, state;
+        if (seen == null)            { color = 'var(--cream-dim)'; dot = '\u26AA'; state = 'no data yet'; }
+        else if (now - seen <= t[0]) { color = '#7ab87a';          dot = '\uD83D\uDFE2'; state = 'live'; }
+        else if (now - seen <= t[1]) { color = '#d4a04a';          dot = '\uD83D\uDFE1'; state = 'stale'; }
+        else                         { color = '#c86a6a';          dot = '\uD83D\uDD34'; state = 'silent'; }
+        return '<div style="background:var(--forest-mid,#16241a);border:1px solid var(--divider,#24382a);border-radius:10px;padding:14px">'
+          + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">'
+          + '<span style="font-size:14px">'+f.label+'</span><span style="font-size:13px">'+dot+'</span></div>'
+          + '<div style="font-size:13px;font-weight:600;color:'+color+';text-transform:capitalize">'+state+'</div>'
+          + '<div style="font-size:11px;color:var(--cream-dim);margin-top:2px">'+fmtAgo(seen)+'</div>'
+          + '</div>';
+      }).join('');
+    }
+    // Refresh the relative times every 30s even without new messages.
+    setInterval(renderHealth, 30000);
 
     function render(visits) {
       const today = visits.filter(v => isToday(v.timestamp));
@@ -433,6 +522,31 @@
       renderBreakdown('osBreakdown', getOS);
       renderBreakdown('deviceBreakdown', getDeviceType);
 
+      // Where visitors come from — categorised, with examples
+      (function renderReferrers() {
+        const cats = {};
+        visits.forEach(function(v){
+          const r = referrerCategory(v.referrer);
+          if (!cats[r.cat]) cats[r.cat] = { count: 0, hint: r.hint, sources: {} };
+          cats[r.cat].count++;
+          if (r.detail && r.detail !== 'Direct') cats[r.cat].sources[r.detail] = (cats[r.cat].sources[r.detail]||0)+1;
+        });
+        const sorted = Object.entries(cats).sort(function(a,b){ return b[1].count - a[1].count; });
+        const max = sorted[0] ? sorted[0][1].count : 1;
+        const el = document.getElementById('referrerBreakdown');
+        if (!el) return;
+        el.innerHTML = sorted.length ? sorted.map(function(e){
+          const name = e[0], d = e[1];
+          const topSrc = Object.entries(d.sources).sort(function(a,b){return b[1]-a[1];}).slice(0,2).map(function(s){return s[0];}).join(', ');
+          return '<div class="page-bar-row" style="align-items:flex-start">'
+            + '<div class="page-bar-label" style="width:130px">'+name+'</div>'
+            + '<div class="page-bar-track" style="flex:1"><div class="page-bar-fill" style="width:'+(d.count/max*100)+'%"></div>'
+            + (topSrc ? '<div style="font-size:11px;color:var(--cream-dim);margin-top:3px">'+topSrc+'</div>' : '')
+            + '</div>'
+            + '<div class="page-bar-count">'+d.count+'</div></div>';
+        }).join('') : '<div style="padding:20px;color:var(--cream-dim);font-style:italic">No data yet</div>';
+      })();
+
       // Recent visits table
       document.getElementById('recentCount').textContent = `${visits.length} total`;
       const recent = visits.slice(0, 50);
@@ -454,12 +568,25 @@
       document.getElementById('statusDot').className = 'dot connected';
       document.getElementById('statusText').textContent = 'Live';
       client.subscribe(ANALYTICS_TOPIC);
+      // Subscribe to each monitored feed so we can show live freshness.
+      HEALTH_FEEDS.forEach(function(f){ client.subscribe(f.topic); });
     });
     client.on('error', () => {
       document.getElementById('statusDot').className = 'dot';
       document.getElementById('statusText').textContent = 'Offline';
     });
     client.on('message', (topic, message) => {
+      // Health feeds: just record that we heard from them, and when.
+      const feed = HEALTH_FEEDS.find(function(f){ return f.topic === topic; });
+      if (feed) {
+        // For bats, ignore fallback re-sends so a quiet night doesn't look 'live'.
+        let isFallback = false;
+        try { const p = JSON.parse(message.toString()); isFallback = (p && p.isFallback === true); } catch(e) {}
+        if (!(feed.id === 'bats' && isFallback)) { feedLastSeen[feed.id] = Date.now(); }
+        renderHealth();
+        return;
+      }
+      if (topic !== ANALYTICS_TOPIC) return;
       try {
         const visits = JSON.parse(message.toString());
         if (Array.isArray(visits)) render(visits);
