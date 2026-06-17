@@ -222,6 +222,17 @@
       </div>
     </div>
 
+    <!-- Detector hardware (PoE HAT telemetry) -->
+    <div style="margin-bottom:24px">
+      <div class="section-header">
+        <div class="section-title">Detector Hardware</div>
+        <div class="section-subtitle">PoE HAT temperature, fan &amp; IP</div>
+      </div>
+      <div id="deviceStrip" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px">
+        <div style="padding:14px;color:var(--cream-dim);font-style:italic">Waiting for devices…</div>
+      </div>
+    </div>
+
     <!-- Stats -->
     <div class="stats-row">
       <div class="stat-box"><div class="stat-value" id="statToday">—</div><div class="stat-label">Today</div></div>
@@ -313,7 +324,7 @@
     </div>
 
     <footer>
-      <div class="footer-text">Threlkeld, Cumbria · Private Administration · Not linked publicly · Updated 16 Jun 2026 (f)</div>
+      <div class="footer-text">Threlkeld, Cumbria · Private Administration · Not linked publicly · Updated 17 Jun 2026 (a)</div>
       <div class="footer-brand">www.threlkeld.info</div>
     </footer>
   </div>
@@ -331,6 +342,15 @@
       { id: 'backup',  label: '💾 Flows backup', topic: 'threlkeld/backup/flows' }
     ];
     const feedLastSeen = {};   // id -> timestamp(ms)
+
+    // Detector hardware telemetry — each Pi's PoE HAT publishes {temperature, fan, ip}
+    // every ~30s to its own system topic (retained). Bat Pi is the one to watch:
+    // it runs on a Waveshare PoE HAT (B), 802.3af / 12.5W, no spare USB headroom.
+    const DEVICES = [
+      { id: 'batdetector', label: '🦇 Bat detector', topic: 'birdnetpi/greg2026/batdetector/system' },
+      { id: 'birdnetpi',   label: '🐦 Bird detector', topic: 'birdnetpi/greg2026/birdnetpi/system' }
+    ];
+    const deviceState = {};   // id -> { temperature, fan, ip, ts }
 
     function isToday(ts) { return new Date(ts).toDateString() === new Date().toDateString(); }
     function isThisWeek(ts) { return Date.now() - new Date(ts).getTime() < 7 * 24 * 60 * 60 * 1000; }
@@ -457,6 +477,55 @@
     // Refresh the relative times every 30s even without new messages.
     setInterval(renderHealth, 30000);
 
+    function renderDevices() {
+      const el = document.getElementById('deviceStrip');
+      if (!el) return;
+      const now = Date.now();
+      function fmtAgo(ms) {
+        if (ms == null) return 'no data yet';
+        const s = Math.round((now - ms)/1000);
+        if (s < 60) return s + 's ago';
+        const m = Math.floor(s/60); if (m < 60) return m + 'm ago';
+        const hr = Math.floor(m/60); if (hr < 24) return hr + 'h ago';
+        return Math.floor(hr/24) + 'd ago';
+      }
+      // Temperature colour: green < 60, amber 60-70, red > 70 (Pi 4 throttles ~80-85)
+      function tempColor(t) {
+        if (t == null) return 'var(--cream-dim)';
+        if (t < 60) return '#7ab87a';
+        if (t < 70) return '#d4a04a';
+        return '#c86a6a';
+      }
+      // A device is 'live' if heard from in the last 2 min (publishes every ~30s)
+      function staleColor(ts) {
+        if (ts == null) return 'var(--cream-dim)';
+        return (now - ts <= 2*60*1000) ? '#7ab87a' : '#c86a6a';
+      }
+      el.innerHTML = DEVICES.map(function(d){
+        const s = deviceState[d.id];
+        const temp = s ? s.temperature : null;
+        const fan = s ? s.fan : null;
+        const ip = s ? s.ip : null;
+        const ts = s ? s.ts : null;
+        const tStr = (temp == null) ? '—' : (Math.round(temp*10)/10) + '°C';
+        const fanStr = (fan == null) ? '—' : (String(fan).toLowerCase() === 'on' || fan === true ? 'on' : 'off');
+        const ipStr = ip || '—';
+        return '<div style="background:var(--forest-mid,#16241a);border:1px solid var(--divider,#24382a);border-radius:10px;padding:14px">'
+          + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">'
+          + '<span style="font-size:14px">'+d.label+'</span>'
+          + '<span style="font-size:11px;color:'+staleColor(ts)+'">'+fmtAgo(ts)+'</span></div>'
+          + '<div style="display:flex;gap:16px;align-items:baseline">'
+          + '<div><div style="font-size:22px;font-weight:600;color:'+tempColor(temp)+'">'+tStr+'</div>'
+          + '<div style="font-size:10px;color:var(--cream-dim);text-transform:uppercase;letter-spacing:0.08em">Temp</div></div>'
+          + '<div><div style="font-size:22px;font-weight:600;color:var(--cream)">'+fanStr+'</div>'
+          + '<div style="font-size:10px;color:var(--cream-dim);text-transform:uppercase;letter-spacing:0.08em">Fan</div></div>'
+          + '</div>'
+          + '<div style="font-size:11px;color:var(--cream-dim);margin-top:10px;font-family:monospace">'+ipStr+'</div>'
+          + '</div>';
+      }).join('');
+    }
+    setInterval(renderDevices, 30000);
+
     function render(visits) {
       const today = visits.filter(v => isToday(v.timestamp));
       const week = visits.filter(v => isThisWeek(v.timestamp));
@@ -572,6 +641,8 @@
       client.subscribe(ANALYTICS_TOPIC);
       // Subscribe to each monitored feed so we can show live freshness.
       HEALTH_FEEDS.forEach(function(f){ client.subscribe(f.topic); });
+      // Subscribe to each detector's PoE HAT system telemetry.
+      DEVICES.forEach(function(d){ client.subscribe(d.topic); });
     });
     client.on('error', () => {
       document.getElementById('statusDot').className = 'dot';
@@ -591,6 +662,21 @@
         if (feed.id === 'backup') { feedLastSeen[feed.id] = beatTs || Date.now(); }
         else if (!(feed.id === 'bats' && isFallback)) { feedLastSeen[feed.id] = Date.now(); }
         renderHealth();
+        return;
+      }
+      // Detector hardware telemetry: parse {temperature, fan, ip} and update its card.
+      const dev = DEVICES.find(function(d){ return d.topic === topic; });
+      if (dev) {
+        try {
+          const p = JSON.parse(message.toString());
+          deviceState[dev.id] = {
+            temperature: (p.temperature != null ? Number(p.temperature) : (p.temp != null ? Number(p.temp) : null)),
+            fan: p.fan,
+            ip: p.ip,
+            ts: Date.now()
+          };
+          renderDevices();
+        } catch(e) {}
         return;
       }
       if (topic !== ANALYTICS_TOPIC) return;
