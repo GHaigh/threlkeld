@@ -510,6 +510,17 @@
         const tStr = (temp == null) ? '—' : (Math.round(temp*10)/10) + '°C';
         const fanStr = (fan == null) ? '—' : (String(fan).toLowerCase() === 'on' || fan === true ? 'on' : 'off');
         const ipStr = ip || '—';
+        const volts = s ? s.volts : null;
+        const vStr = (volts == null) ? null : (Math.round(volts*100)/100) + 'V';
+        // Under-voltage flag: prefer "since boot" (catches a past dip), fall back to "now".
+        const uvBoot = s ? s.uvBoot : null;
+        const uvNow = s ? s.uvNow : null;
+        let uvHtml = '';
+        if (s && (uvBoot != null || uvNow != null)) {
+          if (uvNow === true)       uvHtml = '<span style="color:#c86a6a">\u26A0 under-voltage now</span>';
+          else if (uvBoot === true) uvHtml = '<span style="color:#c86a6a">\u26A0 under-voltage seen since boot</span>';
+          else                      uvHtml = '<span style="color:#7ab87a">\u2713 power OK</span>';
+        }
         return '<div style="background:var(--forest-mid,#16241a);border:1px solid var(--divider,#24382a);border-radius:10px;padding:14px">'
           + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">'
           + '<span style="font-size:14px">'+d.label+'</span>'
@@ -519,8 +530,11 @@
           + '<div style="font-size:10px;color:var(--cream-dim);text-transform:uppercase;letter-spacing:0.08em">Temp</div></div>'
           + '<div><div style="font-size:22px;font-weight:600;color:var(--cream)">'+fanStr+'</div>'
           + '<div style="font-size:10px;color:var(--cream-dim);text-transform:uppercase;letter-spacing:0.08em">Fan</div></div>'
+          + (vStr ? '<div><div style="font-size:22px;font-weight:600;color:var(--cream)">'+vStr+'</div>'
+              + '<div style="font-size:10px;color:var(--cream-dim);text-transform:uppercase;letter-spacing:0.08em">Core V</div></div>' : '')
           + '</div>'
-          + '<div style="font-size:11px;color:var(--cream-dim);margin-top:10px;font-family:monospace">'+ipStr+'</div>'
+          + (uvHtml ? '<div style="font-size:11px;margin-top:10px">'+uvHtml+'</div>' : '')
+          + '<div style="font-size:11px;color:var(--cream-dim);margin-top:6px;font-family:monospace">'+ipStr+'</div>'
           + '</div>';
       }).join('');
     }
@@ -673,6 +687,10 @@
             temperature: (p.temperature != null ? Number(p.temperature) : (p.temp != null ? Number(p.temp) : null)),
             fan: p.fan,
             ip: p.ip,
+            volts: (p.volts != null ? Number(p.volts) : null),
+            throttled: p.throttled != null ? p.throttled : null,
+            uvNow: p.under_voltage_now,
+            uvBoot: p.under_voltage_since_boot,
             ts: Date.now()
           };
           renderDevices();
