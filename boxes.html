@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Nature Boxes · Threlkeld</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Source+Sans+3:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --forest-deep: #0d1a0d;
+      --forest-dark: #1a2e1a;
+      --forest-mid: #243022;
+      --forest-light: #3b6d11;
+      --sage: #7ab87a;
+      --sage-light: #a8d4a8;
+      --cream: #e8f0e4;
+      --cream-dim: #b8c8b4;
+      --divider: rgba(122, 184, 122, 0.15);
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: var(--forest-deep); color: var(--cream); font-family: 'Source Sans 3', sans-serif; font-weight: 300; min-height: 100vh; }
+    body::before { content: ''; position: fixed; inset: 0; background-image: radial-gradient(ellipse at 20% 30%, rgba(122,184,122,0.08) 0%, transparent 60%), radial-gradient(ellipse at 80% 70%, rgba(59,109,17,0.06) 0%, transparent 50%); pointer-events: none; z-index: 0; }
+    .page { max-width: 1100px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
+
+    nav { display: flex; align-items: center; gap: 24px; padding: 16px 0; border-bottom: 1px solid var(--divider); margin-bottom: 40px; }
+    .nav-home { font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--sage); text-decoration: none; }
+
+    /* Hero */
+    .hero { text-align: center; padding: 60px 0 48px; border-bottom: 1px solid var(--divider); margin-bottom: 60px; }
+    .hero-eyebrow { font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--sage); margin-bottom: 16px; }
+    .hero-title { font-family: 'Playfair Display', serif; font-size: clamp(32px, 5vw, 56px); font-weight: 400; color: var(--cream); line-height: 1.1; margin-bottom: 20px; }
+    .hero-title em { font-style: italic; color: var(--sage-light); }
+    .hero-sub { font-size: 16px; color: var(--cream-dim); line-height: 1.8; max-width: 580px; margin: 0 auto 28px; }
+    .hero-badges { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+    .hero-badge { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; padding: 6px 14px; border-radius: 20px; border: 1px solid var(--divider); color: var(--cream-dim); }
+
+    /* How it works */
+    .how-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-bottom: 60px; }
+    @media (max-width: 600px) { .how-grid { grid-template-columns: 1fr; } }
+    .how-card { text-align: center; padding: 28px 20px; }
+    .how-icon { font-size: 36px; margin-bottom: 14px; }
+    .how-title { font-size: 14px; color: var(--cream); margin-bottom: 8px; font-weight: 400; }
+    .how-desc { font-size: 13px; color: var(--cream-dim); line-height: 1.7; }
+
+    /* Products */
+    .products { display: grid; grid-template-columns: repeat(2, 1fr); gap: 28px; margin-bottom: 60px; }
+    @media (max-width: 700px) { .products { grid-template-columns: 1fr; } }
+
+    .product-card {
+      background: var(--forest-dark);
+      border: 1px solid var(--divider);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+
+    .product-hero {
+      background: var(--forest-mid);
+      padding: 40px 28px;
+      text-align: center;
+      border-bottom: 1px solid var(--divider);
+    }
+    .product-emoji { font-size: 64px; margin-bottom: 12px; }
+    .product-name { font-family: 'Playfair Display', serif; font-size: 24px; color: var(--cream); margin-bottom: 4px; }
+    .product-tagline { font-size: 13px; color: var(--cream-dim); }
+
+    .product-body { padding: 24px; }
+    .product-price { font-family: 'Playfair Display', serif; font-size: 32px; color: var(--cream); margin-bottom: 4px; }
+    .product-price-note { font-size: 11px; color: var(--cream-dim); margin-bottom: 20px; }
+
+    .product-features { list-style: none; margin-bottom: 24px; }
+    .product-features li { font-size: 13px; color: var(--cream-dim); padding: 6px 0; border-bottom: 1px solid var(--divider); display: flex; align-items: flex-start; gap: 8px; line-height: 1.5; }
+    .product-features li:last-child { border-bottom: none; }
+    .product-features li::before { content: '✓'; color: var(--sage); flex-shrink: 0; margin-top: 1px; }
+
+    .product-btn {
+      display: block; width: 100%; padding: 14px;
+      background: var(--sage); color: var(--forest-deep);
+      font-size: 12px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase;
+      text-align: center; text-decoration: none; border-radius: 8px;
+      font-family: 'Source Sans 3', sans-serif; cursor: pointer; border: none;
+      transition: background 0.2s;
+    }
+    .product-btn:hover { background: var(--sage-light); }
+    .product-btn.secondary { background: transparent; color: var(--sage); border: 1px solid var(--sage); margin-top: 10px; }
+    .product-btn.secondary:hover { background: rgba(122,184,122,0.1); }
+
+    /* Setup steps */
+    .setup-steps { counter-reset: step; margin-bottom: 60px; }
+    .setup-step { display: grid; grid-template-columns: 48px 1fr; gap: 20px; padding: 20px 0; border-bottom: 1px solid var(--divider); align-items: start; }
+    .setup-step:last-child { border-bottom: none; }
+    .step-num { width: 48px; height: 48px; background: var(--forest-dark); border: 1px solid var(--divider); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: 'Playfair Display', serif; font-size: 18px; color: var(--sage); flex-shrink: 0; }
+    .step-title { font-size: 15px; color: var(--cream); margin-bottom: 4px; font-weight: 400; }
+    .step-desc { font-size: 13px; color: var(--cream-dim); line-height: 1.7; }
+
+    /* Demo feeds */
+    .demo-section { margin-bottom: 60px; }
+    .demo-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+    @media (max-width: 600px) { .demo-grid { grid-template-columns: 1fr; } }
+    .demo-card { background: var(--forest-dark); border: 1px solid var(--divider); border-radius: 10px; padding: 20px; text-align: center; }
+    .demo-icon { font-size: 32px; margin-bottom: 10px; }
+    .demo-name { font-size: 14px; color: var(--cream); margin-bottom: 4px; }
+    .demo-sub { font-size: 12px; color: var(--cream-dim); margin-bottom: 12px; }
+    .demo-badge { font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; padding: 3px 10px; border-radius: 10px; background: rgba(122,184,122,0.15); color: var(--sage); border: 1px solid rgba(122,184,122,0.3); }
+
+    /* FAQ */
+    .faq { margin-bottom: 60px; }
+    .faq-item { border-bottom: 1px solid var(--divider); padding: 20px 0; }
+    .faq-q { font-size: 15px; color: var(--cream); margin-bottom: 8px; font-weight: 400; }
+    .faq-a { font-size: 13px; color: var(--cream-dim); line-height: 1.7; }
+
+    /* Interest form */
+    .interest-box { background: var(--forest-dark); border: 1px solid var(--divider); border-radius: 12px; padding: 32px; text-align: center; margin-bottom: 40px; }
+    .interest-title { font-family: 'Playfair Display', serif; font-size: 24px; color: var(--cream); margin-bottom: 8px; }
+    .interest-sub { font-size: 14px; color: var(--cream-dim); margin-bottom: 24px; line-height: 1.7; }
+    .interest-form { display: flex; gap: 12px; max-width: 460px; margin: 0 auto; flex-wrap: wrap; justify-content: center; }
+    .interest-input { flex: 1; min-width: 200px; background: var(--forest-mid); border: 1px solid var(--divider); border-radius: 8px; padding: 12px 16px; color: var(--cream); font-family: 'Source Sans 3', sans-serif; font-size: 13px; outline: none; }
+    .interest-input:focus { border-color: var(--sage); }
+    .interest-input::placeholder { color: var(--cream-dim); }
+    .interest-btn { background: var(--sage); color: var(--forest-deep); border: none; border-radius: 8px; padding: 12px 24px; font-size: 12px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer; font-family: 'Source Sans 3', sans-serif; white-space: nowrap; }
+    .interest-btn:hover { background: var(--sage-light); }
+    .interest-note { font-size: 11px; color: var(--cream-dim); margin-top: 12px; }
+
+    footer { border-top: 1px solid var(--divider); padding: 20px 0 32px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+    .footer-text { font-size: 11px; color: var(--cream-dim); }
+    .footer-brand { font-size: 11px; color: var(--sage); }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <nav>
+      <a href="index.html" class="nav-home">← Threlkeld Nature Watch</a>
+    </nav>
+
+    <!-- Hero -->
+    <div class="hero">
+      <div class="hero-eyebrow">Handmade in Cumbria · Smart Nature Monitoring</div>
+      <h1 class="hero-title">Watch what lives<br>in your <em>garden</em></h1>
+      <p class="hero-sub">Handcrafted nest boxes and bat boxes with built-in cameras and WiFi. See what's inside — live, from your phone — without disturbing a thing.</p>
+      <div class="hero-badges">
+        <span class="hero-badge">🪵 Handmade in Threlkeld</span>
+        <span class="hero-badge">📶 WiFi self-setup</span>
+        <span class="hero-badge">🌙 Night vision</span>
+        <span class="hero-badge">🔋 Solar powered</span>
+        <span class="hero-badge">🐦 No subscription</span>
+      </div>
+    </div>
+
+    <!-- How it works -->
+    <div style="text-align:center;margin-bottom:32px">
+      <div style="font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:var(--sage)">How it works</div>
+    </div>
+    <div class="how-grid">
+      <div class="how-card">
+        <div class="how-icon">🪵</div>
+        <div class="how-title">Mount the box</div>
+        <div class="how-desc">Fix to a tree, wall or post in your garden. No tools beyond a drill and screw. Each box comes with a stainless mounting bracket.</div>
+      </div>
+      <div class="how-card">
+        <div class="how-icon">📶</div>
+        <div class="how-title">Connect to WiFi</div>
+        <div class="how-desc">The box creates its own hotspot on first boot. Connect your phone, enter your WiFi password, done. Takes under 2 minutes.</div>
+      </div>
+      <div class="how-card">
+        <div class="how-icon">📱</div>
+        <div class="how-title">Watch live</div>
+        <div class="how-desc">Open your browser to see the live camera feed, get motion alerts, and watch occupancy build through the season.</div>
+      </div>
+    </div>
+
+    <!-- Products -->
+    <div style="text-align:center;margin-bottom:32px">
+      <div style="font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:var(--sage)">The boxes</div>
+    </div>
+    <div class="products">
+
+      <!-- Bird Box -->
+      <div class="product-card">
+        <div class="product-hero">
+          <div class="product-emoji">🐦</div>
+          <div class="product-name">Smart Bird Box</div>
+          <div class="product-tagline">Blue Tit · Great Tit · Robin</div>
+        </div>
+        <div class="product-body">
+          <div class="product-price">£79</div>
+          <div class="product-price-note">One-off · No subscription · Free local delivery in Cumbria</div>
+          <ul class="product-features">
+            <li>Handmade from FSC-certified untreated oak</li>
+            <li>ESP32-CAM wide-angle camera, 2MP</li>
+            <li>850nm IR night vision — see eggs and chicks in the dark</li>
+            <li>Solar powered — no wires, no plugs, no batteries to change</li>
+            <li>WiFi self-setup via hotspot — no app needed</li>
+            <li>Live view in any browser on your home network</li>
+            <li>Motion alerts when a bird enters</li>
+            <li>28mm hole (Blue Tit) or 32mm (Great Tit) — specify on order</li>
+            <li>Weatherproof to IP65</li>
+          </ul>
+          <a href="mailto:greg@threlkeld.info?subject=Bird Box Order" class="product-btn">Order a Bird Box</a>
+          <a href="#interest" class="product-btn secondary">Register Interest</a>
+        </div>
+      </div>
+
+      <!-- Bat Box -->
+      <div class="product-card">
+        <div class="product-hero">
+          <div class="product-emoji">🦇</div>
+          <div class="product-name">Smart Bat Box</div>
+          <div class="product-tagline">Pipistrelle · Daubenton's · Noctule</div>
+        </div>
+        <div class="product-body">
+          <div class="product-price">£139</div>
+          <div class="product-price-note">One-off · No subscription · Free local delivery in Cumbria</div>
+          <ul class="product-features">
+            <li>Handmade from rough-sawn untreated larch — bats need grip</li>
+            <li>Raspberry Pi Camera Module 3 NoIR — 12MP autofocus</li>
+            <li>940nm IR LEDs — completely invisible to bats, zero disturbance</li>
+            <li>Mains USB powered — bats return nightly, no solar needed</li>
+            <li>WiFi self-setup via hotspot — no app needed</li>
+            <li>Live view in any browser on your home network</li>
+            <li>Narrow crevice design — 20mm gap, correct for UK pipistrelles</li>
+            <li>Rough interior landing board for grip</li>
+            <li>Weatherproof to IP65</li>
+          </ul>
+          <a href="mailto:greg@threlkeld.info?subject=Bat Box Order" class="product-btn">Order a Bat Box</a>
+          <a href="#interest" class="product-btn secondary">Register Interest</a>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Setup steps -->
+    <div style="text-align:center;margin-bottom:32px">
+      <div style="font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:var(--sage)">Getting started</div>
+      <div style="font-family:'Playfair Display',serif;font-size:28px;color:var(--cream);margin-top:8px">Up and running in <em>10 minutes</em></div>
+    </div>
+    <div class="setup-steps">
+      <div class="setup-step">
+        <div class="step-num">1</div>
+        <div><div class="step-title">Mount the box</div><div class="step-desc">Find a suitable spot — 2m+ high for bird boxes, 3m+ for bat boxes, ideally facing south or south-west away from direct afternoon sun. Fix the included stainless bracket to a tree, wall or post.</div></div>
+      </div>
+      <div class="setup-step">
+        <div class="step-num">2</div>
+        <div><div class="step-title">Power it up</div><div class="step-desc">Bird box: the solar panel charges automatically, nothing to do. Bat box: plug the included 2m USB cable into any outdoor or indoor USB socket.</div></div>
+      </div>
+      <div class="setup-step">
+        <div class="step-num">3</div>
+        <div><div class="step-title">Connect to the box hotspot</div><div class="step-desc">On your phone, go to WiFi settings and connect to "ThrelkeldBirdBox" or "ThrelkeldBatBox". A setup page opens automatically — just like connecting to hotel WiFi.</div></div>
+      </div>
+      <div class="setup-step">
+        <div class="step-num">4</div>
+        <div><div class="step-title">Enter your WiFi details</div><div class="step-desc">Type your home WiFi name and password into the setup page. The box reboots, connects to your network, and you're done. Your credentials never leave your home network.</div></div>
+      </div>
+      <div class="setup-step">
+        <div class="step-num">5</div>
+        <div><div class="step-title">Open the live view</div><div class="step-desc">Visit <strong>nestbox.local</strong> in any browser on your home network. The live camera feed loads instantly. Bookmark it on your phone for one-tap access.</div></div>
+      </div>
+    </div>
+
+    <!-- Demo feeds -->
+    <div class="demo-section">
+      <div style="text-align:center;margin-bottom:32px">
+        <div style="font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:var(--sage)">Live demos</div>
+        <div style="font-family:'Playfair Display',serif;font-size:28px;color:var(--cream);margin-top:8px">Our own boxes, <em>live</em></div>
+        <div style="font-size:13px;color:var(--cream-dim);margin-top:8px">These are the actual boxes in Greg's garden in Threlkeld — what you see is what you get</div>
+      </div>
+      <div class="demo-grid">
+        <div class="demo-card">
+          <div class="demo-icon">🐦</div>
+          <div class="demo-name">Garden Bird Box</div>
+          <div class="demo-sub">Threlkeld, Cumbria · South-facing oak</div>
+          <span class="demo-badge">Coming Spring 2026</span>
+        </div>
+        <div class="demo-card">
+          <div class="demo-icon">🦇</div>
+          <div class="demo-name">Garden Bat Box</div>
+          <div class="demo-sub">Threlkeld, Cumbria · Stream-side larch</div>
+          <span class="demo-badge">Coming Summer 2026</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- FAQ -->
+    <div style="text-align:center;margin-bottom:32px">
+      <div style="font-family:'Playfair Display',serif;font-size:28px;color:var(--cream)">Questions</div>
+    </div>
+    <div class="faq">
+      <div class="faq-item">
+        <div class="faq-q">Does it need an internet connection?</div>
+        <div class="faq-a">No — the camera feed works entirely on your home WiFi network. You don't need an internet connection to view it. You do need WiFi to set it up initially.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">Can I view it when I'm away from home?</div>
+        <div class="faq-a">Not by default — it's a local network device for simplicity and privacy. If you have a VPN into your home network you can access it remotely. We're working on an optional cloud relay feature.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">What happens in winter when there are no birds?</div>
+        <div class="faq-a">The box just ticks over quietly. Bird boxes are often used as winter roosts too. Bat boxes are occupied from April to October. The camera is always live if you want to check.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">Will it disturb the animals?</div>
+        <div class="faq-a">The IR LEDs are the key — the bird box uses 850nm which is effectively invisible to birds. The bat box uses 940nm which is completely invisible to bats. Neither produces any heat or audible noise.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">Do you deliver outside Cumbria?</div>
+        <div class="faq-a">Yes — free delivery in Cumbria, £8 standard post to mainland UK. Each box is packed carefully and shipped fully assembled and tested.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">Can I get a custom hole size or species variant?</div>
+        <div class="faq-a">Yes — just mention it when you order. We can make Robin open-fronted boxes, Treecreeper crevice boxes, or Tawny Owl boxes. Drop us an email to discuss.</div>
+      </div>
+    </div>
+
+    <!-- Interest form -->
+    <div class="interest-box" id="interest">
+      <div class="interest-title">Register your interest</div>
+      <div class="interest-sub">We're building our first batch now. Leave your email and we'll let you know when they're ready to order — no spam, just one email when the boxes are live.</div>
+      <form class="interest-form" action="https://formspree.io/f/threlkeld-boxes" method="POST">
+        <input class="interest-input" type="email" name="email" placeholder="your@email.com" required>
+        <input class="interest-input" type="text" name="interest" placeholder="Bird box, bat box, or both?" style="flex:1.5">
+        <button class="interest-btn" type="submit">Notify me</button>
+      </form>
+      <div class="interest-note">No spam. One email when we're ready. Unsubscribe any time.</div>
+    </div>
+
+    <footer>
+      <div class="footer-text">Handmade in Threlkeld, Cumbria · Smart Nature Boxes</div>
+      <div class="footer-brand">threlkeld.info</div>
+    </footer>
+  </div>
+</body>
+</html>
