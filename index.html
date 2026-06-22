@@ -1,0 +1,1135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <meta name="theme-color" content="#0d1a0d">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Threlkeld">
+    <meta property="og:type" content="website">
+  <meta property="og:title" content="Threlkeld Nature Watch">
+  <meta property="og:description" content="Live nature monitoring from Threlkeld, Cumbria — birds, weather, planes, rivers, fells and wildlife.">
+  <meta property="og:url" content="https://threlkeld.info">
+  <meta property="og:image" content="https://threlkeld.info/favicon.svg">
+  <meta property="og:site_name" content="Threlkeld Nature Watch">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Threlkeld Nature Watch">
+  <meta name="twitter:description" content="Live nature monitoring from Threlkeld, Cumbria — birds, weather, planes, rivers, fells and wildlife.">
+  <meta name="description" content="Live nature monitoring from Threlkeld, Cumbria — birds, weather, planes, rivers, fells and wildlife.">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Threlkeld Nature Watch</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Source+Sans+3:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --forest-deep: #0d1a0d;
+      --forest-dark: #1a2e1a;
+      --forest-mid: #243022;
+      --forest-light: #3b6d11;
+      --sage: #7ab87a;
+      --sage-light: #a8d4a8;
+      --cream: #e8f0e4;
+      --cream-dim: #b8c8b4;
+      --divider: rgba(122, 184, 122, 0.15);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--forest-deep);
+      color: var(--cream);
+      font-family: 'Source Sans 3', sans-serif;
+      font-weight: 300;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: 
+        radial-gradient(ellipse at 20% 50%, rgba(59, 109, 17, 0.08) 0%, transparent 60%),
+        radial-gradient(ellipse at 80% 20%, rgba(122, 184, 122, 0.05) 0%, transparent 50%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .page {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 0 24px;
+      position: relative;
+      z-index: 1;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      padding: 80px 0 60px;
+      border-bottom: 1px solid var(--divider);
+      margin-bottom: 60px;
+    }
+
+    .header-eyebrow {
+      font-size: 10px;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--sage);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .header-eyebrow::before {
+      content: '';
+      display: inline-block;
+      width: 24px;
+      height: 1px;
+      background: var(--sage);
+    }
+
+    h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(36px, 6vw, 64px);
+      font-weight: 400;
+      line-height: 1.1;
+      color: var(--cream);
+      margin-bottom: 8px;
+    }
+
+    h1 em {
+      font-style: italic;
+      color: var(--sage-light);
+    }
+
+    .header-subtitle {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(18px, 3vw, 28px);
+      font-weight: 400;
+      color: var(--cream-dim);
+      margin-bottom: 32px;
+      font-style: italic;
+    }
+
+    .header-description {
+      font-size: 16px;
+      color: var(--cream-dim);
+      max-width: 600px;
+      line-height: 1.8;
+    }
+
+    .header-description strong {
+      color: var(--cream);
+      font-weight: 500;
+    }
+
+    .naturalist-card {
+      background: var(--forest-dark);
+      border: 1px solid var(--divider, rgba(122,184,122,0.15));
+      border-left: 3px solid var(--sage);
+      border-radius: 10px;
+      padding: 22px 26px;
+      margin: 0 0 32px;
+    }
+    .naturalist-head { display: flex; align-items: center; margin-bottom: 12px; }
+    .naturalist-title { font-family: 'Playfair Display', Georgia, serif; font-size: 17px; color: var(--cream); letter-spacing: 0.01em; }
+    .naturalist-date { font-size: 12px; color: var(--cream-dim); font-weight: 300; font-family: 'Source Sans 3', sans-serif; margin-left: 8px; }
+    .naturalist-body { font-size: 15px; line-height: 1.7; color: var(--cream); font-weight: 300; }
+    .naturalist-link { display: inline-flex; align-items: center; gap: 6px; margin-top: 16px; font-size: 13px; font-weight: 500; letter-spacing: 0.04em; color: var(--sage); text-decoration: none; transition: gap 0.15s, color 0.15s; }
+    .naturalist-link:hover { color: var(--sage-light, #9fd49f); gap: 10px; }
+    @media(max-width:600px) { .naturalist-card { padding: 18px 18px; } .naturalist-date { display: none; } }
+
+    .projects-label {
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--sage);
+      margin-top: 8px;
+      margin-bottom: 16px;
+    }
+
+    .projects-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 60px;
+    }
+
+    @media (max-width: 600px) {
+      .projects-grid { grid-template-columns: 1fr; }
+    }
+
+    .project-card {
+      background: var(--forest-dark);
+      border: 1px solid var(--divider);
+      border-radius: 12px;
+      padding: 32px;
+      text-decoration: none;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      transition: background 0.2s, border-color 0.2s, transform 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .project-card::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: var(--sage);
+      transform: scaleX(0);
+      transition: transform 0.3s ease;
+    }
+
+    .project-card:hover {
+      background: var(--forest-mid);
+      border-color: rgba(122, 184, 122, 0.3);
+      transform: translateY(-2px);
+    }
+
+    .project-card:hover::after { transform: scaleX(1); }
+
+    .project-icon { font-size: 36px; line-height: 1; }
+
+    .project-tag {
+      font-size: 9px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--sage);
+    }
+
+    .project-name {
+      font-family: 'Playfair Display', serif;
+      font-size: 24px;
+      font-weight: 400;
+      color: var(--cream);
+      line-height: 1.2;
+    }
+
+    .project-desc {
+      font-size: 14px;
+      color: var(--cream-dim);
+      line-height: 1.6;
+      flex: 1;
+    }
+
+    .project-link {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--forest-deep);
+      background: var(--sage);
+      letter-spacing: 0.08em;
+      margin-top: 12px;
+      padding: 10px 16px;
+      border-radius: 6px;
+      transition: background 0.2s, transform 0.1s;
+    }
+
+    .project-link::after {
+      content: '→';
+      transition: transform 0.2s;
+    }
+
+    .project-card:hover .project-link {
+      background: var(--sage-light);
+    }
+
+    .project-card:hover .project-link::after { transform: translateX(4px); }
+
+    .beta-badge {
+      position: absolute;
+      top: 48px;
+      right: 16px;
+      background: rgba(155,114,207,0.2);
+      border: 1px solid rgba(155,114,207,0.4);
+      color: #9b72cf;
+      font-size: 9px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 3px 8px;
+      border-radius: 20px;
+    }
+
+    .live-badge {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 9px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--sage);
+      background: rgba(122, 184, 122, 0.1);
+      border: 1px solid rgba(122, 184, 122, 0.25);
+      border-radius: 20px;
+      padding: 4px 8px;
+    }
+
+    .live-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--sage);
+      animation: livePulse 1.5s ease-in-out infinite;
+    }
+
+    @keyframes livePulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(122, 184, 122, 0.8); opacity: 1; }
+      50% { box-shadow: 0 0 0 4px rgba(122, 184, 122, 0); opacity: 0.6; }
+    }
+
+    /* Suggestions form */
+    .suggestions-box {
+      background: var(--forest-dark);
+      border: 1px solid var(--divider);
+      border-radius: 12px;
+      padding: 32px;
+      margin-bottom: 60px;
+    }
+
+    .suggestions-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 24px;
+      font-weight: 400;
+      color: var(--cream);
+      margin-bottom: 8px;
+    }
+
+    .suggestions-text {
+      font-size: 14px;
+      color: var(--cream-dim);
+      line-height: 1.7;
+      margin-bottom: 24px;
+      max-width: 560px;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    @media (max-width: 600px) {
+      .form-grid { grid-template-columns: 1fr; }
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .form-group.full { grid-column: 1 / -1; }
+
+    label {
+      font-size: 10px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--sage);
+    }
+
+    input, textarea {
+      background: var(--forest-mid);
+      border: 1px solid var(--divider);
+      border-radius: 6px;
+      padding: 10px 14px;
+      color: var(--cream);
+      font-family: 'Source Sans 3', sans-serif;
+      font-size: 14px;
+      font-weight: 300;
+      outline: none;
+      transition: border-color 0.2s;
+      width: 100%;
+    }
+
+    input::placeholder, textarea::placeholder { color: var(--cream-dim); opacity: 0.5; }
+
+    input:focus, textarea:focus {
+      border-color: rgba(122, 184, 122, 0.4);
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 120px;
+    }
+
+    .submit-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--forest-light);
+      color: var(--cream);
+      border: none;
+      border-radius: 6px;
+      padding: 12px 24px;
+      font-family: 'Source Sans 3', sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+      margin-top: 8px;
+    }
+
+    .submit-btn:hover {
+      background: var(--sage);
+      color: var(--forest-deep);
+      transform: translateY(-1px);
+    }
+
+    .submit-btn:active { transform: translateY(0); }
+
+    .form-success {
+      display: none;
+      background: var(--forest-mid);
+      border: 1px solid rgba(122, 184, 122, 0.3);
+      border-radius: 8px;
+      padding: 20px 24px;
+      margin-top: 16px;
+      color: var(--sage-light);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .form-success.visible { display: block; }
+
+    .footer-hills {
+      width: 100vw;
+      position: relative;
+      left: 50%;
+      margin-left: -50vw;
+      display: block;
+      margin-top: 40px;
+      line-height: 0;
+    }
+
+    .footer-hills svg { width: 100%; height: auto; display: block; }
+
+    footer {
+      padding: 20px 0 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .footer-text { font-size: 11px; color: var(--cream-dim); }
+    .footer-location { font-size: 11px; color: var(--sage); letter-spacing: 0.1em; }
+
+    /* ── Hero ── */
+    .hero {
+      position: relative;
+      width: 100vw;
+      left: 50%;
+      right: 50%;
+      margin-left: -50vw;
+      margin-right: -50vw;
+      height: 480px;
+      overflow: hidden;
+      margin-bottom: 32px;
+    }
+
+    .hero-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center 40%;
+      display: block;
+      filter: brightness(0.7);
+    }
+
+    .hero-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        to bottom,
+        rgba(13, 26, 13, 0.2) 0%,
+        rgba(13, 26, 13, 0.3) 40%,
+        rgba(13, 26, 13, 0.85) 100%
+      );
+    }
+
+    .hero-content {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 40px 40px 48px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .hero-eyebrow {
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--sage);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .hero-eyebrow::before {
+      content: '';
+      display: inline-block;
+      width: 20px;
+      height: 1px;
+      background: var(--sage);
+    }
+
+    .hero h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(36px, 6vw, 64px);
+      font-weight: 400;
+      color: var(--cream);
+      line-height: 1.1;
+      margin-bottom: 12px;
+    }
+
+    .hero h1 em {
+      font-style: italic;
+      color: var(--sage-light);
+    }
+
+    .hero-subtitle {
+      font-size: 15px;
+      color: var(--cream-dim);
+      max-width: 560px;
+      line-height: 1.6;
+    }
+
+    .hero-credit {
+      position: absolute;
+      bottom: 8px;
+      right: 12px;
+      font-size: 9px;
+      color: rgba(255,255,255,0.3);
+      letter-spacing: 0.05em;
+    }
+
+    /* Mobile hamburger nav */
+    .nav-hamburger {
+      display: none;
+      flex-direction: column;
+      gap: 5px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 4px;
+      margin-left: auto;
+    }
+    .nav-hamburger span {
+      display: block;
+      width: 22px;
+      height: 2px;
+      background: var(--cream-dim);
+      border-radius: 2px;
+      transition: all 0.25s;
+    }
+    .nav-hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+    .nav-hamburger.open span:nth-child(2) { opacity: 0; }
+    .nav-hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+    @media (max-width: 700px) {
+      .nav-hamburger { display: flex; }
+      .nav-links {
+        display: none;
+        position: absolute;
+        top: 56px;
+        left: 0;
+        right: 0;
+        background: var(--forest-dark);
+        border-bottom: 1px solid var(--divider);
+        padding: 12px 24px;
+        flex-direction: column;
+        gap: 14px;
+        z-index: 100;
+      }
+      .nav-links.open { display: flex; }
+      .nav-divider { display: none; }
+      nav { position: relative; }
+    }
+
+    /* Live ticker */
+    .live-ticker {
+      display: inline-flex;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 10px;
+      margin-top: 16px;
+      font-size: 14px;
+      font-weight: 300;
+      color: var(--cream);
+      min-height: 20px;
+    }
+    .ticker-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--sage); box-shadow: 0 0 6px var(--sage); animation: livePulse 1.5s ease-in-out infinite; flex: none; }
+    .ticker-rotator {
+      transition: opacity 0.4s ease;
+      letter-spacing: 0.01em;
+      white-space: nowrap;
+    }
+    .ticker-rotator.fading { opacity: 0; }
+    .ticker-rotator .ticker-value { color: var(--sage); font-weight: 600; font-size: 15px; margin-right: 4px; }
+    @media(max-width:600px) { .live-ticker { font-size: 13px; } }
+
+    /* Subscribe section */
+    .subscribe-section {
+      background: var(--forest-dark);
+      border: 1px solid rgba(155,114,207,0.25);
+      border-radius: 12px;
+      padding: 32px;
+      margin-bottom: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+    .subscribe-section-text h3 {
+      font-family: 'Playfair Display', serif;
+      font-size: 22px;
+      font-weight: 400;
+      color: var(--cream);
+      margin-bottom: 6px;
+    }
+    .subscribe-section-text p {
+      font-size: 14px;
+      color: var(--cream-dim);
+      max-width: 380px;
+    }
+    .subscribe-section-form {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .subscribe-section-form input {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--divider);
+      border-radius: 6px;
+      padding: 10px 14px;
+      color: var(--cream);
+      font-size: 14px;
+      font-family: inherit;
+      width: 220px;
+      outline: none;
+    }
+    .subscribe-section-form input:focus { border-color: rgba(155,114,207,0.4); }
+    .subscribe-section-form input::placeholder { color: #6a7e6a; }
+    .subscribe-section-form button {
+      background: rgba(155,114,207,0.15);
+      border: 1px solid rgba(155,114,207,0.35);
+      color: #9b72cf;
+      border-radius: 6px;
+      padding: 10px 18px;
+      font-size: 13px;
+      font-family: inherit;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.15s;
+    }
+    .subscribe-section-form button:hover { background: rgba(155,114,207,0.25); }
+    .subscribe-section-msg { font-size: 13px; margin-top: 8px; display: none; width: 100%; }
+  </style>
+  <script src="https://cdn.counter.dev/script.js" data-id="0f7db49f-3699-43bc-b09e-d45b58c39067" data-utcoffset="1"></script>
+
+  <script>
+    // Threlkeld Analytics
+    (function() {
+      fetch('https://rlpzmepeautd1v5pgoumz9aa2qhd92xd.ui.nabu.casa/api/webhook/-FGc31SjPhOeecG848YzrwkwP', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          page: 'index.html',
+          referrer: document.referrer || '',
+          screen: window.screen.width + 'x' + window.screen.height,
+          userAgent: navigator.userAgent
+        })
+      }).catch(() => {});
+    })();
+  </script>
+
+  <style>
+    .install-banner {
+      display: none;
+      position: fixed;
+      bottom: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #1a2e1a;
+      border: 1px solid rgba(122,184,122,0.3);
+      border-radius: 12px;
+      padding: 12px 18px;
+      z-index: 999;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+      max-width: 360px;
+      width: calc(100% - 32px);
+      font-family: 'Source Sans 3', sans-serif;
+      animation: slideUp 0.3s ease;
+    }
+    @keyframes slideUp { from { opacity:0; transform: translateX(-50%) translateY(20px); } to { opacity:1; transform: translateX(-50%) translateY(0); } }
+    .install-banner-inner { display: flex; align-items: center; gap: 12px; }
+    .install-banner-icon { font-size: 24px; flex-shrink: 0; }
+    .install-banner-text { flex: 1; }
+    .install-banner-title { font-size: 13px; font-weight: 500; color: #e8f0e4; margin-bottom: 2px; }
+    .install-banner-sub { font-size: 11px; color: rgba(232,240,228,0.6); line-height: 1.4; }
+    .install-banner-actions { display: flex; gap: 8px; margin-top: 10px; }
+    .install-btn { background: rgba(122,184,122,0.2); border: 1px solid rgba(122,184,122,0.4); color: #7ab87a; font-size: 12px; padding: 6px 14px; border-radius: 20px; cursor: pointer; font-family: inherit; }
+    .install-btn:hover { background: rgba(122,184,122,0.3); }
+    .install-dismiss { background: none; border: none; color: rgba(232,240,228,0.4); font-size: 12px; cursor: pointer; font-family: inherit; padding: 6px 8px; }
+  </style>
+  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+</head>
+<body>
+  <div class="page">
+    <!-- Hero -->
+    <div class="hero">
+      <img class="hero-img" src="blencathra.jpg" alt="Blencathra, Threlkeld, Cumbria">
+      <div class="hero-overlay"></div>
+      <div class="hero-content">
+        <div class="hero-eyebrow">Threlkeld, Cumbria · Lake District</div>
+        <h1>Threlkeld <em>Nature Watch</em></h1>
+        <div class="hero-subtitle">
+          Citizen environmental science from a garden in Threlkeld, nestled beneath 
+          Blencathra in the northern Lake District. Acoustic AI, live weather instruments 
+          and real-time data feeds — monitoring birds, bats, weather, rivers and the 
+          night sky as it happens.
+        </div>
+        <div class="live-ticker" id="liveTicker">
+          <span class="ticker-dot"></span>
+          <div class="ticker-rotator" id="tickerRotator">&nbsp;</div>
+          <!-- hidden live values, written by MQTT, read by the rotator -->
+          <span id="tickerBirdsToday" hidden>—</span>
+          <span id="tickerBirdSpecies" hidden>—</span>
+          <span id="tickerBatsLast" hidden>—</span>
+          <span id="tickerBatSpecies" hidden>—</span>
+          <span id="tickerPlanesToday" hidden>—</span>
+          <span id="tickerTemp" hidden>—</span>
+          <span id="tickerRain" hidden>—</span>
+        </div>
+      </div>
+      <div class="hero-credit">Photo · Threlkeld Village Hall</div>
+    </div>
+
+    <div class="projects-label">Citizen Environmental Science · Live · Updated in Real Time</div>
+
+    <!-- AI Naturalist daily summary -->
+    <div class="naturalist-card" id="naturalistCard" style="display:none">
+      <div class="naturalist-head">
+        <span class="naturalist-title">The Threlkeld Naturalist <span class="naturalist-date" id="naturalistDate"></span></span>
+      </div>
+      <div class="naturalist-body" id="naturalistBody"></div>
+      <a href="naturalist.html" class="naturalist-link">Read the full record <span aria-hidden="true">→</span></a><!-- LINK-BUILD-B -->
+    </div>
+
+    <div class="projects-grid">
+      <a href="birds.html" class="project-card">
+        <div class="live-badge"><div class="live-dot"></div>Live</div>
+        <div class="project-icon">🐦</div>
+        <div class="project-tag">Acoustic Monitoring</div>
+        <div class="project-name">Garden Bird Watch</div>
+        <p class="project-desc">Real-time bird detection using BirdNET-Pi acoustic AI. See which birds are visiting the garden, with photos, confidence scores and activity charts updated as detections happen.</p>
+        <div class="project-link">Explore live detections</div>
+      </a>
+      <a href="bats.html" class="project-card">
+        <div class="live-badge"><div class="live-dot"></div>Live</div>
+        <div class="beta-badge">Beta</div>
+        <div class="project-icon">🦇</div>
+        <div class="project-tag">Acoustic Monitoring</div>
+        <div class="project-name">Garden Bat Watch</div>
+        <p class="project-desc">Live bat detections via AudioMoth and BatDetect2. Dusk–dawn monitoring of UK bat species in the garden.</p>
+        <div class="project-link">Explore live detections</div>
+      </a>
+
+      <a href="fells.html" class="project-card">
+        <div class="live-badge"><div class="live-dot"></div>Live</div>
+        <div class="project-icon">🏔️</div>
+        <div class="project-tag">Open-Meteo · Mountain Weather</div>
+        <div class="project-name">Fell Conditions</div>
+        <p class="project-desc">Live summit conditions for Blencathra and the Northern Fells — temperature, wind, gusts, visibility and walking conditions. Hourly forecast and 3-day outlook. Links to full MWIS expert forecast.</p>
+        <div class="project-link">Check the fells</div>
+      </a>
+
+      <a href="planes.html" class="project-card">
+        <div class="live-badge"><div class="live-dot"></div>Live</div>
+        <div class="project-icon">✈️</div>
+        <div class="project-tag">Flight Tracking</div>
+        <div class="project-name">Overhead Planes</div>
+        <p class="project-desc">Every aircraft passing over Threlkeld, logged in real time. See what's overhead, browse the history, and spot the occasional military flight over the northern Lake District.</p>
+        <div class="project-link">Explore live flights</div>
+      </a>
+
+      <a href="river.html" class="project-card">
+        <div class="live-badge"><div class="live-dot"></div>Live</div>
+        <div class="project-icon">🌊</div>
+        <div class="project-tag">EA Flood Monitoring</div>
+        <div class="project-name">Rivers, Lakes &amp; Wild Swimming</div>
+        <p class="project-desc">Live levels from the Glenderamackin, Greta and Derwent plus Derwentwater, Bassenthwaite, Thirlmere and Ullswater. Includes indicative wild swimming conditions updated every 15 minutes.</p>
+        <div class="project-link">Explore river levels</div>
+      </a>
+
+      <a href="weather.html" class="project-card">
+        <div class="live-badge"><div class="live-dot"></div>Live</div>
+        <div class="project-icon">🌤️</div>
+        <div class="project-tag">Weather Station</div>
+        <div class="project-name">Weather Station</div>
+        <p class="project-desc">Live conditions from our Ecowitt GW2000A weather station — temperature, rainfall, wind, solar radiation and more, with historical charts going back nearly three years.</p>
+        <div class="project-link">Explore live conditions</div>
+      </a>
+
+      <a href="wildlife.html" class="project-card">
+        <div class="live-badge"><div class="live-dot"></div>Live</div>
+        <div class="project-icon">🦔</div>
+        <div class="project-tag">iNaturalist · Community Science</div>
+        <div class="project-name">Local Wildlife</div>
+        <p class="project-desc">Verified wildlife sightings within 5km of Threlkeld — mammals, plants, fungi and more, drawn from the iNaturalist community science database. Red squirrels, otters and pine martens all recorded nearby.</p>
+        <div class="project-link">Explore local wildlife</div>
+      </a>
+
+      <a href="about.html" class="project-card">
+        <div class="project-icon">ℹ️</div>
+        <div class="project-tag">Tech stack · Hardware · Story</div>
+        <div class="project-name">About This Project</div>
+        <p class="project-desc">How it all works — BirdNET-Pi, Home Assistant, Node-RED, MQTT and GitHub Pages. The hardware, the data pipeline and the running costs (almost zero).</p>
+        <div class="project-link">Read more</div>
+      </a>
+      <a href="data.html" class="project-card">
+        <div class="project-icon">⚙️</div>
+        <div class="project-tag">Open data · How-to · Build your own</div>
+        <div class="project-name">Data &amp; How-To</div>
+        <p class="project-desc">Download the raw data behind every page in JSON or CSV, and a full guide to how the whole system is built — sensors, pipeline and code — so you could put one on your own patch.</p>
+        <div class="project-link">Explore</div>
+      </a>
+    </div>
+
+
+    <div class="subscribe-section">
+      <div class="subscribe-section-text">
+        <h3>This Week in <em style="font-style:italic;color:#9b72cf">Threlkeld</em></h3>
+        <p>Every Sunday evening, a short summary of what's been happening in and around the village — bats heard, birds spotted, weather endured, flights overhead and rivers watched. Delivered free to your inbox. No spam, no adverts &amp; unsubscribe whenever you like.</p>
+      </div>
+      <div>
+        <div class="subscribe-section-form">
+          <input type="email" id="indexSubEmail" placeholder="your@email.com">
+          <button onclick="indexSubscribe()">Subscribe →</button>
+        </div>
+        <div class="subscribe-section-msg" id="indexSubMsg"></div>
+      </div>
+    </div>
+
+    <div class="suggestions-box">
+      <div class="suggestions-title">Got an idea for a project?</div>
+      <p class="suggestions-text">
+        We're always looking for interesting ways to monitor and share what's happening locally. 
+        If you have a suggestion for a new eco or tech project — whether it's air quality monitoring, 
+        wildlife cameras, bat detection, or something else entirely — we'd love to hear from you.
+      </p>
+
+      <form id="suggestionForm" action="https://formspree.io/f/mzdwrgol" method="POST">
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="name">Your Name</label>
+            <input type="text" id="name" name="name" placeholder="Jane Smith" required>
+          </div>
+          <div class="form-group">
+            <label for="email">Your Email</label>
+            <input type="email" id="email" name="email" placeholder="jane@example.com" required>
+          </div>
+          <div class="form-group full">
+            <label for="message">Your Idea or Suggestion</label>
+            <textarea id="message" name="message" placeholder="Tell us about your idea..."></textarea>
+          </div>
+        </div>
+        <button type="submit" class="submit-btn">Send your idea →</button>
+      </form>
+
+      <div class="form-success" id="formSuccess">
+        ✅ Thanks for your suggestion! We'll take a look and get back to you if we have any questions.
+      </div>
+    </div>
+
+    <div class="footer-hills">
+      <svg viewBox="0 0 1440 200" xmlns="http://www.w3.org/2000/svg" width="100%" style="display:block">
+        <path d="M0,200 L0,180 C30,178 60,175 90,170 C120,165 150,158 175,150 C195,143 210,136 222,128 C232,121 239,115 245,108 C250,103 254,98 258,93 C262,88 266,83 270,78 C274,73 278,68 282,64 C286,60 290,57 294,54 C298,51 302,49 306,47 C310,45 314,44 318,44 C322,44 326,45 330,47 C334,50 338,54 342,52 C346,49 350,44 355,38 C360,32 365,26 370,20 C374,15 378,10 382,7 C386,4 390,2 394,1 C398,0 402,1 406,3 C410,6 414,11 418,8 C422,5 426,1 431,2 C436,4 441,9 446,7 C450,5 454,1 459,3 C464,6 469,12 474,10 C479,8 484,4 490,6 C496,9 502,15 508,13 C513,11 518,7 524,10 C530,14 536,21 542,19 C547,17 552,13 558,17 C564,22 570,30 576,28 C581,26 586,22 592,27 C598,33 604,42 610,48 C616,43 622,37 629,43 C636,50 643,60 650,70 C657,80 664,91 672,99 C680,107 689,114 699,120 C709,126 720,131 733,136 C746,141 760,145 778,150 C798,155 822,159 852,163 C885,167 924,170 970,173 C1020,176 1078,178 1145,181 C1220,183 1320,186 1440,188 L1440,200 Z" fill="#1a2e1a"/>
+        <path d="M0,200 L0,193 C150,191 300,189 420,188 C510,187 580,187 640,188 C700,189 750,191 800,190 C850,189 900,187 960,188 C1020,189 1090,191 1180,193 C1280,194 1370,195 1440,196 L1440,200 Z" fill="#0d1a0d"/>
+      </svg>
+    </div>
+
+    <footer>
+      <div class="footer-text">Threlkeld, Cumbria · All data collected and processed locally · Updated 15 Jun 2026 (a)</div>
+      <div class="footer-location">54.6°N 3.0°W</div>
+    </footer>
+  </div>
+
+  <script>
+    const form = document.getElementById('suggestionForm');
+    const success = document.getElementById('formSuccess');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const data = new FormData(form);
+      const response = await fetch(form.action, {
+        method: 'POST',
+        body: data,
+        headers: { 'Accept': 'application/json' }
+      });
+      if (response.ok) {
+        form.style.display = 'none';
+        success.classList.add('visible');
+      }
+    });
+  
+    // Mobile nav
+    document.getElementById('navHamburger').addEventListener('click', function() {
+      this.classList.toggle('open');
+      document.querySelector('.nav-links').classList.toggle('open');
+    });
+    // Close on link click
+    document.querySelectorAll('.nav-link').forEach(l => {
+      l.addEventListener('click', () => {
+        document.getElementById('navHamburger').classList.remove('open');
+        document.querySelector('.nav-links').classList.remove('open');
+      });
+    });
+  
+    // Footer timestamp
+
+  </script>
+
+  <!-- PWA Install Banner -->
+  <div class="install-banner" id="installBanner">
+    <div class="install-banner-inner">
+      <div class="install-banner-icon">🏔️</div>
+      <div class="install-banner-text">
+        <div class="install-banner-title">Install Threlkeld Nature Watch</div>
+        <div class="install-banner-sub" id="installBannerSub">Add to your home screen for quick access</div>
+      </div>
+    </div>
+    <div class="install-banner-actions">
+      <button class="install-btn" id="installBtn">Install</button>
+      <button class="install-dismiss" id="installDismiss">Not now</button>
+    </div>
+  </div>
+
+  <script>
+    // PWA Install prompt
+    (function() {
+      if (localStorage.getItem('pwa_dismissed')) return;
+      const banner = document.getElementById('installBanner');
+      const sub = document.getElementById('installBannerSub');
+      const installBtn = document.getElementById('installBtn');
+      const dismissBtn = document.getElementById('installDismiss');
+
+      function dismiss() {
+        banner.style.display = 'none';
+        localStorage.setItem('pwa_dismissed', '1');
+      }
+      dismissBtn.addEventListener('click', dismiss);
+
+      // Android/Chrome — intercept beforeinstallprompt
+      let deferredPrompt;
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        banner.style.display = 'block';
+        installBtn.addEventListener('click', async () => {
+          banner.style.display = 'none';
+          deferredPrompt.prompt();
+          const { outcome } = await deferredPrompt.userChoice;
+          if (outcome === 'accepted') localStorage.setItem('pwa_dismissed', '1');
+          deferredPrompt = null;
+        });
+      });
+
+      // iOS Safari — show manual instructions
+      const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+      const isInStandaloneMode = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+      if (isIOS && !isInStandaloneMode) {
+        setTimeout(() => {
+          sub.textContent = 'Tap the Share button ↑ then "Add to Home Screen"';
+          installBtn.textContent = 'Got it';
+          installBtn.addEventListener('click', dismiss);
+          banner.style.display = 'block';
+        }, 3000);
+      }
+    })();
+  </script>
+
+  <script>
+    // Live ticker via MQTT
+    // Render the Naturalist card (shared by fast-fetch and MQTT fallback)
+    function renderNaturalist(data) {
+      if (!data || !data.summary) return;
+      document.getElementById('naturalistBody').textContent = data.summary;
+      const dateEl = document.getElementById('naturalistDate');
+      if (data.date) {
+        const d = new Date(data.date + 'T00:00:00');
+        dateEl.textContent = 'Summary for the morning of ' + d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+      }
+      document.getElementById('naturalistCard').style.display = 'block';
+    }
+
+    // Fast path: fetch the static summary immediately (no MQTT handshake wait).
+    // MQTT remains a live-update fallback below.
+    fetch('https://rlpzmepeautd1v5pgoumz9aa2qhd92xd.ui.nabu.casa/local/naturalist.json?t=' + Date.now())
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data) renderNaturalist(data); })
+      .catch(() => {});
+
+    const client = mqtt.connect('wss://broker.hivemq.com:8884/mqtt', {
+      reconnectPeriod: 5000,
+      connectTimeout: 10000
+    });
+    client.on('connect', function() {
+      client.subscribe('birdnetpi/greg2026/stats');
+      client.subscribe('birdnetpi/greg2026/bats/stats');
+      client.subscribe('birdnetpi/greg2026/flights');
+      client.subscribe('birdnetpi/greg2026/weather/current');
+      client.subscribe('birdnetpi/greg2026/naturalist');
+    });
+    client.on('message', function(topic, message) {
+      try {
+        const data = JSON.parse(message.toString());
+        if (topic === 'birdnetpi/greg2026/naturalist') {
+          renderNaturalist(data);
+        }
+        if (topic === 'birdnetpi/greg2026/stats') {
+          const today = data.today || [];
+          const todayTotal = today.reduce((s, b) => s + (b.count || 0), 0);
+          document.getElementById('tickerBirdsToday').textContent = todayTotal.toLocaleString();
+          document.getElementById('tickerBirdSpecies').textContent = today.length;
+        }
+        if (topic === 'birdnetpi/greg2026/bats/stats') {
+          const session = data.session || {};
+          // bat_stats.py makes `session` context-aware: tonight after dusk,
+          // otherwise last night (with automatic fallback to the last active night).
+          const isTonight = data.isTonight === true;
+          const when = isTonight ? 'tonight' : 'last night';
+          document.getElementById('tickerBatsLast').textContent = session.total || 0;
+          document.getElementById('tickerBatSpecies').textContent = session.species || 0;
+          document.getElementById('tickerBatsLast').dataset.label = 'bats ' + when;
+          document.getElementById('tickerBatSpecies').dataset.label = 'bat species ' + when;
+        }
+        if (topic === 'birdnetpi/greg2026/flights') {
+          const flights = Array.isArray(data) ? data : (data.flights || []);
+          const today = new Date().toDateString();
+          const planesToday = flights.filter(f => f.timestamp && new Date(f.timestamp).toDateString() === today).length;
+          document.getElementById('tickerPlanesToday').textContent = planesToday;
+        }
+        if (topic === 'birdnetpi/greg2026/weather/current') {
+          if (data.temperature !== undefined && data.temperature !== null) {
+            document.getElementById('tickerTemp').textContent = Number(data.temperature).toFixed(1) + '°C';
+          }
+          const rate = parseFloat(data.rain_rate);
+          document.getElementById('tickerRain').textContent = (!isNaN(rate) && rate > 0) ? 'Yes' : 'No';
+        }
+      } catch(e) {}
+    });
+
+    // Rotating ticker line — cycles through the live values one at a time
+    const tickerSlides = [
+      () => `<span class="ticker-value">${document.getElementById('tickerBirdsToday').textContent}</span>birds detected today`,
+      () => `<span class="ticker-value">${document.getElementById('tickerBirdSpecies').textContent}</span>bird species today`,
+      () => `<span class="ticker-value">${document.getElementById('tickerBatsLast').textContent}</span>${document.getElementById('tickerBatsLast').dataset.label || 'bats last night'}`,
+      () => `<span class="ticker-value">${document.getElementById('tickerBatSpecies').textContent}</span>${document.getElementById('tickerBatSpecies').dataset.label || 'bat species last night'}`,
+      () => `<span class="ticker-value">${document.getElementById('tickerPlanesToday').textContent}</span>planes overhead today`,
+      () => `<span class="ticker-value">${document.getElementById('tickerTemp').textContent}</span>right now`,
+      () => `rain right now: <span class="ticker-value" style="margin-left:4px">${document.getElementById('tickerRain').textContent}</span>`
+    ];
+    // Each slide's primary value element — used to tell if its data has loaded yet.
+    const tickerSources = ['tickerBirdsToday','tickerBirdSpecies','tickerBatsLast','tickerBatSpecies','tickerPlanesToday','tickerTemp','tickerRain'];
+    const PLACEHOLDER = '—';
+    function slideReady(i) {
+      const v = document.getElementById(tickerSources[i]);
+      return v && v.textContent && v.textContent !== PLACEHOLDER;
+    }
+    function anyReady() {
+      return tickerSources.some((_, i) => slideReady(i));
+    }
+    let tickerIdx = 0;
+    const tickerEl = document.getElementById('tickerRotator');
+    function showTickerSlide() {
+      if (!tickerEl) return;
+      tickerEl.innerHTML = tickerSlides[tickerIdx]();
+    }
+    function nextReadyIdx(from) {
+      // find the next slide (starting after `from`) that has real data
+      for (let step = 1; step <= tickerSlides.length; step++) {
+        const i = (from + step) % tickerSlides.length;
+        if (slideReady(i)) return i;
+      }
+      return from; // nothing ready yet
+    }
+    function rotateTicker() {
+      if (!tickerEl || !anyReady()) return;
+      const next = nextReadyIdx(tickerIdx);
+      if (next === tickerIdx) return; // only one ready slide; leave it
+      tickerEl.classList.add('fading');
+      setTimeout(() => {
+        tickerIdx = next;
+        showTickerSlide();
+        tickerEl.classList.remove('fading');
+      }, 400);
+    }
+    // Don't paint slide 0 blindly — wait until at least one slide has data,
+    // then show the first ready one. Poll briefly until data arrives.
+    function startTicker() {
+      if (anyReady()) {
+        if (!slideReady(tickerIdx)) tickerIdx = nextReadyIdx(tickerIdx);
+        showTickerSlide();
+        setInterval(rotateTicker, 4000);
+      } else {
+        setTimeout(startTicker, 200);
+      }
+    }
+    startTicker();
+
+    // Subscribe form
+    async function indexSubscribe() {
+      const email = document.getElementById('indexSubEmail').value.trim();
+      const msg = document.getElementById('indexSubMsg');
+      msg.style.display = 'none';
+      if (!email || !email.includes('@')) {
+        msg.style.display = 'block';
+        msg.style.color = '#e05555';
+        msg.textContent = 'Please enter a valid email address.';
+        return;
+      }
+      try {
+        const res = await fetch('https://threlkeld.haigh-greg.workers.dev/?email=' + encodeURIComponent(email), {method:'POST'});
+        msg.style.display = 'block';
+        if (res.ok) {
+          msg.style.color = '#9b72cf';
+          msg.textContent = '✓ Thank you — you\'ll receive the next summary this Sunday.';
+          document.getElementById('indexSubEmail').value = '';
+        } else {
+          msg.style.color = '#e05555';
+          msg.textContent = 'Something went wrong. Please try again.';
+        }
+      } catch(e) {
+        msg.style.display = 'block';
+        msg.style.color = '#e05555';
+        msg.textContent = 'Could not connect. Please try again.';
+      }
+    }
+  </script>
+</body>
+</html>
