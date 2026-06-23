@@ -1,0 +1,1576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>For School · Threlkeld Nature Watch</title>
+<meta name="description" content="Real birds, bats and red squirrels heard and seen by sensors in Threlkeld, beneath Blencathra. A live nature page for Threlkeld C of E Primary School — pick your class for stories, photos and real recordings pitched to each age.">
+<meta property="og:title" content="For School · Threlkeld Nature Watch">
+<meta property="og:description" content="Real birds, bats and red squirrels from sensors in our village. Choose your class for nature stories, photos and real recordings — made for Threlkeld C of E Primary School.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://threlkeld.info/school.html">
+<meta property="og:image" content="https://threlkeld.info/favicon.svg">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="For School · Threlkeld Nature Watch">
+<meta name="twitter:description" content="Real birds, bats and red squirrels from sensors in our village — made for Threlkeld C of E Primary School.">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-title" content="Nature Watch">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Baloo+2:wght@500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/5.3.4/mqtt.min.js"></script>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  .skip-link{position:absolute;left:-9999px;top:0;background:#fff;color:#16321a;padding:12px 18px;border-radius:0 0 10px 0;font-weight:700;z-index:1000;text-decoration:none}
+  .skip-link:focus{left:0}
+  :root{
+    --forest:#16321a;          /* deep woodland, ties to main site */
+    --forest-2:#1f4424;
+    --leaf:#7ac74f;            /* bright friendly green */
+    --sky:#8fd3ff;             /* daytime sky */
+    --sun:#ffd24a;            /* warm highlight */
+    --acorn:#d98a3d;          /* squirrel/acorn orange */
+    --berry:#e0607e;          /* playful pink-red */
+    --cream:#fbf7ec;
+    --ink:#23331f;            /* dark text on light cards */
+    --card:#ffffff;
+  }
+  body{
+    font-family:'Fredoka',system-ui,sans-serif;
+    color:var(--cream);
+    background:
+      radial-gradient(1200px 600px at 50% -10%, rgba(143,211,255,0.18), transparent 60%),
+      linear-gradient(180deg,#16321a 0%,#102612 100%);
+    min-height:100vh;
+    line-height:1.5;
+    -webkit-text-size-adjust:100%;
+  }
+
+  /* ---------- top bar ---------- */
+  .topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;gap:12px;flex-wrap:wrap}
+  .brand{display:flex;align-items:center;gap:10px;font-family:'Baloo 2',sans-serif;font-weight:700;font-size:16px;color:var(--cream);text-decoration:none}
+  .brand .leaf{font-size:22px}
+  .home-link{font-size:13px;color:#bfe6c2;text-decoration:none;background:rgba(255,255,255,0.08);padding:7px 12px;border-radius:999px}
+  .home-link:hover{background:rgba(255,255,255,0.16)}
+
+  .wrap{max-width:1000px;margin:0 auto;padding:8px 20px 64px}
+
+  /* ---------- chooser (teacher landing) ---------- */
+  .chooser{text-align:center;padding:28px 0 8px}
+  .chooser .eyebrow{font-size:14px;letter-spacing:0.08em;text-transform:uppercase;color:var(--sun);font-weight:600;margin-bottom:10px}
+  .chooser h1{font-family:'Baloo 2',sans-serif;font-weight:700;font-size:clamp(30px,6vw,52px);line-height:1.05;margin-bottom:14px}
+  .chooser h1 .pop{color:var(--leaf)}
+  .chooser p.lead{font-size:clamp(16px,2.4vw,20px);color:#d7ecd6;max-width:620px;margin:0 auto 26px}
+
+  .class-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:8px}
+  .class-card{
+    background:var(--card);color:var(--ink);border:none;border-radius:22px;padding:24px 18px;cursor:pointer;
+    text-align:center;font-family:'Baloo 2',sans-serif;transition:transform .12s ease, box-shadow .12s ease;
+    box-shadow:0 6px 0 rgba(0,0,0,0.18);
+  }
+  .class-card:hover{transform:translateY(-4px);box-shadow:0 10px 0 rgba(0,0,0,0.18)}
+  .class-card:focus-visible{transform:translateY(-4px);outline:4px solid #2f6f9f;outline-offset:3px}
+  /* visible keyboard focus for every interactive element */
+  button:focus-visible,a:focus-visible{outline:4px solid #2f6f9f;outline-offset:3px;border-radius:8px}
+  .class-card .emoji{font-size:48px;display:block;margin-bottom:8px}
+  .class-card .ttl{font-size:22px;font-weight:700;margin-bottom:2px}
+  .class-card .yrs{font-size:14px;color:#5f7a59;font-weight:600}
+  .class-card.c1{box-shadow:0 6px 0 #cfa23a}
+  .class-card.c2{box-shadow:0 6px 0 #2f8f3a}
+  .class-card.c3{box-shadow:0 6px 0 #2f6f9f}
+
+  .chooser .why{margin-top:22px;font-size:14px;color:#a9c7a8}
+  .teacher-link{margin-top:24px;background:#fff;border:none;color:#1f4424;border-radius:14px;padding:15px 26px;font-family:'Baloo 2',sans-serif;font-weight:700;font-size:16px;cursor:pointer;box-shadow:0 4px 0 rgba(0,0,0,0.22);display:inline-flex;align-items:center;gap:9px;transition:transform .12s ease, box-shadow .12s ease}
+  .teacher-link:hover{transform:translateY(-2px);box-shadow:0 6px 0 rgba(0,0,0,0.22)}
+  .teacher-link:active{transform:translateY(2px);box-shadow:0 2px 0 rgba(0,0,0,0.22)}
+  .teacher-link .tl-arrow{font-weight:700;opacity:0.5}
+
+  /* teachers section — calmer, grown-up, readable */
+  .teachers .t-block{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:16px;padding:22px 24px;margin-bottom:16px}
+  .teachers .t-block h2{font-family:'Baloo 2',sans-serif;font-weight:600;font-size:20px;color:#dff0df;margin-bottom:10px}
+  .teachers .t-block p{font-size:15.5px;color:#e6f1e4;margin-bottom:10px;line-height:1.65}
+  .teachers .t-block p:last-child{margin-bottom:0}
+  .teachers .t-list{list-style:none;margin:4px 0 0}
+  .teachers .t-list li{font-size:15px;color:#e6f1e4;padding:7px 0 7px 22px;position:relative;line-height:1.55}
+  .teachers .t-list li::before{content:'•';position:absolute;left:4px;color:var(--leaf)}
+  .teachers .t-note{font-size:13.5px;color:#a9c7a8;font-style:italic}
+  .teachers .t-block.feedback{background:linear-gradient(135deg,rgba(122,199,79,0.14),rgba(143,211,255,0.12));border-color:rgba(122,199,79,0.3)}
+  .feedback-btn{display:inline-block;margin-top:8px;background:var(--sun);color:#3a2a00;text-decoration:none;border-radius:999px;padding:12px 22px;font-family:'Baloo 2',sans-serif;font-weight:700;font-size:15px;box-shadow:0 4px 0 #c79a1d}
+  .feedback-btn:active{transform:translateY(2px);box-shadow:0 2px 0 #c79a1d}
+
+  /* ---------- a class view ---------- */
+  .view{display:none}
+  .view.active{display:block;animation:fade .3s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+  .view-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:14px 0 22px}
+  .view-title{font-family:'Baloo 2',sans-serif;font-weight:700;font-size:clamp(24px,4.5vw,38px)}
+  .view-title small{display:block;font-size:14px;font-weight:600;color:var(--sun);letter-spacing:0.04em;text-transform:uppercase}
+  .change-btn{background:var(--sun);color:#3a2a00;border:none;border-radius:999px;padding:10px 18px;font-family:'Baloo 2',sans-serif;font-weight:700;font-size:15px;cursor:pointer;box-shadow:0 4px 0 #c79a1d}
+  .change-btn:active{transform:translateY(2px);box-shadow:0 2px 0 #c79a1d}
+  .head-btns{display:flex;gap:10px;flex-wrap:wrap}
+  .band-intro{font-size:15px;color:#d7ecd6;margin:-4px 0 16px;max-width:760px;line-height:1.55}
+  .print-btn{background:#eef7ff;color:#1f4f6f;border:2px solid #cfe7fb;border-radius:999px;padding:10px 16px;font-family:'Baloo 2',sans-serif;font-weight:700;font-size:15px;cursor:pointer}
+  .print-btn:active{transform:translateY(1px)}
+
+  /* worksheet is hidden on screen, shown only when printing */
+  .print-only{display:none}
+  @media print{
+    @page{margin:1.5cm}
+    body{background:#fff !important;color:#000 !important}
+    /* hide everything except the worksheet */
+    .topbar,.chooser,.view,.data-note,footer,.no-print{display:none !important}
+    .print-only{display:block !important}
+    #worksheet{color:#000}
+    #worksheet .ws-head{border-bottom:2px solid #000;padding-bottom:8px;margin-bottom:16px}
+    #worksheet .ws-title{font-family:'Baloo 2',sans-serif;font-size:22px;font-weight:700}
+    #worksheet .ws-sub{font-size:13px;color:#333}
+    #worksheet h3{font-family:'Baloo 2',sans-serif;font-size:16px;margin:18px 0 6px}
+    #worksheet p{font-size:14px;line-height:1.5;margin:0 0 8px}
+    #worksheet .ws-lines{margin-top:6px}
+    #worksheet .ws-line{border-bottom:1px solid #999;height:26px}
+    #worksheet .ws-box{border:1px solid #999;border-radius:6px;height:150px;margin-top:6px}
+    #worksheet .ws-birds{font-size:14px;line-height:1.8}
+    #worksheet .ws-foot{margin-top:22px;padding-top:8px;border-top:1px solid #ccc;font-size:11px;color:#555}
+  }
+  .change-bottom{text-align:center;margin:24px 0 4px}
+
+  /* big friendly cards */
+  .cards{display:grid;gap:16px}
+  .card{background:var(--card);color:var(--ink);border-radius:22px;padding:22px;box-shadow:0 6px 0 rgba(0,0,0,0.14)}
+  .card h2{font-family:'Baloo 2',sans-serif;font-size:22px;margin-bottom:6px;display:flex;align-items:center;gap:8px}
+  .card .sub{color:#5f7a59;font-size:14px;font-weight:500;margin-bottom:14px}
+
+  /* hero number */
+  .bignum{font-family:'Baloo 2',sans-serif;font-weight:700;font-size:64px;line-height:1;color:var(--leaf)}
+  .bignum.acorn{color:var(--acorn)}
+  .bignum.berry{color:var(--berry)}
+  .num-label{font-size:16px;color:#5f7a59;font-weight:600;margin-top:2px}
+
+  /* bird/critter list */
+  .critters{display:flex;flex-direction:column;gap:10px;margin-top:6px}
+  .critter{display:flex;align-items:center;gap:12px;background:#f3f8ef;border-radius:14px;padding:10px 14px}
+  .critter .ico{font-size:28px}
+  .critter-photo{width:44px;height:44px;border-radius:10px;object-fit:cover;background:#e2ece0;flex-shrink:0}
+  .critter .nm{font-weight:600;font-size:17px;flex:1}
+  .critter .ct{font-family:'Baloo 2',sans-serif;font-weight:700;color:var(--leaf);font-size:20px}
+  .critter .bar{height:10px;border-radius:999px;background:var(--leaf);min-width:10px}
+  .barwrap{flex:1;background:#e2ece0;border-radius:999px;overflow:hidden;height:10px}
+
+  /* squirrel photo */
+  .squirrel-photo{width:100%;border-radius:16px;display:block;background:#eef4ea;aspect-ratio:16/10;object-fit:cover}
+  .photo-cap{font-size:13px;color:#5f7a59;margin-top:8px;font-weight:500}
+
+  /* fact + activity tiles */
+  .tile{border-radius:18px;padding:18px 20px}
+  .tile.fact{background:linear-gradient(135deg,#eafbe2,#d6f3c8);color:#22401c}
+  .tile.doit{background:linear-gradient(135deg,#fff2cf,#ffe3a6);color:#5a3d00}
+  .tile h3{font-family:'Baloo 2',sans-serif;font-size:19px;margin-bottom:6px;display:flex;align-items:center;gap:8px}
+  .tile p{font-size:16px}
+  .tile ul{margin:6px 0 0 2px;list-style:none}
+  .tile li{padding:6px 0 6px 30px;position:relative;font-size:16px}
+  .tile li::before{content:'☐';position:absolute;left:0;font-size:20px;color:#7a6a2a}
+
+  .twocol{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+
+  /* today's nature diary card */
+  .diary-card{background:linear-gradient(135deg,#e8f6ff,#d4ecff);color:#143a52;border-radius:22px;padding:22px;box-shadow:0 6px 0 rgba(0,0,0,0.12)}
+  .diary-card h2{font-family:'Baloo 2',sans-serif;font-size:21px;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+  .diary-card .diary-body{font-size:17px;line-height:1.6}
+  .diary-card.ks1 .diary-body{font-size:20px;line-height:1.5}
+  .diary-card b{color:#0b6aa8;font-weight:700}
+
+  /* today's sky / weather card */
+  .sky-card{background:linear-gradient(135deg,#fff6da,#ffe9c2);color:#5a3d00;border-radius:22px;padding:22px;box-shadow:0 6px 0 rgba(0,0,0,0.12)}
+  .sky-card h2{font-family:'Baloo 2',sans-serif;font-size:21px;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+  .sky-row{display:flex;gap:18px;flex-wrap:wrap}
+  .sky-item{background:rgba(255,255,255,0.55);border-radius:16px;padding:14px 18px;text-align:center;flex:1;min-width:120px}
+  .sky-emoji{font-size:40px;line-height:1}
+  .sky-val{font-family:'Baloo 2',sans-serif;font-weight:700;font-size:20px;margin-top:4px}
+  .sky-lbl{font-size:12px;color:#7a5a1a;text-transform:uppercase;letter-spacing:0.06em;margin-top:2px}
+  .sky-note{font-size:15px;margin-top:12px}
+
+  /* fell cam */
+  .fellcam{margin-top:14px}
+  .fellcam-img{width:100%;border-radius:14px;display:block;background:#dfe9d8;aspect-ratio:16/9;object-fit:cover}
+  .fellcam-cap{font-size:13px;color:#7a5a1a;margin-top:7px;font-weight:600}
+  .fellcam.cam-off{display:none}
+  .tl-watch{margin-top:10px;background:#1f4424;color:#eafbe2;border:none;border-radius:999px;padding:10px 18px;font-family:'Baloo 2',sans-serif;font-weight:700;font-size:14px;cursor:pointer;box-shadow:0 3px 0 #0e2a13}
+  .tl-watch:active{transform:translateY(2px);box-shadow:0 1px 0 #0e2a13}
+  .tl-watch .tl-time{opacity:0.8;font-weight:500}
+
+  /* this season card */
+  .season-card{background:linear-gradient(135deg,#eafbe2,#cdeec0);color:#22401c;border-radius:22px;padding:22px;box-shadow:0 6px 0 rgba(0,0,0,0.12)}
+  .season-card h2{font-family:'Baloo 2',sans-serif;font-size:21px;margin-bottom:8px}
+  .season-card p{font-size:16px;line-height:1.6}
+
+  /* our river today (LKS2/UKS2 only — water cycle, no swimming) */
+  .river-card{background:linear-gradient(135deg,#e2f3fb,#c5e8f7);color:#0e3a52;border-radius:22px;padding:22px;box-shadow:0 6px 0 rgba(0,0,0,0.12)}
+  .river-card h2{font-family:'Baloo 2',sans-serif;font-size:21px;margin-bottom:10px}
+  .river-state{display:inline-flex;align-items:center;gap:8px;font-family:'Baloo 2',sans-serif;font-weight:700;font-size:18px;padding:8px 16px;border-radius:999px;background:rgba(255,255,255,0.6);margin-bottom:10px}
+  .river-body p{font-size:15.5px;line-height:1.6;margin-top:4px}
+  .river-card b{color:#0b6aa8}
+  .diary-card.ks1 + .sky-card + .season-card p,.season-card p{font-size:16px}
+
+  /* live ticker */
+  .live-ticker{display:flex;align-items:center;gap:10px;background:rgba(122,199,79,0.12);border:1px solid rgba(122,199,79,0.3);border-radius:999px;padding:10px 18px;margin-bottom:18px;font-size:16px;color:#e6f1e4}
+  .ticker-dot{width:9px;height:9px;border-radius:50%;background:#7ac74f;box-shadow:0 0 8px #7ac74f;flex:none;animation:tickerPulse 1.5s ease-in-out infinite}
+  @keyframes tickerPulse{0%,100%{opacity:1}50%{opacity:0.3}}
+  .ticker-text{font-weight:500;transition:opacity .35s}
+  .ticker-text.fading{opacity:0}
+  .ticker-text b{color:#a8e57f;font-weight:700}
+
+  /* sound buttons (KS1) */
+  .sound-row{display:flex;flex-wrap:wrap;gap:12px;margin-top:6px}
+  .sound-btn{background:#eef7ff;border:2px solid #cfe7fb;border-radius:16px;padding:14px 18px;min-height:48px;font-family:'Fredoka',sans-serif;font-weight:600;font-size:17px;color:#1f4f6f;cursor:pointer;display:flex;align-items:center;gap:8px}
+  .sound-btn:hover{background:#dff0ff}
+
+  .data-note{font-size:13px;color:#cfe0cd;text-align:center;margin-top:20px;background:rgba(255,255,255,0.06);padding:10px 14px;border-radius:14px}
+
+  footer{margin-top:36px;padding-top:18px;border-top:1px solid rgba(255,255,255,0.12);font-size:13px;color:#aac6a9;text-align:center;line-height:1.8}
+  footer a{color:#cfe6cf}
+
+  @media(max-width:680px){
+    .class-grid{grid-template-columns:1fr}
+    .twocol{grid-template-columns:1fr}
+  }
+  @media(prefers-reduced-motion:reduce){
+    *,*::before,*::after{animation-duration:0.001ms !important;animation-iteration-count:1 !important;transition-duration:0.001ms !important;scroll-behavior:auto !important}
+    .ticker-dot{animation:none;opacity:1}
+  }
+</style>
+</head>
+<body>
+
+<a href="#main" class="skip-link">Skip to content</a>
+<header class="topbar">
+  <a class="brand" href="school.html"><span class="leaf" aria-hidden="true">🌿</span> Threlkeld Nature Watch · for School</a>
+  <a class="home-link" href="index.html">Main site →</a>
+</header>
+
+<main class="wrap" id="main">
+
+  <!-- ============ TEACHER CHOOSER ============ -->
+  <section class="chooser" id="chooser" aria-label="Choose a class">
+    <div class="eyebrow">Hello Threlkeld C of E Primary!</div>
+    <h1>What's in nature <span class="pop">today?</span></h1>
+    <p class="lead">Real birds, bats and red squirrels, heard and seen by sensors right here in our village beneath Blencathra. Pick your class to begin.</p>
+
+    <div class="class-grid">
+      <button class="class-card c1" onclick="showView('ks1')">
+        <span class="emoji">🐿️</span>
+        <span class="ttl">Little Explorers</span>
+        <span class="yrs">Reception · Years 1 & 2</span>
+      </button>
+      <button class="class-card c2" onclick="showView('lks2')">
+        <span class="emoji">🔎</span>
+        <span class="ttl">Nature Detectives</span>
+        <span class="yrs">Years 3 & 4</span>
+      </button>
+      <button class="class-card c3" onclick="showView('uks2')">
+        <span class="emoji">📊</span>
+        <span class="ttl">Wild Scientists</span>
+        <span class="yrs">Years 5 & 6</span>
+      </button>
+    </div>
+    <p class="why">Curiosity is one of our school values — this is a place to be curious about the wild things living all around us.</p>
+    <button class="teacher-link" onclick="showTeachers()"><span aria-hidden="true">📋</span> For Teachers — why we made this &amp; how to use it <span class="tl-arrow" aria-hidden="true">→</span></button>
+  </section>
+
+  <!-- ============ FOR TEACHERS ============ -->
+  <section class="view teachers" id="view-teachers">
+    <div class="view-head">
+      <div class="view-title"><small>For Teachers</small>About this page</div>
+      <button class="change-btn" onclick="goHome()">↩ Back</button>
+    </div>
+
+    <div class="t-block">
+      <h2>Why we made this</h2>
+      <p>Threlkeld is surrounded by living things most of us walk past without noticing — birds calling from the hedges, bats hunting over the beck at night, red squirrels in the trees. This page connects children to that wildlife using <strong>real data gathered in the village</strong>, not a textbook. When a child sees that a robin was heard <em>here, today</em>, science stops being abstract and becomes something happening on their doorstep.</p>
+      <p>It's built around one of the school's own values — <strong>Curiosity</strong> — and around the idea of <strong>citizen science</strong>: children aren't just told about nature, they're looking at the same evidence a real researcher would, and asking the same questions.</p>
+    </div>
+
+    <div class="t-block">
+      <h2>What it is</h2>
+      <p>A set of sensors runs continuously in Threlkeld:</p>
+      <ul class="t-list">
+        <li><strong>Bird detector</strong> — a microphone listens all day; AI (BirdNET) identifies each species from its song.</li>
+        <li><strong>Bat detector</strong> — an ultrasonic microphone listens at night; AI (BatDetect2) identifies bats from calls too high for us to hear.</li>
+        <li><strong>Wildlife camera</strong> — spots red squirrels at a feeder and identifies them automatically.</li>
+        <li><strong>Weather &amp; environment</strong> — temperature, rainfall and moon phase, which help explain what the animals are doing.</li>
+      </ul>
+      <p>The page presents this live data three ways, pitched by age — <strong>Little Explorers</strong> (Reception–Y2), <strong>Nature Detectives</strong> (Y3–4) and <strong>Wild Scientists</strong> (Y5–6) — each with a daily nature diary, a daily challenge, real photographs, and (for bats) real recordings from the village.</p>
+      <p class="t-note">Honest status: bird and squirrel photos, the daily diary, daily challenges and real bat-call playback are live now. Real bird-sound playback (using the village's own recordings) is in progress and will follow.</p>
+    </div>
+
+    <div class="t-block">
+      <h2>Curriculum hooks</h2>
+      <ul class="t-list">
+        <li><strong>Science — living things &amp; habitats:</strong> identifying and grouping birds, bats, mammals; what a habitat provides; why Threlkeld suits red squirrels.</li>
+        <li><strong>Science — animals including humans:</strong> food chains (leaf → insect → bat → ...), nocturnal vs diurnal, adaptation (echolocation, camouflage).</li>
+        <li><strong>Science — seasonal change:</strong> how bird and bat activity shifts with weather and time of year (the daily diary makes this visible over time).</li>
+        <li><strong>Maths — data handling:</strong> reading the daily counts and charts, comparing days, tallying, simple averages, spotting patterns.</li>
+        <li><strong>Computing — AI &amp; how computers sense the world:</strong> how a sound becomes a spectrogram and how AI recognises a species; a real, local example of machine learning.</li>
+        <li><strong>Geography &amp; local study:</strong> our village, the Blencathra landscape, why this place is special for wildlife.</li>
+        <li><strong>Writing:</strong> nature diary entries, persuasive writing on conservation, fact-files on a chosen species.</li>
+      </ul>
+    </div>
+
+    <div class="t-block">
+      <h2>Lesson ideas</h2>
+      <ul class="t-list">
+        <li><strong>Daily 5-minute starter:</strong> read today's nature diary together, then tackle the day's challenge.</li>
+        <li><strong>Prediction &amp; check:</strong> predict tomorrow's busiest bird or whether rain will mean fewer detections — check the next day.</li>
+        <li><strong>Tally &amp; compare:</strong> children run their own 5-minute bird survey from the window, then compare with the sensors.</li>
+        <li><strong>Species fact-file:</strong> pick a bird, bat or the red squirrel and research it, using the photo and data as a starting point.</li>
+        <li><strong>Cross-year:</strong> older children explain the AI/echolocation science to younger ones.</li>
+      </ul>
+    </div>
+
+    <div class="t-block feedback">
+      <h2>We'd love your feedback</h2>
+      <p>This is built and run by a volunteer in the village, and it will get better with your input. What works for your class? What would help? Which features or age-pitches would you change? Any data or topics you'd like added?</p>
+      <a class="feedback-btn" href="mailto:hello@threlkeld.info?subject=Threlkeld%20Nature%20Watch%20for%20School%20%E2%80%94%20feedback&amp;body=Hello%2C%0A%0A(Please%20share%20any%20thoughts%2C%20suggestions%20or%20things%20that%20didn't%20work)%0A%0AClass%2Fyear%20group%3A%0A">✉️ Send feedback or suggestions</a>
+    </div>
+
+    <div class="t-block">
+      <p class="t-note">💡 Tip: on an iPad or tablet, tap your browser's Share button and choose <strong>"Add to Home Screen"</strong> to save this page like an app — handy for opening it quickly each morning.</p>
+      <p class="t-note">Thank you for taking a look. The hope is simply that it sparks a bit of curiosity about the wild things living all around Threlkeld.</p>
+    </div>
+
+    <div class="change-bottom"><button class="change-btn" onclick="goHome()">↩ Back</button></div>
+  </section>
+
+  <!-- ============ KS1 ============ -->
+  <section class="view" id="view-ks1">
+    <div class="view-head">
+      <div class="view-title"><small>Little Explorers</small>Look what we found today!</div>
+      <div class="head-btns"><button class="print-btn no-print" onclick="printWorksheet()">🖨️ Print worksheet</button><button class="change-btn no-print" onclick="goHome()">↩ Change class</button></div>
+    </div>
+    <p class="band-intro">This page shows real birds, bats and squirrels that live right here in Threlkeld — found today by special listening boxes and a camera!</p>
+    <div class="live-ticker no-print" id="ticker-ks1" aria-label="Live nature updates" aria-hidden="true"><span class="ticker-dot" aria-hidden="true"></span><span class="ticker-text">Connecting to our village…</span></div>
+    <div class="cards">
+      <div class="diary-card ks1">
+        <h2>📖 Today's Nature Diary</h2>
+        <div class="diary-body" id="ks1-diary">Reading what's happening in nature today…</div>
+      </div>
+      <div class="sky-card">
+        <h2>🌤️ Today's Sky</h2>
+        <div id="ks1-sky" class="sky-wrap">Looking at the sky…</div>
+        <div class="fellcam" id="fellcam-ks1">
+          <img class="fellcam-img" alt="Live view of the fells above Threlkeld" loading="lazy">
+          <div class="fellcam-cap">📷 Our mountains right now! <span class="fellcam-time"></span></div>
+          <button class="tl-watch no-print" id="tlwatch-ks1" onclick="toggleSchoolTL('ks1')" hidden>▶ Watch yesterday</button>
+        </div>
+      </div>
+      <div class="season-card">
+        <h2 id="ks1-season-title">🌿 This season</h2>
+        <p id="ks1-season">Finding out what&rsquo;s happening this season…</p>
+      </div>
+      <div class="card">
+        <h2>🐦 We heard birds singing!</h2>
+        <div class="sub">Our listening box hears birds in the village.</div>
+        <div class="bignum" id="ks1-birdnum">…</div>
+        <div class="num-label" id="ks1-birdlabel">kinds of bird today</div>
+        <div class="critters" id="ks1-birds"></div>
+      </div>
+
+      <div class="card">
+        <h2>🐿️ Red squirrels</h2>
+        <div class="sub">Threlkeld is a special place — red squirrels still live here!</div>
+        <div id="ks1-squirrelwrap"></div>
+      </div>
+
+      <div class="card">
+        <h2>🦇 While you were asleep…</h2>
+        <div class="sub">Bats come out at night to catch flying insects.</div>
+        <div class="bignum berry" id="ks1-batnum">…</div>
+        <div class="num-label" id="ks1-batlabel">bats flew past last night</div>
+        <div class="tile fact" style="margin-top:14px">
+          <h3>✨ Amazing!</h3>
+          <p>Bats can fly in the dark without bumping into anything. They make tiny squeaks and listen for the echo — they "see" with their ears!</p>
+        </div>
+        <div class="sound-row" style="margin-top:12px">
+          <button class="sound-btn" onclick="batSqueak(this)">🦇 Hear a real bat</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>🔊 Hear today's birds</h2>
+        <div class="sub">Tap a bird to hear what it really sounds like.</div>
+        <div class="sound-row" id="ks1-songrow">
+          <span style="color:#5f7a59;font-size:15px">Listening for today's birds…</span>
+        </div>
+      </div>
+
+      <div class="tile doit">
+        <h3 id="ks1-challenge-title">🎨 Today's wonder</h3>
+        <p id="ks1-challenge">…</p>
+      </div>
+    </div>
+    <div class="change-bottom"><button class="change-btn" onclick="goHome()">↩ Change class</button></div>
+  </section>
+
+  <!-- ============ LOWER KS2 ============ -->
+  <section class="view" id="view-lks2">
+    <div class="view-head">
+      <div class="view-title"><small>Nature Detectives</small>Today's wildlife clues</div>
+      <div class="head-btns"><button class="print-btn no-print" onclick="printWorksheet()">🖨️ Print worksheet</button><button class="change-btn no-print" onclick="goHome()">↩ Change class</button></div>
+    </div>
+    <p class="band-intro">Everything here is real data from Threlkeld — birds and bats picked up by microphones, and squirrels spotted by a camera. It updates through the day.</p>
+    <div class="live-ticker no-print" id="ticker-lks2" aria-label="Live nature updates" aria-hidden="true"><span class="ticker-dot" aria-hidden="true"></span><span class="ticker-text">Connecting to our village…</span></div>
+    <div class="cards">
+      <div class="diary-card">
+        <h2>📖 Today's Nature Diary</h2>
+        <div class="diary-body" id="lks2-diary">Reading today's nature diary…</div>
+      </div>
+      <div class="sky-card">
+        <h2>🌤️ Today's Weather &amp; Sky</h2>
+        <div id="lks2-sky" class="sky-wrap">Looking at the sky…</div>
+        <div class="fellcam" id="fellcam-lks2">
+          <img class="fellcam-img" alt="Live view of the fells above Threlkeld" loading="lazy">
+          <div class="fellcam-cap">📷 The fells above Threlkeld, right now <span class="fellcam-time"></span></div>
+          <button class="tl-watch no-print" id="tlwatch-lks2" onclick="toggleSchoolTL('lks2')" hidden>▶ Watch yesterday</button>
+        </div>
+      </div>
+      <div class="season-card">
+        <h2 id="lks2-season-title">🌿 This season</h2>
+        <p id="lks2-season">Finding out what&rsquo;s happening this season…</p>
+      </div>
+      <div class="river-card" id="river-lks2" hidden>
+        <h2>🌊 Our River Today</h2>
+        <div class="river-body" id="lks2-river"></div>
+      </div>
+      <div class="twocol">
+        <div class="card">
+          <h2>🐦 Birds heard today</h2>
+          <div class="sub">Counted by a computer that listens to birdsong.</div>
+          <div class="bignum" id="lks2-birdtotal">…</div>
+          <div class="num-label">bird sounds heard today</div>
+        </div>
+        <div class="card">
+          <h2>🐿️ Squirrel sightings</h2>
+          <div class="sub">Our camera spots red squirrels at the feeder.</div>
+          <div class="bignum acorn" id="lks2-sqtoday">…</div>
+          <div class="num-label">seen today · <span id="lks2-sqweek">…</span> this week</div>
+          <div id="lks2-squirrelwrap" style="margin-top:14px"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>🏆 Top birds today</h2>
+        <div class="sub">Which bird has been the chattiest?</div>
+        <div class="critters" id="lks2-birds"></div>
+      </div>
+
+      <div class="card">
+        <h2>🦇 Night detectives</h2>
+        <div class="sub">A special detector listens for bats after dark.</div>
+        <div class="bignum berry" id="lks2-batnum">…</div>
+        <div class="num-label">bat passes last night · <span id="lks2-batspecies">…</span> kinds of bat</div>
+        <div class="tile fact" style="margin-top:14px">
+          <h3>💡 Clue</h3>
+          <p>Bats love rainy weeks like ours — rain brings out lots of insects, and insects are a bat's favourite food! Our bats hunt along the stream.</p>
+        </div>
+      </div>
+
+      <div class="twocol">
+        <div class="tile fact">
+          <h3>💡 Did you know?</h3>
+          <p id="lks2-fact">Red squirrels have tufty ears in winter and can leap between trees without ever touching the ground!</p>
+        </div>
+        <div class="tile doit">
+          <h3 id="lks2-challenge-title">🔎 Today's detective task</h3>
+          <p id="lks2-challenge">…</p>
+        </div>
+      </div>
+    </div>
+    <div class="change-bottom"><button class="change-btn" onclick="goHome()">↩ Change class</button></div>
+  </section>
+
+  <!-- ============ UPPER KS2 ============ -->
+  <section class="view" id="view-uks2">
+    <div class="view-head">
+      <div class="view-title"><small>Wild Scientists</small>Today's data from our village</div>
+      <div class="head-btns"><button class="print-btn no-print" onclick="printWorksheet()">🖨️ Print worksheet</button><button class="change-btn no-print" onclick="goHome()">↩ Change class</button></div>
+    </div>
+    <p class="band-intro">This is live citizen-science data gathered in Threlkeld: AI listens for birds and bats and identifies each species, while a camera records red squirrels. The same evidence a real researcher would use.</p>
+    <div class="live-ticker no-print" id="ticker-uks2" aria-label="Live nature updates" aria-hidden="true"><span class="ticker-dot" aria-hidden="true"></span><span class="ticker-text">Connecting to our village…</span></div>
+    <div class="cards">
+      <div class="diary-card">
+        <h2>📖 Today's Nature Diary</h2>
+        <div class="diary-body" id="uks2-diary">Reading today's nature diary…</div>
+      </div>
+      <div class="sky-card">
+        <h2>🌤️ Today's Weather &amp; Sky</h2>
+        <div id="uks2-sky" class="sky-wrap">Looking at the sky…</div>
+        <div class="fellcam" id="fellcam-uks2">
+          <img class="fellcam-img" alt="Live view of the fells above Threlkeld" loading="lazy">
+          <div class="fellcam-cap">📷 Live: the fells above Threlkeld <span class="fellcam-time"></span></div>
+          <button class="tl-watch no-print" id="tlwatch-uks2" onclick="toggleSchoolTL('uks2')" hidden>▶ Watch yesterday</button>
+        </div>
+      </div>
+      <div class="season-card">
+        <h2 id="uks2-season-title">🌿 This season</h2>
+        <p id="uks2-season">Finding out what&rsquo;s happening this season…</p>
+      </div>
+      <div class="river-card" id="river-uks2" hidden>
+        <h2>🌊 Our River Today</h2>
+        <div class="river-body" id="uks2-river"></div>
+      </div>
+      <div class="twocol">
+        <div class="card">
+          <h2>🐦 Birds</h2>
+          <div class="bignum" id="uks2-birdtotal">…</div>
+          <div class="num-label"><span id="uks2-birdspecies">…</span> different species · <span id="uks2-birdtotal2">…</span> calls today</div>
+        </div>
+        <div class="card">
+          <h2>🦇 Bats &amp; 🐿️ Squirrels</h2>
+          <div class="bignum berry" id="uks2-batnum">…</div>
+          <div class="num-label"><span id="uks2-batspecies">…</span> bat species · last night's passes</div>
+          <div style="margin-top:10px"><span class="bignum acorn" style="font-size:36px" id="uks2-sqtotal">…</span> <span class="num-label" style="display:inline">squirrel sightings all-time</span></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>🦇 The hidden night world</h2>
+        <div class="sub">Bats call far too high for human ears — but not too high for a computer.</div>
+        <div class="tile fact" style="margin-top:0">
+          <h3>🔬 Ultrasonic detectives</h3>
+          <p>Bats hunt using <strong>echolocation</strong> — they shout and listen for echoes to find tiny insects in total darkness. Their calls are <strong>ultrasonic</strong>: too high-pitched for us to hear. Our detector records these secret sounds, and an AI called <strong>BatDetect2</strong> works out which species made each call. Last night it counted <strong id="uks2-batinline">…</strong> bat passes over Threlkeld.</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>📊 Top 5 birds today</h2>
+        <div class="sub">This is real data — collected by sensors in Threlkeld, analysed by AI that recognises each bird from its song.</div>
+        <div class="critters" id="uks2-birds"></div>
+      </div>
+
+      <div class="twocol">
+        <div class="tile fact">
+          <h3>🔬 How does it work?</h3>
+          <p>Microphones listen all day and all night. By day, a program called <strong>BirdNET</strong> turns each sound into a picture of it (a <em>spectrogram</em>) and uses artificial intelligence to work out which bird made it — a bit like how you recognise a friend's voice. After dark, a second detector with a special ultrasonic microphone listens for bats, and an AI called <strong>BatDetect2</strong> identifies each species from calls far too high-pitched for us to hear.</p>
+        </div>
+        <div class="tile doit">
+          <h3 id="uks2-challenge-title">📈 Today's science challenge</h3>
+          <p id="uks2-challenge">…</p>
+        </div>
+      </div>
+      <div class="change-bottom"><button class="change-btn" onclick="goHome()">↩ Change class</button></div>
+    </div>
+  </section>
+
+  <p class="data-note" id="dataNote" role="status" aria-live="polite">Connecting to our village sensors…</p>
+
+  <!-- Print-only worksheet, filled from the current band when the teacher prints -->
+  <div id="worksheet" class="print-only" aria-hidden="true"></div>
+
+</main>
+
+  <footer>
+    A learning page from <a href="https://www.threlkeld.info">Threlkeld Nature Watch</a><br>
+    Made for <strong>Threlkeld C of E Primary School</strong> · Real data from sensors in Threlkeld, Cumbria<br>
+    Bird &amp; wildlife photos from <a href="https://www.inaturalist.org">iNaturalist</a><br>
+    Perseverance · Patience · Courage · <strong>Curiosity</strong> · Friendship<br>
+    <span style="opacity:0.6">Updated 21 Jun 2026 (a)</span>
+  </footer>
+
+<script>
+  // ---------- view switching ----------
+  const views = ['ks1','lks2','uks2','teachers'];
+  function showView(id){
+    document.getElementById('chooser').style.display='none';
+    views.forEach(v=>document.getElementById('view-'+v).classList.toggle('active', v===id));
+    window.scrollTo({top:0,behavior:'smooth'});
+    if(id==='ks1'||id==='lks2'||id==='uks2'){ primeTicker(id); }
+    try{ localStorage && null; }catch(e){}
+  }
+  function showTeachers(){ showView('teachers'); }
+  function goHome(){
+    views.forEach(v=>document.getElementById('view-'+v).classList.remove('active'));
+    document.getElementById('chooser').style.display='block';
+    window.scrollTo({top:0,behavior:'smooth'});
+  }
+
+  // ---------- shared audio (iOS-safe) ----------
+  // iOS Safari/Chrome only allow audio that starts inside a user tap, and the
+  // AudioContext starts 'suspended' — it must be resumed inside a gesture or
+  // everything is silently dropped. One shared context, resumed on first tap,
+  // used for BOTH birdsong and bat calls.
+  let sharedCtx=null, currentSource=null;
+  function getCtx(){
+    if(!sharedCtx){
+      try{ sharedCtx=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ return null; }
+    }
+    if(sharedCtx.state==='suspended'){ sharedCtx.resume().catch(()=>{}); }
+    return sharedCtx;
+  }
+  function stopCurrent(){
+    if(currentSource){ try{ currentSource.stop(); }catch(e){} currentSource=null; }
+  }
+  // Play an audio file URL through the shared context (works on iOS where <audio> often won't).
+  async function playUrl(url){
+    const ctx=getCtx(); if(!ctx) throw new Error('no audio');
+    const resp=await fetch(url);
+    const arr=await resp.arrayBuffer();
+    const buf=await ctx.decodeAudioData(arr);
+    stopCurrent();
+    const src=ctx.createBufferSource();
+    src.buffer=buf; src.connect(ctx.destination); src.start();
+    currentSource=src;
+    return src;
+  }
+
+  // ---------- real birdsong (Xeno-canto) for KS1 ----------
+  const songCache={};                 // species name -> recording URL (or false if none)
+
+  async function findSong(name){
+    if(songCache[name]!==undefined) return songCache[name];
+    try{
+      const q=encodeURIComponent(`${name} q:A`);
+      const r=await fetch(`https://xeno-canto.org/api/2/recordings?query=${q}`);
+      const j=await r.json();
+      const rec=(j && j.recordings && j.recordings.length) ? j.recordings[0] : null;
+      let url=rec && rec.file ? rec.file : null;
+      if(url && url.startsWith('//')) url='https:'+url;
+      songCache[name]=url||false;
+      return songCache[name];
+    }catch(e){ songCache[name]=false; return false; }
+  }
+
+  async function playSong(name, btn){
+    // Resume the audio context synchronously inside this tap (critical for iOS).
+    getCtx();
+    const label=btn.dataset.label||name;
+    btn.textContent='⏳ '+label;
+    try{
+      const url=await findSong(name);
+      if(!url){ btn.textContent='🔇 none found'; setTimeout(()=>btn.textContent='🐦 '+label,1600); return; }
+      const src=await playUrl(url);
+      btn.textContent='🔊 '+label;
+      src.onended=()=>{ btn.textContent='🐦 '+label; };
+    }catch(e){
+      btn.textContent='🔈 tap again';
+      setTimeout(()=>btn.textContent='🐦 '+label,1600);
+    }
+  }
+
+  // Common fallback birds if today's list is empty (quiet day / no data).
+  const FALLBACK_SONG_BIRDS=['Robin','Blackbird','Wren','Chaffinch','Great Tit'];
+
+  function buildSongRow(birds){
+    const row=document.getElementById('ks1-songrow');
+    if(!row) return;
+    const names=(birds && birds.length ? birds.slice(0,5).map(b=>b.bird) : FALLBACK_SONG_BIRDS);
+    row.innerHTML=names.map(n=>{
+      const safe=n.replace(/'/g,"\\'");
+      return `<button class="sound-btn" data-label="${n}" onclick="playSong('${safe}', this)">🐦 ${n}</button>`;
+    }).join('');
+  }
+
+  // ---------- seasons ----------
+  // Age-pitched "what to look & listen for this season", keyed to the month.
+  // Evergreen and reliable — needs no data, so it always shows something true
+  // about the turning year in Threlkeld.
+  // Seasons by month index (0=Jan): grouped UK seasons.
+  function seasonName(m){
+    if(m===11||m===0||m===1) return 'Winter';
+    if(m>=2&&m<=4) return 'Spring';
+    if(m>=5&&m<=7) return 'Summer';
+    return 'Autumn';
+  }
+  const SEASON_CONTENT={
+    Spring:{ emoji:'🌸',
+      ks1:'It&rsquo;s Spring! Birds are building nests and singing loudly. Listen for the dawn chorus and look for fluffy baby birds.',
+      lks2:'Spring is nesting season — birds sing hardest now to claim their patch. Bats are waking from their winter sleep, and the days are getting longer.',
+      uks2:'Spring brings the breeding season: birdsong peaks as males defend territory, summer migrants arrive from Africa, and bats emerge from hibernation as insects return. Watch the bird counts climb.'},
+    Summer:{ emoji:'☀️',
+      ks1:'It&rsquo;s Summer! Swifts scream over the rooftops and bats hunt insects on warm evenings. Lots of baby animals are growing up.',
+      lks2:'In Summer the woods are full of young birds learning to fly, and warm nights mean busy bats. Swifts and swallows are here, having flown thousands of miles to visit us.',
+      uks2:'Summer is peak activity: fledglings everywhere, long days, and warm nights ideal for bats hunting moths and midges. Many of the birds you hear are summer visitors that will leave again by autumn.'},
+    Autumn:{ emoji:'🍂',
+      ks1:'It&rsquo;s Autumn! Red squirrels are busy collecting nuts to store for winter. Leaves are falling and some birds are flying away to warmer places.',
+      lks2:'Autumn is the time to fatten up and store food — watch for red squirrels caching nuts. Summer birds head south, while winter visitors begin to arrive. Bats feed hard before hibernation.',
+      uks2:'Autumn is migration and preparation: summer migrants depart, winter thrushes arrive, squirrels cache food, and bats build fat reserves before hibernating. A great season to spot change in the data week by week.'},
+    Winter:{ emoji:'❄️',
+      ks1:'It&rsquo;s Winter! The bats are asleep until spring. Birds fluff up their feathers to stay warm — look for robins and tits at the feeders.',
+      lks2:'In Winter the bats hibernate and the woods are quieter, but hardy birds stay active — robins, tits and finches. Cold, still days are best for spotting them.',
+      uks2:'Winter is survival mode: bats hibernate to save energy, insects vanish, and resident birds rely on stored fat and feeders. Bird detections drop and bat activity all but stops — the data tells the story of a hard season.'}
+  };
+  function renderSeasons(){
+    const m=new Date().getMonth();
+    const season=seasonName(m);
+    const c=SEASON_CONTENT[season];
+    if(!c) return;
+    const head=`${c.emoji} This season: ${season}`;
+    [['ks1',c.ks1],['lks2',c.lks2],['uks2',c.uks2]].forEach(([band,text])=>{
+      const t=document.getElementById(band+'-season-title'); if(t) t.innerHTML=head;
+      const b=document.getElementById(band+'-season'); if(b) b.innerHTML=text;
+    });
+  }
+
+  // ---------- Did you know? (rotates daily, like the challenges) ----------
+  const DYK_FACTS=[
+    'Red squirrels have tufty ears in winter and can leap between trees without ever touching the ground!',
+    'A bat can eat up to 3,000 insects in a single night.',
+    'Robins are one of the only British birds you can hear singing in the middle of winter.',
+    'Red squirrels don&rsquo;t remember where they bury all their nuts — the forgotten ones grow into new trees!',
+    'Bats aren&rsquo;t blind, but they use echoes (echolocation) to hunt in the dark.',
+    'A wren is one of Britain&rsquo;s smallest birds, yet it has one of the loudest songs for its size.',
+    'Some bats can live for over 30 years — tiny but long-lived!',
+    'Red squirrels can swim if they need to.',
+    'Blue tits can remember where they&rsquo;ve hidden food, and even peck through milk-bottle tops!',
+    'A bat&rsquo;s wings are actually its hands — the name for bats means &ldquo;hand-wing&rdquo;.',
+    'Owls can turn their heads almost all the way round to look behind them.',
+    'Swifts can stay in the air for months at a time, even sleeping while they fly.',
+    'A red squirrel&rsquo;s tail helps it balance, steer when jumping, and keep warm like a blanket.',
+    'Pipistrelle bats are so small they could fit in a matchbox, yet they fly miles each night.',
+    'Birds sing most at dawn because the cool, still air carries their song further.',
+    'Hedgehogs can travel up to two miles in a single night looking for food.',
+    'Bats find their way using sounds too high for humans to hear.',
+    'Goldfinches love teasel seeds — their thin beaks reach where other birds can&rsquo;t.',
+    'A group of bats is called a colony, and a group of squirrels is called a scurry.',
+    'Red squirrels grow thick ear tufts in winter and shed them in summer.',
+    'Tawny owls call &ldquo;twit-twoo&rdquo; as a duet — two owls answering each other.',
+    'Bats are the only mammals that can truly fly.',
+    'A blackbird&rsquo;s song is made up of tunes it makes up as it goes along.',
+    'Red squirrels are one of the few animals that can climb down a tree head-first.',
+    'In winter, many small birds fluff up their feathers to trap warm air and stay cosy.',
+    'Some of the birds we hear in summer have flown all the way from Africa.',
+    'Bats hibernate through winter because there are no insects to eat.',
+    'A robin&rsquo;s red breast is used to warn other robins to stay off its patch.',
+    'Threlkeld sits in one of England&rsquo;s last strongholds for red squirrels.',
+    'Bats are brilliant for the environment — they eat midges, moths and mosquitoes!'
+  ];
+  function renderDYK(){
+    const el=document.getElementById('lks2-fact');
+    if(!el || !DYK_FACTS.length) return;
+    const idx=dayIndex()%DYK_FACTS.length;
+    el.innerHTML=DYK_FACTS[idx];
+  }
+
+  // ---------- live ticker ----------
+  // Rotates friendly "happening now" facts from data already captured. Same on
+  // all bands; UKS2 gets slightly more grown-up wording. Only shows facts that
+  // have data, so it never displays a bare placeholder.
+  function tickerSlides(grownUp){
+    const s=[]; const cd=challengeData; const sk=skyState;
+    const birds = cd.birdTotal;
+    const species = cd.birdSpecies;
+    const bats = cd.bats;
+    const sq = cd.sqToday;
+    const temp = sk.temp!=null?Math.round(sk.temp):(sk.tempMax!=null?Math.round(sk.tempMax):null);
+    if(birds!=null && birds>0) s.push(grownUp
+      ? `<b>${birds}</b> bird detections logged today`
+      : `<b>${birds}</b> birds heard singing today! 🐦`);
+    if(species!=null && species>0) s.push(grownUp
+      ? `<b>${species}</b> bird species identified today`
+      : `<b>${species}</b> different kinds of bird today! 🐦`);
+    if(bats!=null && bats>0) s.push(grownUp
+      ? `<b>${bats}</b> bat passes recorded last night`
+      : `<b>${bats}</b> bats flew past last night! 🦇`);
+    if(sq!=null && sq>0) s.push(grownUp
+      ? `<b>${sq}</b> red squirrel sightings today`
+      : `<b>${sq}</b> red squirrel visits today! 🐿️`);
+    if(grownUp){
+      if(temp!=null) s.push(`currently <b>${temp}°C</b> in Threlkeld`);
+    } else {
+      // For the youngest: a word, not a number
+      const w=weatherWord();
+      if(w) s.push(`it's <b>${w.word}</b> outside! ${w.emoji}`);
+    }
+    return s;
+  }
+  // Simple sky word for the youngest, from the weather-station data we already have.
+  // Rain is always accurate; humidity helps tell overcast from clear when it's not raining.
+  function weatherWord(){
+    const t = skyState.temp!=null ? skyState.temp : skyState.tempMax;
+    const h = skyState.humidity;
+    if(skyState.rain!=null && skyState.rain>0) return {word:'rainy', emoji:'🌧️'};
+    if(t!=null && t<=2) return {word:'frosty', emoji:'❄️'};
+    // Very damp air with no rain → misty/overcast (common in the fells)
+    if(h!=null && h>=92) return {word:'misty', emoji:'🌫️'};
+    if(h!=null && h>=80) return {word:'cloudy', emoji:'☁️'};
+    // Drier air → clearer skies; warmer = sunny, cooler-but-dry = bright
+    if(h!=null && h<65) return (t!=null && t>=15) ? {word:'sunny', emoji:'☀️'} : {word:'bright', emoji:'🌤️'};
+    if(t!=null && t>=18) return {word:'sunny', emoji:'☀️'};
+    if(t!=null || h!=null) return {word:'cloudy', emoji:'⛅'};
+    return null;
+  }
+  const tickerIdx={ks1:0,lks2:0,uks2:0};
+  function rotateTicker(){
+    const band=currentBand();
+    if(!band) return;
+    const el=document.getElementById('ticker-'+band);
+    if(!el) return;
+    const textEl=el.querySelector('.ticker-text');
+    const slides=tickerSlides(band==='uks2');
+    if(!slides.length){ textEl.innerHTML='🌱 Gathering today\u2019s nature data…'; return; }
+    let i=tickerIdx[band]%slides.length;
+    textEl.classList.add('fading');
+    setTimeout(()=>{
+      textEl.innerHTML=slides[i];
+      textEl.classList.remove('fading');
+      tickerIdx[band]=(i+1)%slides.length;
+    },350);
+  }
+  // show one immediately when a band opens, then rotate every 4.5s
+  function primeTicker(band){
+    const el=document.getElementById('ticker-'+band); if(!el) return;
+    const textEl=el.querySelector('.ticker-text');
+    const slides=tickerSlides(band==='uks2');
+    if(slides.length){ textEl.innerHTML=slides[0]; tickerIdx[band]=1%slides.length; }
+    else { textEl.innerHTML='🌱 Gathering today\u2019s nature data…'; }
+  }
+  setInterval(rotateTicker, 4500);
+
+  // ---------- live data ----------
+  const MQTT_HOST='broker.hivemq.com', MQTT_PORT=8884;
+  const STATS_TOPIC='birdnetpi/greg2026/stats';
+  const BAT_STATS_TOPIC='birdnetpi/greg2026/bats/stats';
+  const BAT_TOPIC='birdnetpi/greg2026/bats';
+  const WEATHER_TOPIC='birdnetpi/greg2026/weather/current';
+  const RIVER_TOPIC='birdnetpi/greg2026/river';
+  const NABU='https://rlpzmepeautd1v5pgoumz9aa2qhd92xd.ui.nabu.casa';
+  const SQUIRREL_JSON=NABU+'/local/wildlife/sightings_summary.json';
+  const HISTORY_URL=NABU+'/local/naturalist_history.json';
+
+  // Build a warm, age-pitched "today's nature story" from the diary data fields.
+  // Three reading levels from the same facts — not the adult prose, so it always
+  // works and needs no daily writing. Degrades gracefully if a field is missing.
+  function buildDiary(entry){
+    const d=(entry && entry.data) || {};
+    const birds = d.birds && d.birds.total24h!=null ? d.birds.total24h : null;
+    const bats  = d.bats && d.bats.lastNightTotal!=null ? d.bats.lastNightTotal : null;
+    const tmax  = d.weather && d.weather.tempMax!=null ? d.weather.tempMax : null;
+    const moon  = d.sky && d.sky.moonPhase ? d.sky.moonPhase : null;
+    const wet   = d.weather && d.weather.rain!=null ? d.weather.rain>0 : null;
+
+    // ---- KS1: one or two simple, happy sentences ----
+    let ks1=[];
+    if(d.birds && d.birds.species24h!=null && d.birds.species24h>0) ks1.push(`Today the birds are singing in our village — we've heard ${d.birds.species24h} kinds! 🐦`);
+    else if(birds!=null) ks1.push(`Today the birds are singing in our village! 🐦`);
+    if(bats!=null && bats>0) ks1.push(`Last night, while you were asleep, ${bats} bats flew past catching insects. 🦇`);
+    else if(bats===0) ks1.push(`The bats were quiet last night — maybe it was too cold or wet for them. 🦇`);
+    if(!ks1.length) ks1.push(`Let's see what nature is doing in Threlkeld today! 🌿`);
+
+    // ---- LKS2: a short paragraph with a 'why' ----
+    let lks2=[];
+    if(birds!=null) lks2.push(`Our listening box counted <b>${birds}</b> bird sounds in the last day.`);
+    if(wet===true) lks2.push(`It has been wet — birds often sing less in the rain, but the damp brings out insects.`);
+    if(bats!=null) lks2.push(bats>0
+      ? `Those insects are good news for bats: <b>${bats}</b> bat passes were detected after dark.`
+      : `No bats were detected last night.`);
+    if(tmax!=null) lks2.push(`The warmest it reached was <b>${tmax}°C</b>.`);
+    if(!lks2.length) lks2.push(`The sensors are gathering today's nature data right now.`);
+
+    // ---- UKS2: closest to the real diary, with numbers + pattern ----
+    let uks2=[];
+    if(birds!=null) uks2.push(`In the past 24 hours, the bird detector logged <b>${birds}</b> detections across the village.`);
+    if(bats!=null) uks2.push(bats>0
+      ? `Overnight, <b>${bats}</b> bat passes were recorded — bats hunt by echolocation, so every pass is a hunting flight caught on an ultrasonic microphone.`
+      : `No bat passes were recorded overnight, which can happen on cold, wet or windy nights when insects stay grounded.`);
+    if(tmax!=null || moon){
+      let env=[];
+      if(tmax!=null) env.push(`a high of <b>${tmax}°C</b>`);
+      if(moon) env.push(`a ${moon.toLowerCase()} moon`);
+      uks2.push(`Conditions today: ${env.join(' and ')}.`);
+    }
+    if(wet===true) uks2.push(`Wet weather tends to suppress birdsong but boost insect numbers — worth watching whether bat activity rises as a result.`);
+    if(!uks2.length) uks2.push(`Live sensor data is being gathered now — check back through the day.`);
+
+    return {
+      ks1: ks1.join(' '),
+      lks2: lks2.join(' '),
+      uks2: uks2.join(' ')
+    };
+  }
+
+  function renderDiary(history){
+    if(!Array.isArray(history) || !history.length) return;
+    const entry = history.slice().sort((a,b)=> a.date<b.date?1:-1)[0]; // newest
+    const txt = buildDiary(entry);
+    setHTML('ks1-diary', txt.ks1);
+    setHTML('lks2-diary', txt.lks2);
+    setHTML('uks2-diary', txt.uks2);
+    // feed weather/moon to daily challenge
+    const dd=(entry && entry.data)||{};
+    if(dd.weather){ if(dd.weather.tempMax!=null) challengeData.tempMax=dd.weather.tempMax; if(dd.weather.rain!=null) challengeData.wet=dd.weather.rain>0; }
+    if(dd.sky && dd.sky.moonPhase) challengeData.moon=dd.sky.moonPhase;
+    // feed the sky/weather card
+    if(dd.weather){ if(dd.weather.tempMax!=null) skyState.tempMax=dd.weather.tempMax; if(dd.weather.rain!=null) skyState.rain=dd.weather.rain; }
+    if(dd.sky && dd.sky.moonPhase) skyState.moon=dd.sky.moonPhase;
+    renderSky();
+    renderChallenges();
+  }
+  function setHTML(id,html){ const e=document.getElementById(id); if(e) e.innerHTML=html; }
+
+  // ---------- printable worksheet ----------
+  function currentBand(){
+    for(const v of ['ks1','lks2','uks2']){
+      const el=document.getElementById('view-'+v);
+      if(el && el.classList.contains('active')) return v;
+    }
+    return null;
+  }
+  function buildWorksheet(){
+    const band=currentBand();
+    const ws=document.getElementById('worksheet');
+    if(!ws) return;
+    if(!band){ ws.innerHTML=''; return; }  // on chooser/teachers — nothing to print
+    const titles={ks1:'Little Explorers', lks2:'Nature Detectives', uks2:'Wild Scientists'};
+    const date=todayStamp();
+    const diary=(document.getElementById(band+'-diary')||{}).textContent||'';
+    const challenge=(document.getElementById(band+'-challenge')||{}).textContent||'';
+    const challTitle=(document.getElementById(band+'-challenge-title')||{}).textContent||'Today\u2019s challenge';
+
+    // birds heard today (names) from the on-screen list
+    let birds=[];
+    const list=document.querySelectorAll('#'+band+'-birds .critter .nm');
+    list.forEach(n=>birds.push(n.textContent));
+
+    let body='';
+    body+=`<div class="ws-head"><div class="ws-title">🌿 Threlkeld Nature Watch — Worksheet</div>`
+        + `<div class="ws-sub">${titles[band]} · ${date} · Name: ____________________</div></div>`;
+
+    if(diary){ body+=`<h3>📖 Today\u2019s Nature Diary</h3><p>${diary}</p>`; }
+
+    // this season
+    {
+      const season=seasonName(new Date().getMonth());
+      const c=SEASON_CONTENT[season];
+      if(c){ const text=(band==='ks1'?c.ks1:band==='lks2'?c.lks2:c.uks2).replace(/&rsquo;/g,'\u2019'); body+=`<h3>🌿 This season: ${season}</h3><p>${text}</p>`; }
+    }
+
+    // weather & sky line
+    {
+      const t = skyState.temp!=null ? Math.round(skyState.temp) : (skyState.tempMax!=null?Math.round(skyState.tempMax):null);
+      const bits=[];
+      if(t!=null) bits.push(t+'°C');
+      if(skyState.rain!=null) bits.push(skyState.rain>0?'rainy':'dry');
+      if(skyState.moon) bits.push('moon: '+skyState.moon);
+      if(bits.length) body+=`<h3>🌤️ Today\u2019s weather &amp; sky</h3><p>${bits.join(' · ')}</p>`;
+    }
+
+    if(birds.length){
+      body+=`<h3>🐦 Birds heard in Threlkeld today</h3><div class="ws-birds">`+birds.join(' &nbsp;·&nbsp; ')+`</div>`;
+    }
+
+    body+=`<h3>${challTitle.replace(/^[^A-Za-z]*/,'')||'Today\u2019s challenge'}</h3><p>${challenge}</p>`;
+
+    // age-appropriate response space
+    if(band==='ks1'){
+      body+=`<h3>🎨 Draw what you would like to see</h3><div class="ws-box"></div>`;
+    } else {
+      body+=`<div class="ws-lines">`+Array.from({length:6}).map(()=>`<div class="ws-line"></div>`).join('')+`</div>`;
+    }
+
+    body+=`<div class="ws-foot">Real data from sensors in Threlkeld, Cumbria · threlkeld.info · Made for Threlkeld C of E Primary School</div>`;
+    ws.innerHTML=body;
+  }
+  window.addEventListener('beforeprint', buildWorksheet);
+  // Safari/iOS don't always fire beforeprint — also build on the button tap.
+  function printWorksheet(){ buildWorksheet(); window.print(); }
+
+  // ---------- daily challenge (deterministic by date, age-pitched) ----------
+  // Same question for everyone all day; rotates so a child rarely repeats across
+  // a ~190-day school year. Mix of data-driven templates (refresh with live
+  // numbers) and a large evergreen pool. Templates fall back to generic if data
+  // is missing, so a challenge always shows.
+
+  // Day index for the daily challenge. A new "day" begins at 07:30 local time,
+  // so the question is settled before the school day and never changes under a
+  // class mid-lesson. Anything before 07:30 still shows the previous day's question.
+  const DAY_ROLLOVER_HOUR=7, DAY_ROLLOVER_MIN=30;
+  function dayIndex(){
+    const now=new Date();
+    const shifted=new Date(now.getTime() - ((DAY_ROLLOVER_HOUR*60+DAY_ROLLOVER_MIN)*60000));
+    const start=new Date(shifted.getFullYear(),0,0);
+    const diff=shifted-start;
+    return Math.floor(diff/86400000); // day-of-year, rolling over at 07:30
+  }
+
+  // latest live data captured for data-driven challenges
+  let challengeData={ topBird:null, birdSpecies:null, birdTotal:null, bats:null, batSpecies:null, sqToday:null, sqTotal:null, tempMax:null, wet:null, moon:null };
+
+  // ---- KS1: short "I wonder…" wonders (gentle, no reading-heavy) ----
+  const KS1_EVERGREEN=[
+    "Draw the bird you would most like to see in the playground. What colour is it?",
+    "Can you flap like a bird? Now can you flap as quietly as an owl?",
+    "If you were a red squirrel, where would you hide your acorns?",
+    "What sound does your favourite bird make? Try to copy it!",
+    "Bats sleep upside down. Can you imagine sleeping like a bat?",
+    "Look outside. How many different birds can you count today?",
+    "What do you think birds eat for breakfast?",
+    "Why do you think owls come out at night and not in the day?",
+    "Make up a name for a robin you might see in your garden.",
+    "Bats use their ears to 'see' in the dark. Cover your eyes — what can you hear?",
+    "Draw a cosy home for a hedgehog to sleep in.",
+    "If a squirrel visited your classroom, what would it do?",
+    "What colour is a blue tit? What other blue things can you spot?",
+    "Pretend to be a bird building a nest. What would you use?",
+    "Why do you think birds sing in the morning?",
+    "Count to ten like a bat squeaking very fast!",
+    "Which is your favourite: birds, bats, or squirrels? Why?",
+    "Draw what you think the garden looks like at night when the bats fly.",
+    "Can you tiptoe as quietly as a mouse so you don't scare the birds?",
+    "What would you like to ask a red squirrel if it could talk?",
+    "Look for something red outside, like a robin's chest.",
+    "If you had wings, where would you fly first?",
+    "Make the happiest bird song you can!",
+    "Why do birds have feathers but we don't?",
+    "Draw a picture of a bat catching a moth in the dark."
+  ];
+  const KS1_TEMPLATES=[
+    d=> d.topBird ? `We heard lots of ${d.topBird}s today! Can you draw one and make its song?` : null,
+    d=> (d.bats!=null && d.bats>0) ? `${d.bats} bats flew past last night! Can you count to ${Math.min(d.bats,20)} like a squeaking bat?` : null,
+    d=> (d.sqToday!=null && d.sqToday>0) ? `A red squirrel visited today! Where do you think it went next?` : null,
+    d=> (d.birdSpecies!=null) ? `We heard ${d.birdSpecies} different kinds of bird. Can you make ${Math.min(d.birdSpecies,5)} different bird sounds?` : null
+  ];
+
+  // ---- LKS2: detective tasks, a bit of 'why' ----
+  const LKS2_EVERGREEN=[
+    "Look out of the window for 5 minutes and tally every bird you see. Which was most common?",
+    "Why do you think we hear more birds in the morning than the afternoon?",
+    "Red squirrels are rarer than grey squirrels in most of England. Why might that be?",
+    "Bats eat insects. What do you think happens to bats in winter when there are fewer insects?",
+    "Design a bird that would be perfectly suited to living in a Lake District wood.",
+    "Why might a bird be easier to hear than to see?",
+    "What three things does a bird need to survive? See if you can list them.",
+    "If it rains all day, do you think we'll hear more or fewer birds? Why?",
+    "Bats hunt at night and birds in the day. Why don't they compete for the same food?",
+    "Make a poster telling people how to help red squirrels.",
+    "Why do you think some birds fly away to warmer countries in winter?",
+    "What might make one day busier for birds than another?",
+    "Owls can turn their heads almost all the way round. Why is that useful?",
+    "Draw a food chain starting with a leaf and ending with an owl.",
+    "Why is it helpful for scientists to record nature every single day?",
+    "How could you tell a robin from a blackbird without seeing it?",
+    "What would happen to the woodland if all the insects disappeared?",
+    "Bats find food using echoes. What everyday animal does something similar?",
+    "Why might a microphone hear birds that you would walk straight past?",
+    "Plan a mini nature survey for your school grounds. What would you record?",
+    "Why are old trees with holes in them important for wildlife?",
+    "If you ran the nature sensors, what new animal would you most want to detect?",
+    "Why do you think birdsong is louder in spring than in autumn?",
+    "What clues in the woods would tell you a squirrel had been there?",
+    "How does the weather change what animals do each day?"
+  ];
+  const LKS2_TEMPLATES=[
+    d=> d.topBird ? `Today's busiest bird was the ${d.topBird}. Why might that species do well around Threlkeld?` : null,
+    d=> (d.bats!=null) ? (d.bats>0 ? `${d.bats} bat passes were detected last night. What do you think the bats were hunting?` : `No bats were detected last night. What might have kept them away — cold, wind, or rain?`) : null,
+    d=> (d.wet===true) ? `It's been wet today. Predict whether that means more or fewer birdsong detections — then check the number above!` : null,
+    d=> (d.birdSpecies!=null) ? `We heard ${d.birdSpecies} different bird species today. How many do you think you could name?` : null,
+    d=> (d.sqTotal!=null && d.sqTotal>0) ? `Our camera has spotted red squirrels ${d.sqTotal} times in total. Why is Threlkeld such a good place for them?` : null
+  ];
+
+  // ---- UKS2: proper science challenges ----
+  const UKS2_EVERGREEN=[
+    "Why might fewer birds be heard on a windy or rainy day? Think about both the birds and the microphone.",
+    "Red squirrels survive here but are rare elsewhere in England. List three reasons why.",
+    "Predict tomorrow's busiest bird, then check whether you were right.",
+    "Bats use ultrasonic calls we can't hear. Why might evolving very high-pitched calls be useful?",
+    "The detector records every day. Why is a long run of daily data more valuable than a single day's?",
+    "Design a fair test to find out whether birds sing more at dawn or dusk.",
+    "Why might two woods only a mile apart have very different birds?",
+    "An AI identifies birds from their songs. What could cause it to make a mistake?",
+    "Bats hunt the insects that rain brings out. Sketch how a wet week might ripple through the food web.",
+    "Why is biodiversity (lots of different species) good for a habitat's health?",
+    "How could climate change alter which birds we hear in Threlkeld over 20 years?",
+    "Grey squirrels carry a disease harmless to them but deadly to reds. How does that help greys spread?",
+    "Why do migratory birds bother flying thousands of miles instead of staying put?",
+    "What are the advantages and disadvantages of monitoring wildlife with sensors instead of people?",
+    "A spectrogram turns sound into a picture. Why is that useful for identifying a species?",
+    "Why might nocturnal animals have evolved better hearing than daytime ones?",
+    "How would you investigate whether the moon's brightness affects bat activity?",
+    "Some birds are 'indicator species' for a healthy habitat. What might that mean?",
+    "Why could counting detections overestimate how many individual birds are really present?",
+    "If you wanted to attract more red squirrels, what would you change about the habitat?",
+    "Echolocation works by timing echoes. How is that like how a submarine uses sonar?",
+    "Why is it important that conservation decisions are based on data, not just opinion?",
+    "What might explain a sudden drop in detections on an otherwise normal day?",
+    "How could you tell the difference between a quiet wildlife day and a broken sensor?",
+    "Design a citizen-science project your whole village could take part in."
+  ];
+  const UKS2_TEMPLATES=[
+    d=> d.topBird ? `Today's most-detected bird was the ${d.topBird}${d.birdTotal?` (${d.birdTotal} calls)`:''}. What features of Threlkeld's habitat might favour it?` : null,
+    d=> (d.bats!=null) ? (d.bats>0 ? `${d.bats} bat passes were recorded overnight${d.batSpecies?` across ${d.batSpecies} species`:''}. What conditions make a good night for bats?` : `Zero bat passes overnight. Suggest two testable explanations and how you'd check each.`) : null,
+    d=> (d.tempMax!=null) ? `Today's high was ${d.tempMax}°C. How might temperature influence both insect numbers and bird activity?` : null,
+    d=> (d.wet===true) ? `It's been wet today. Form a hypothesis about how rain affects detection counts, then test it against the numbers above.` : null,
+    d=> (d.moon) ? `Tonight's moon is ${d.moon.toLowerCase()}. Design an experiment to test whether moonlight changes how bats hunt.` : null,
+    d=> (d.birdSpecies!=null && d.bats!=null) ? `Today: ${d.birdSpecies} bird species by day, ${d.bats} bat passes by night. Why does the same wood support such different animals around the clock?` : null
+  ];
+
+  function pickChallenge(evergreen, templates, data, salt){
+    // Gather available data-driven questions (those whose template returns text)
+    const dataQs=templates.map(fn=>{ try{ return fn(data); }catch(e){ return null; } }).filter(Boolean);
+    // Combined pool: data questions first (so they're favoured when available), then evergreen
+    const pool=dataQs.concat(evergreen);
+    if(!pool.length) return null;
+    const idx=(dayIndex()+salt)%pool.length;
+    return pool[idx];
+  }
+
+  function renderChallenges(){
+    const d=challengeData;
+    const k=pickChallenge(KS1_EVERGREEN, KS1_TEMPLATES, d, 0);
+    const l=pickChallenge(LKS2_EVERGREEN, LKS2_TEMPLATES, d, 1);
+    const u=pickChallenge(UKS2_EVERGREEN, UKS2_TEMPLATES, d, 2);
+    if(k) setText('ks1-challenge', k);
+    if(l) setText('lks2-challenge', l);
+    if(u) setText('uks2-challenge', u);
+  }
+
+  // Build a WAV filename from a detection timestamp, matching the bat recorder's naming.
+  function batFilenameFromTs(ts){
+    try{
+      const d=new Date(ts); const p=n=>String(n).padStart(2,'0');
+      return `${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}.wav`;
+    }catch(e){ return null; }
+  }
+
+  // Friendly fallback birds so a child never sees an empty/quiet screen.
+  const FALLBACK_BIRDS=[
+    {bird:'Robin',count:0},{bird:'Blackbird',count:0},{bird:'Chaffinch',count:0},
+    {bird:'Blue Tit',count:0},{bird:'Wren',count:0}
+  ];
+  const BIRD_EMOJI={
+    robin:'🐦',blackbird:'🐦‍⬛',crow:'🐦‍⬛',magpie:'🐦‍⬛',jackdaw:'🐦‍⬛',rook:'🐦‍⬛',
+    owl:'🦉','tawny owl':'🦉',duck:'🦆',mallard:'🦆',goose:'🪿',pheasant:'🐔',
+    swan:'🦢',gull:'🕊️',pigeon:'🕊️','wood pigeon':'🕊️',dove:'🕊️',
+    sparrow:'🐤','house sparrow':'🐤',wren:'🐤',chaffinch:'🐤',
+    'blue tit':'🐤','great tit':'🐤',finch:'🐤',goldfinch:'🐤'
+  };
+  function emojiFor(name){
+    const n=(name||'').toLowerCase();
+    for(const k in BIRD_EMOJI){ if(n.includes(k)) return BIRD_EMOJI[k]; }
+    return '🐦';
+  }
+
+  let gotBirds=false, gotSquirrels=false;
+
+  function renderBirdLists(today){
+    const list = (today && today.length) ? today : FALLBACK_BIRDS;
+    const usingFallback = !(today && today.length);
+    const totalCalls = list.reduce((s,b)=>s+(b.count||0),0);
+    const species = list.length;
+    const max = Math.max(1, ...list.map(b=>b.count||0));
+
+    // KS1: number of kinds + top 4 with friendly icons
+    setText('ks1-birdnum', usingFallback ? '🐦' : species);
+    setText('ks1-birdlabel', usingFallback ? 'birds we often hear' : (species===1?'kind of bird today':'kinds of bird today'));
+    fillCritters('ks1-birds', list.slice(0,4), max, false);
+    buildSongRow(usingFallback ? null : list);
+
+    // LKS2
+    setText('lks2-birdtotal', usingFallback ? '—' : totalCalls);
+    fillCritters('lks2-birds', list.slice(0,5), max, true);
+
+    // UKS2
+    setText('uks2-birdtotal', usingFallback ? '—' : totalCalls);
+    setText('uks2-birdtotal2', usingFallback ? '—' : totalCalls);
+    setText('uks2-birdspecies', usingFallback ? '—' : species);
+    fillCritters('uks2-birds', list.slice(0,5), max, true);
+
+    // feed daily-challenge data
+    if(!usingFallback){
+      challengeData.topBird = (list[0] && list[0].bird) ? list[0].bird : null;
+      challengeData.birdSpecies = species;
+      challengeData.birdTotal = totalCalls;
+    }
+    renderChallenges();
+  }
+
+  function fillCritters(elId, birds, max, showBars){
+    const el=document.getElementById(elId); if(!el) return;
+    el.innerHTML = birds.map((b,idx)=>{
+      const pct = Math.round(((b.count||0)/max)*100);
+      const countHtml = (b.count>0) ? `<span class="ct">${b.count}</span>` : '';
+      const barHtml = (showBars && b.count>0)
+        ? `<div class="barwrap"><div class="bar" style="width:${Math.max(8,pct)}%"></div></div>` : '';
+      const imgId = `${elId}-img-${idx}`;
+      const wikiFallback = `https://en.wikipedia.org/w/index.php?title=Special:Redirect/file/${(b.bird||'').split(' ').pop()}.jpg&width=120`;
+      return `<div class="critter">
+        <img class="critter-photo" id="${imgId}" alt="${b.bird}" loading="lazy"
+             src="${wikiFallback}"
+             onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'ico',textContent:'${emojiFor(b.bird)}'}))">
+        <span class="nm">${b.bird}</span>${barHtml}${countHtml}</div>`;
+    }).join('');
+    // Upgrade to iNaturalist photos (sharper, better cropped) where available.
+    birds.forEach((b,idx)=>{
+      const imgId = `${elId}-img-${idx}`;
+      fetch(`https://api.inaturalist.org/v1/taxa?q=${encodeURIComponent(b.bird)}&per_page=1&rank=species&iconic_taxa=Aves`)
+        .then(r=>r.ok?r.json():null)
+        .then(j=>{
+          const photo = j && j.results && j.results[0] && j.results[0].default_photo;
+          if(photo && photo.square_url){
+            const el2=document.getElementById(imgId);
+            if(el2) el2.src = photo.medium_url || photo.square_url;
+          }
+        }).catch(()=>{});
+    });
+  }
+
+  function renderSquirrels(d){
+    const today = d && d.today!=null ? d.today : 0;
+    const week  = d && d.week!=null ? d.week : 0;
+    const total = d && d.total!=null ? d.total : 0;
+    const img   = d && d.latest && d.latest.image ? (NABU+'/local/'+d.latest.image) : null;
+
+    setText('lks2-sqtoday', today);
+    setText('lks2-sqweek', week);
+    setText('uks2-sqtotal', total);
+    challengeData.sqToday = today; challengeData.sqTotal = total;
+    renderChallenges();
+
+    const photoHTML = img
+      ? `<img class="squirrel-photo" src="${img}" alt="A red squirrel at the feeder in Threlkeld" loading="lazy">
+          <div class="photo-cap">🐿️ A real red squirrel, photographed at our feeder!</div>`
+      : `<div class="squirrel-photo" role="img" aria-label="Red squirrel illustration" style="display:flex;align-items:center;justify-content:center;font-size:64px">🐿️</div>
+          <div class="photo-cap">Red squirrels visit our garden feeder. ${total>0?('We have spotted them '+total+' times!'):'Keep watching — they are shy!'}</div>`;
+    ['ks1-squirrelwrap','lks2-squirrelwrap'].forEach(id=>{
+      const wrap=document.getElementById(id);
+      if(wrap) wrap.innerHTML=photoHTML;
+    });
+  }
+
+  function renderBats(d){
+    const session = d && d.session ? d.session : null;
+    const n = session && session.total!=null ? session.total : null;
+    const sp = session && session.species!=null ? session.species : null;
+    const nStr = (n==null) ? '—' : n;
+    const spStr = (sp==null) ? '—' : sp;
+    // KS1
+    setText('ks1-batnum', nStr);
+    setText('ks1-batlabel', (n==null) ? 'bats come out at night' : (n===1?'bat flew past last night':'bats flew past last night'));
+    // LKS2
+    setText('lks2-batnum', nStr);
+    setText('lks2-batspecies', spStr);
+    // UKS2
+    setText('uks2-batnum', nStr);
+    setText('uks2-batspecies', spStr);
+    setText('uks2-batinline', nStr);
+    challengeData.bats = n; challengeData.batSpecies = sp;
+    renderChallenges();
+  }
+
+  // KS1 bat sound — plays a REAL Threlkeld bat recording, time-expanded 10x so the
+  // ultrasonic call drops into human hearing range. Reuses the bats page mechanism.
+  const BATS_URL='https://rlpzmepeautd1v5pgoumz9aa2qhd92xd.ui.nabu.casa/local/bats/';
+  let latestBatFile=null;     // filename of a recent real recording, from BAT_TOPIC
+
+  function batSqueak(btn){
+    getCtx(); // resume audio inside the tap (iOS)
+    if(!latestBatFile){
+      if(btn){ const t=btn.textContent; btn.textContent='🦇 Listening for bats…'; setTimeout(()=>btn.textContent=t,1800); }
+      return;
+    }
+    playRealBat(latestBatFile, btn);
+  }
+
+  async function playRealBat(filename, btn){
+    try{
+      const ctx=getCtx(); if(!ctx) throw new Error('no audio');
+      if(btn) btn.textContent='⏳ Playing…';
+      const resp=await fetch(BATS_URL+filename);
+      const arrayBuf=await resp.arrayBuffer();
+      const view=new DataView(arrayBuf);
+      const sampleRate=view.getUint32(24,true);
+      const bitsPerSample=view.getUint16(34,true);
+      const dataOffset=44;
+      const bytes=new Uint8Array(arrayBuf);
+      const numSamples=Math.floor((bytes.length-dataOffset)/(bitsPerSample/8));
+      const playbackRate=Math.round(sampleRate/10); // 10x time-expansion → audible
+      const buf=ctx.createBuffer(1,numSamples,playbackRate);
+      const ch=buf.getChannelData(0);
+      if(bitsPerSample===16){ for(let i=0;i<numSamples;i++) ch[i]=view.getInt16(dataOffset+i*2,true)/32768; }
+      else if(bitsPerSample===8){ for(let i=0;i<numSamples;i++) ch[i]=(bytes[dataOffset+i]-128)/128; }
+      stopCurrent();
+      const src=ctx.createBufferSource();
+      src.buffer=buf; src.connect(ctx.destination); src.start();
+      currentSource=src;
+      if(btn) btn.textContent='🔊 A real Threlkeld bat!';
+      src.onended=()=>{ if(btn) btn.textContent='🦇 Hear a real bat'; };
+    }catch(e){
+      if(btn){ btn.textContent='🔈 tap again'; setTimeout(()=>{ if(btn) btn.textContent='🦇 Hear a real bat'; },1600); }
+    }
+  }
+
+  // ---------- our river today (water cycle; LKS2/UKS2 only) ----------
+  function renderRiver(data){
+    try{
+      const stations=(data && data.stations)||[];
+      const main=stations.find(s=>s.main)||stations[0];
+      if(!main || main.level==null) return;
+      const level=Number(main.level);
+      const nmax=(main.normal && main.normal[1]!=null)?main.normal[1]:2;
+      // state: low / normal / high (observational only)
+      let state, emoji;
+      if(level>=nmax){ state='high'; emoji='🌊'; }
+      else if(level>=nmax*0.8){ state='quite high'; emoji='💧'; }
+      else if(level<=nmax*0.4){ state='low'; emoji='🪨'; }
+      else { state='normal'; emoji='💧'; }
+      // trend
+      let trendWord='';
+      if(main.trend==='rising') trendWord='rising';
+      else if(main.trend==='falling') trendWord='falling';
+      else trendWord='steady';
+
+      const lvlStr=level.toFixed(2)+'m';
+
+      // LKS2: simple cause-and-effect
+      const lks2=`<div class="river-state">${emoji} The river is ${state}</div>
+        <p>The Glenderamackin — our village river — is flowing past Threlkeld today. When it rains on Blencathra, the water runs down the fells into the river a few hours later, so the river is often <b>${trendWord}</b> after wet or dry weather.</p>`;
+
+      // UKS2: add the number + the catchment science
+      const uks2=`<div class="river-state">${emoji} ${state.charAt(0).toUpperCase()+state.slice(1)} · ${trendWord}</div>
+        <p>The Glenderamackin at Threlkeld is at <b>${lvlStr}</b> (its normal top is about ${nmax}m). Rain falling on Blencathra and the surrounding fells gathers in the catchment and runs off into the river, so the level usually rises a few hours after heavy rain and falls during dry spells — a clear example of the water cycle in action.</p>`;
+
+      const lb=document.getElementById('lks2-river'); const lc=document.getElementById('river-lks2');
+      if(lb){ lb.innerHTML=lks2; if(lc) lc.hidden=false; }
+      const ub=document.getElementById('uks2-river'); const uc=document.getElementById('river-uks2');
+      if(ub){ ub.innerHTML=uks2; if(uc) uc.hidden=false; }
+    }catch(e){}
+  }
+
+  function setText(id,val){ const e=document.getElementById(id); if(e) e.textContent=val; }
+
+  // ---------- weather & sky (age-pitched) ----------
+  let skyState={ temp:null, feels:null, humidity:null, tempMax:null, rain:null, moon:null };
+
+  function weatherEmoji(){
+    if(skyState.rain!=null && skyState.rain>0) return '🌧️';
+    if(skyState.temp!=null && skyState.temp>=20) return '☀️';
+    if(skyState.temp!=null && skyState.temp<=3) return '❄️';
+    return '⛅';
+  }
+  function moonEmoji(p){
+    if(!p) return '🌙';
+    const s=p.toLowerCase();
+    if(s.includes('new')) return '🌑';
+    if(s.includes('full')) return '🌕';
+    if(s.includes('first quarter')) return '🌓';
+    if(s.includes('last quarter')||s.includes('third quarter')) return '🌗';
+    if(s.includes('waxing')&&s.includes('crescent')) return '🌒';
+    if(s.includes('waxing')&&s.includes('gibbous')) return '🌔';
+    if(s.includes('waning')&&s.includes('gibbous')) return '🌖';
+    if(s.includes('waning')&&s.includes('crescent')) return '🌘';
+    return '🌙';
+  }
+  function renderSky(){
+    const t = skyState.temp!=null ? Math.round(skyState.temp) : (skyState.tempMax!=null?Math.round(skyState.tempMax):null);
+    const wEmoji=weatherEmoji();
+    const mEmoji=moonEmoji(skyState.moon);
+    const tStr = t!=null ? t+'°C' : '—';
+    const rainy = (skyState.rain!=null && skyState.rain>0);
+
+    // KS1: big, simple — a word, not a number
+    const kw=weatherWord()||{word:'today',emoji:wEmoji};
+    setHTML('ks1-sky', `<div class="sky-row">
+        <div class="sky-item"><div class="sky-emoji">${kw.emoji}</div><div class="sky-val">${kw.word.charAt(0).toUpperCase()+kw.word.slice(1)}</div><div class="sky-lbl">Weather</div></div>
+        <div class="sky-item"><div class="sky-emoji">${mEmoji}</div><div class="sky-val">Moon</div><div class="sky-lbl">${skyState.moon?skyState.moon:'tonight'}</div></div>
+      </div>
+      <p class="sky-note">${rainy?'It&rsquo;s a wet day — good for worms and bats!':'Look up and see what the sky is doing today.'}</p>`);
+
+    // LKS2: a little detail
+    setHTML('lks2-sky', `<div class="sky-row">
+        <div class="sky-item"><div class="sky-emoji">${wEmoji}</div><div class="sky-val">${tStr}</div><div class="sky-lbl">Temperature</div></div>
+        <div class="sky-item"><div class="sky-emoji">${mEmoji}</div><div class="sky-val">${skyState.moon||'—'}</div><div class="sky-lbl">Moon tonight</div></div>
+      </div>
+      <p class="sky-note">${rainy?'Rain brings out insects — watch whether the bats are busy tonight.':'The weather and the moon both change what the animals do.'}</p>`);
+
+    // UKS2: precise + linking science
+    let detail=[];
+    if(skyState.temp!=null) detail.push(`${Math.round(skyState.temp)}°C`+(skyState.feels!=null?` (feels ${Math.round(skyState.feels)}°C)`:''));
+    if(skyState.humidity!=null) detail.push(`${Math.round(skyState.humidity)}% humidity`);
+    setHTML('uks2-sky', `<div class="sky-row">
+        <div class="sky-item"><div class="sky-emoji">${wEmoji}</div><div class="sky-val">${tStr}</div><div class="sky-lbl">${detail.length?detail.join(' · '):'Temperature'}</div></div>
+        <div class="sky-item"><div class="sky-emoji">${mEmoji}</div><div class="sky-val">${skyState.moon||'—'}</div><div class="sky-lbl">Moon phase</div></div>
+      </div>
+      <p class="sky-note">Weather and moonlight are variables a scientist would record: both can influence insect activity, birdsong and how bats hunt.</p>`);
+  }
+
+  function todayStamp(){
+    try{ return new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'}); }
+    catch(e){ return ''; }
+  }
+  function updateNote(){
+    const note=document.getElementById('dataNote');
+    if(!note) return;
+    if(gotBirds||gotSquirrels){
+      const d=todayStamp();
+      note.textContent='✅ Showing real, live data from sensors in Threlkeld'+(d?' — '+d:'')+'. Updates through the day.';
+    }
+  }
+  // If nothing has loaded after 9s (flaky wifi), be honest rather than stuck on "Connecting…".
+  setTimeout(function(){
+    if(!gotBirds && !gotSquirrels){
+      const note=document.getElementById('dataNote');
+      if(note) note.textContent='⏳ Showing what we can — some live data may be delayed. The page will fill in as it connects.';
+    }
+  }, 9000);
+
+  // Squirrels: static JSON first (instant, reliable)
+  fetch(SQUIRREL_JSON+'?t='+Date.now())
+    .then(r=>r.ok?r.json():null)
+    .then(d=>{ if(d){ renderSquirrels(d); gotSquirrels=true; updateNote(); } })
+    .catch(()=>{ renderSquirrels(null); });
+
+  // Today's nature diary (auto-generated, three reading levels) from the same feed the main site uses.
+  fetch(HISTORY_URL+'?t='+Date.now())
+    .then(r=>r.ok?r.json():null)
+    .then(h=>{ if(h) renderDiary(h); })
+    .catch(()=>{});
+
+  // Birds + bats via MQTT (retained messages arrive on subscribe)
+  let birdTimeout = setTimeout(()=>{ if(!gotBirds) renderBirdLists(null); }, 6000); // fallback if no data
+  let batTimeout = setTimeout(()=>{ renderBats(null); }, 6000); // show dashes if no bat data arrives
+  try{
+    const client=mqtt.connect(`wss://${MQTT_HOST}:${MQTT_PORT}/mqtt`,{connectTimeout:8000,reconnectPeriod:5000});
+    client.on('connect',()=>{ client.subscribe(STATS_TOPIC); client.subscribe(BAT_STATS_TOPIC); client.subscribe(BAT_TOPIC); client.subscribe(WEATHER_TOPIC); client.subscribe(RIVER_TOPIC); });
+    client.on('message',(topic,msg)=>{
+      try{
+        const data=JSON.parse(msg.toString());
+        if(topic===STATS_TOPIC){
+          clearTimeout(birdTimeout);
+          renderBirdLists(Array.isArray(data.today)?data.today:null);
+          gotBirds=true; updateNote();
+        } else if(topic===BAT_STATS_TOPIC){
+          clearTimeout(batTimeout);
+          renderBats(data);
+        } else if(topic===WEATHER_TOPIC){
+          if(data.temperature!=null) skyState.temp=Number(data.temperature);
+          if(data.feels_like!=null) skyState.feels=Number(data.feels_like);
+          if(data.humidity!=null) skyState.humidity=Number(data.humidity);
+          renderSky();
+        } else if(topic===RIVER_TOPIC){
+          renderRiver(data);
+        } else if(topic===BAT_TOPIC){
+          // Live bat detection feed (last ~200). Grab the most recent timestamp
+          // to offer a real recording for the KS1 "hear a real bat" button.
+          let recent=null;
+          if(Array.isArray(data)) recent=data[0];
+          else if(data && data.count){ for(let i=0;i<data.count;i++){ if(data[i]&&data[i].timestamp){ recent=data[i]; break; } } }
+          else if(data && data.timestamp) recent=data;
+          if(recent && recent.timestamp){ const f=batFilenameFromTs(recent.timestamp); if(f) latestBatFile=f; }
+        }
+      }catch(e){}
+    });
+    client.on('error',()=>{});
+  }catch(e){ renderBirdLists(null); renderBats(null); }
+
+  // Render fallback squirrel placeholder immediately so KS1 card isn't blank
+  renderSquirrels(null);
+  // Show a daily challenge straight away (evergreen) — data-driven ones swap in as feeds arrive
+  renderChallenges();
+  // Show the sky card straight away; live temp + diary moon/rain fill in as feeds arrive
+  renderSky();
+  // Show this season's note (evergreen, no data needed)
+  renderSeasons();
+  // Show today's "Did you know?" fact (rotates daily at 07:30 like the challenges)
+  renderDYK();
+
+  // ---------- fell cam (live still, reused from the weather page) ----------
+  const FELLCAM_STILL='https://rlpzmepeautd1v5pgoumz9aa2qhd92xd.ui.nabu.casa/local/fellcam.jpg';
+  let tlYesterdayFiles=[];          // full URLs of yesterday's frames
+  let tlActiveBand=null, tlPlaying=false, tlPos=0, tlTimer=null;
+  function refreshFellCam(){
+    if(tlPlaying) return; // don't clobber a playing timelapse
+    const now=new Date();
+    const hour=now.getHours();
+    const isDaylight = hour>=4 && hour<22; // camera updates daylight hours only
+    const timeStr=now.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+    ['ks1','lks2','uks2'].forEach(band=>{
+      const box=document.getElementById('fellcam-'+band);
+      if(!box) return;
+      const img=box.querySelector('.fellcam-img');
+      const time=box.querySelector('.fellcam-time');
+      const cap=box.querySelector('.fellcam-cap');
+      if(!isDaylight){
+        if(cap) cap.innerHTML='🌙 The mountain camera rests at night — check back in daylight!';
+        if(img) img.style.display='none';
+        return;
+      }
+      if(img) img.style.display='';
+      img.onerror=()=>{
+        // Don't vanish silently — show a gentle note so it's clearly intentional.
+        if(img) img.style.display='none';
+        if(cap) cap.innerHTML='📷 Our mountain view will appear here in daylight.';
+      };
+      img.onload=()=>{ if(cap) cap.innerHTML='📷 The fells above Threlkeld, right now · '+timeStr; };
+      img.src=FELLCAM_STILL+'?t='+Date.now();
+    });
+  }
+  refreshFellCam();
+  setInterval(refreshFellCam, 5*60*1000);
+
+  // ---------- yesterday's timelapse (child-friendly: one button, play/pause) ----------
+  const FELLCAM_BASE='https://rlpzmepeautd1v5pgoumz9aa2qhd92xd.ui.nabu.casa/local/fellcam/';
+
+  async function loadYesterdayFrames(){
+    try{
+      const r=await fetch(FELLCAM_BASE+'index.json?t='+Date.now());
+      const idx=await r.json();
+      if(!idx || !idx.days || idx.days.length<2) return false; // need at least yesterday
+      // days[0] is today (partial), days[1] is yesterday (complete)
+      const y=idx.days[1];
+      if(!y || !y.files || !y.files.length) return false;
+      tlYesterdayFiles=y.files.map(f=>FELLCAM_BASE+f);
+      return true;
+    }catch(e){ return false; }
+  }
+
+  // Reveal the watch buttons only if yesterday's frames exist
+  loadYesterdayFrames().then(ok=>{
+    if(ok){ ['ks1','lks2','uks2'].forEach(b=>{ const el=document.getElementById('tlwatch-'+b); if(el) el.hidden=false; }); }
+  });
+
+  function tlFrameTime(url){
+    const m=url.match(/fellcam_(\d{4})(\d{2})(\d{2})_(\d{2})(\d{2})/);
+    return m ? `${m[4]}:${m[5]}` : '';
+  }
+  function toggleSchoolTL(band){
+    const btn=document.getElementById('tlwatch-'+band);
+    // if playing on this band, stop
+    if(tlPlaying && tlActiveBand===band){ stopSchoolTL(); return; }
+    // stop any other band first
+    stopSchoolTL();
+    if(!tlYesterdayFiles.length) return;
+    tlActiveBand=band; tlPlaying=true; tlPos=0;
+    if(btn) btn.innerHTML='⏸ Pause <span class="tl-time"></span>';
+    playSchoolTLFrame(band);
+  }
+  function playSchoolTLFrame(band){
+    if(!tlPlaying || tlActiveBand!==band) return;
+    const box=document.getElementById('fellcam-'+band);
+    if(!box){ stopSchoolTL(); return; }
+    const img=box.querySelector('.fellcam-img');
+    const btn=document.getElementById('tlwatch-'+band);
+    const url=tlYesterdayFiles[tlPos];
+    const next=new Image();
+    next.onload=()=>{
+      if(!tlPlaying || tlActiveBand!==band) return;
+      if(img){ img.style.display=''; img.src=url; }
+      const timeEl=btn?btn.querySelector('.tl-time'):null;
+      if(timeEl) timeEl.textContent=tlFrameTime(url);
+      tlPos++;
+      if(tlPos>=tlYesterdayFiles.length){
+        // reached end of the day — stop and restore live view
+        stopSchoolTL(); refreshFellCam(); return;
+      }
+      tlTimer=setTimeout(()=>playSchoolTLFrame(band), 180);
+    };
+    next.onerror=()=>{ tlPos++; if(tlPos<tlYesterdayFiles.length){ tlTimer=setTimeout(()=>playSchoolTLFrame(band),60); } else { stopSchoolTL(); refreshFellCam(); } };
+    next.src=url;
+  }
+  function stopSchoolTL(){
+    tlPlaying=false; clearTimeout(tlTimer);
+    ['ks1','lks2','uks2'].forEach(b=>{ const el=document.getElementById('tlwatch-'+b); if(el && !el.hidden) el.innerHTML='▶ Watch yesterday'; });
+    tlActiveBand=null;
+  }
+</script>
+</body>
+</html>
