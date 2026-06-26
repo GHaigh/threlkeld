@@ -168,6 +168,11 @@
   .rec-label{font-size:11px;color:#cfe0cd;text-transform:uppercase;letter-spacing:0.04em;margin-top:2px}
   .rec-date{font-size:11px;color:#9fb89d;margin-top:1px}
   .records-grid:empty{display:none}
+  .nightsky{background:linear-gradient(160deg,#0f1b3a 0%,#16213f 100%);border:1px solid rgba(160,196,255,0.25);border-radius:16px;padding:18px 20px;margin-bottom:18px;color:#dce6ff}
+  .nightsky h2{color:#fff}
+  .ns-line{font-size:16px;line-height:1.5;margin:8px 0;color:#dce6ff}
+  .ns-line:empty{display:none}
+  .ns-line b{color:#fff}
   .mini-fact{font-size:15px;color:#7a5a8a;font-weight:600;margin-top:10px}
 
   /* bird/critter list */
@@ -449,6 +454,14 @@
         </div>
       </div>
 
+      <div class="nightsky" id="ks1-nightsky" style="display:none">
+        <h2>🌙 Tonight's Sky</h2>
+        <p class="ns-line" id="ks1-ns-moon"></p>
+        <p class="ns-line" id="ks1-ns-stars"></p>
+        <p class="ns-line" id="ks1-ns-iss"></p>
+        <p class="ns-line" id="ks1-ns-aurora"></p>
+      </div>
+
       <div class="season-card">
         <h2 id="ks1-season-title">🌿 This season</h2>
         <p id="ks1-season">Finding out what&rsquo;s happening this season…</p>
@@ -483,6 +496,14 @@
           <div class="fellcam-cap">📷 The fells above Threlkeld, right now <span class="fellcam-time"></span></div>
           <button class="tl-watch no-print" id="tlwatch-lks2" onclick="toggleSchoolTL('lks2')" hidden>▶ Watch yesterday</button>
         </div>
+      </div>
+
+      <div class="nightsky" id="lks2-nightsky" style="display:none">
+        <h2>🌙 Tonight's Sky</h2>
+        <p class="ns-line" id="lks2-ns-moon"></p>
+        <p class="ns-line" id="lks2-ns-stars"></p>
+        <p class="ns-line" id="lks2-ns-iss"></p>
+        <p class="ns-line" id="lks2-ns-aurora"></p>
       </div>
       <div class="season-card">
         <h2 id="lks2-season-title">🌿 This season</h2>
@@ -577,6 +598,14 @@
           <div class="fellcam-cap">📷 Live: the fells above Threlkeld <span class="fellcam-time"></span></div>
           <button class="tl-watch no-print" id="tlwatch-uks2" onclick="toggleSchoolTL('uks2')" hidden>▶ Watch yesterday</button>
         </div>
+      </div>
+
+      <div class="nightsky" id="uks2-nightsky" style="display:none">
+        <h2>🌙 Tonight's Sky</h2>
+        <p class="ns-line" id="uks2-ns-moon"></p>
+        <p class="ns-line" id="uks2-ns-stars"></p>
+        <p class="ns-line" id="uks2-ns-iss"></p>
+        <p class="ns-line" id="uks2-ns-aurora"></p>
       </div>
       <div class="season-card">
         <h2 id="uks2-season-title">🌿 This season</h2>
@@ -1145,7 +1174,113 @@
     if(uks2El) uks2El.textContent = grown;
   }
 
-  // ---------- Nature Records (LKS2/UKS2): the extremes seen so far ----------
+  // ---------- Night sky (autumn/winter): moon, stars, space station, aurora ----------
+  // Seasonally gated: only shown when nights are long enough to matter (Oct–Mar),
+  // since "stargazing tonight!" is pointless in light summer evenings. Built to
+  // degrade gracefully — every part hides itself if its data isn't available.
+  // Pitched per band: KS1 gets moon + space station in simple words; the older
+  // bands also get a stargazing score and the northern-lights chance.
+  function nightSkySeason(){
+    const m = new Date().getMonth(); // 0=Jan
+    // Oct(9), Nov(10), Dec(11), Jan(0), Feb(1), Mar(2)
+    return (m>=9 || m<=2);
+  }
+  function moonInfo(){
+    const now=new Date();
+    const moonAge=(((now - new Date('2000-01-06T18:14:00Z'))/86400000)%29.53+29.53)%29.53;
+    let phase,icon;
+    if(moonAge<1.85){phase='New Moon';icon='🌑';}
+    else if(moonAge<7.38){phase='Waxing Crescent';icon='🌒';}
+    else if(moonAge<9.22){phase='First Quarter';icon='🌓';}
+    else if(moonAge<14.77){phase='Waxing Gibbous';icon='🌔';}
+    else if(moonAge<16.61){phase='Full Moon';icon='🌕';}
+    else if(moonAge<22.15){phase='Waning Gibbous';icon='🌖';}
+    else if(moonAge<23.99){phase='Last Quarter';icon='🌗';}
+    else{phase='Waning Crescent';icon='🌘';}
+    const brightness = (moonAge>7 && moonAge<22) ? Math.round(Math.sin((moonAge/29.53)*Math.PI)*100) : 0;
+    return {phase,icon,brightness};
+  }
+
+  async function renderNightSky(){
+    if(!nightSkySeason()){
+      // hide all night-sky cards out of season
+      ['ks1','lks2','uks2'].forEach(b=>{ const c=document.getElementById(b+'-nightsky'); if(c) c.style.display='none'; });
+      return;
+    }
+    ['ks1','lks2','uks2'].forEach(b=>{ const c=document.getElementById(b+'-nightsky'); if(c) c.style.display=''; });
+
+    // --- Moon (always available, no network) ---
+    const moon=moonInfo();
+    setHTML('ks1-ns-moon', `${moon.icon} Tonight's moon is a <b>${moon.phase}</b>. Can you find it in the sky?`);
+    setHTML('lks2-ns-moon', `${moon.icon} Tonight's moon: <b>${moon.phase}</b> (about ${moon.brightness}% bright).`);
+    setHTML('uks2-ns-moon', `${moon.icon} Moon tonight: <b>${moon.phase}</b>, roughly ${moon.brightness}% illuminated — a bright moon washes out fainter stars.`);
+
+    const lat=54.616, lon=-3.056;
+
+    // --- Stargazing score + aurora (Open-Meteo + NOAA) ---
+    try{
+      const [wRes,kRes]=await Promise.all([
+        fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=cloudcover&daily=sunset&timezone=Europe%2FLondon&forecast_days=1`),
+        fetch('https://services.swpc.noaa.gov/products/noaa-planetary-k-index-forecast.json')
+      ]);
+      const data=await wRes.json();
+      const now=new Date();
+      const sunset=new Date(data.daily.sunset[0]);
+      const hi=Math.min(Math.max(sunset.getHours(), now.getHours()),23);
+      const cloud=(data.hourly.cloudcover[hi]||0);
+      let score=10; score-=Math.round(cloud/15);
+      if(moon.brightness>70) score-=3; else if(moon.brightness>40) score-=1;
+      score=Math.max(0,Math.min(10,score));
+      let word = score>=8?'Excellent':score>=6?'Good':score>=4?'Fair':'Poor';
+      const ks1word = score>=6 ? 'A good night for stars! 🌟' : (cloud>70?'Cloudy tonight — the stars are hiding. ☁️':'Stars might peek through tonight. ✨');
+      setHTML('ks1-ns-stars', ks1word);
+      setHTML('lks2-ns-stars', `⭐ Stargazing tonight: <b>${word}</b> (${Math.round(cloud)}% cloud).`);
+      setHTML('uks2-ns-stars', `⭐ Stargazing score tonight: <b>${score}/10 (${word})</b> — from cloud cover (${Math.round(cloud)}%) and moonlight. Threlkeld sits under some of England's darkest skies.`);
+
+      // Aurora (Kp)
+      const kpData=await kRes.json();
+      let kp=0;
+      if(Array.isArray(kpData) && kpData.length>1){
+        const next=kpData.slice(1).find(r=>new Date(r[0])>now) || kpData[kpData.length-1];
+        kp=parseFloat(next[1])||0;
+      }
+      if(kp>=4){
+        setHTML('ks1-ns-aurora', `🌌 The Northern Lights might be out tonight — ask a grown-up to look north!`);
+        setHTML('lks2-ns-aurora', `🌌 Northern Lights possible tonight (Kp ${kp}). Look north, away from lights.`);
+        setHTML('uks2-ns-aurora', `🌌 Aurora chance tonight: Kp ${kp}. From 54.6°N aurora can appear at Kp 4+. We're near the Solar Cycle 25 peak.`);
+      } else {
+        ['ks1','lks2','uks2'].forEach(b=>setHTML(b+'-ns-aurora',''));
+      }
+    }catch(e){
+      ['ks1','lks2','uks2'].forEach(b=>{ setHTML(b+'-ns-stars',''); setHTML(b+'-ns-aurora',''); });
+    }
+
+    // --- ISS visible passes ---
+    try{
+      const res=await fetch(`https://iss-api.polluxlabs.io/iss-pass?lat=${lat}&lon=${lon}&visible_only=true`);
+      if(!res.ok) throw new Error('iss');
+      const json=await res.json();
+      const passes=(json && Array.isArray(json.passes))?json.passes:[];
+      const now=new Date();
+      const upcoming=passes.map(p=>({rise:new Date(p.rise.time), elev:Math.round(p.culmination?p.culmination.elevation_deg:0)}))
+        .filter(p=>p.rise>now).sort((a,b)=>a.rise-b.rise);
+      if(upcoming.length){
+        const n=upcoming[0];
+        const today=new Date(); today.setHours(0,0,0,0);
+        const dd=new Date(n.rise); dd.setHours(0,0,0,0);
+        const diff=Math.round((dd-today)/86400000);
+        const day = diff===0?'tonight':diff===1?'tomorrow':n.rise.toLocaleDateString('en-GB',{weekday:'long'});
+        const tm=n.rise.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+        setHTML('ks1-ns-iss', `🛰️ The Space Station flies over <b>${day} at ${tm}</b> — look up and wave!`);
+        setHTML('lks2-ns-iss', `🛰️ Spot the Space Station ${day} at <b>${tm}</b> (rises ${n.elev}° high). It looks like a fast, steady star.`);
+        setHTML('uks2-ns-iss', `🛰️ ISS visible pass ${day} at <b>${tm}</b>, peaking ${n.elev}° elevation. It orbits ~400 km up at 28,000 km/h — sunlight glinting off it makes it shine.`);
+      } else {
+        ['ks1','lks2','uks2'].forEach(b=>setHTML(b+'-ns-iss', b==='ks1'?'🛰️ No Space Station passes to see just now — check back soon!':'🛰️ No visible ISS passes right now (it\u2019s passing in daylight or Earth\u2019s shadow).'));
+      }
+    }catch(e){
+      ['ks1','lks2','uks2'].forEach(b=>setHTML(b+'-ns-iss',''));
+    }
+  }
   // Built from the daily history the page already holds. Records delight children
   // and make a lovely data-handling hook. Honest: these are "since recording began".
   function computeRecords(sorted){
@@ -2018,6 +2153,8 @@
   renderSeasons();
   // Show the scientist data boxes immediately (fill with — until data arrives)
   renderDataBoxes();
+  // Night sky (auto-hides out of the dark season; fills in from APIs when shown)
+  renderNightSky();
   // Show today's "Did you know?" fact (rotates daily at 07:30 like the challenges)
   renderDYK();
 
