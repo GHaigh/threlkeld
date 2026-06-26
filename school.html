@@ -1183,7 +1183,7 @@
   function nightSkySeason(){
     const m = new Date().getMonth(); // 0=Jan
     // Oct(9), Nov(10), Dec(11), Jan(0), Feb(1), Mar(2)
-    return true;
+    return (m>=9 || m<=2);
   }
   function moonInfo(){
     const now=new Date();
@@ -1246,8 +1246,8 @@
       }
       if(kp>=4){
         setHTML('ks1-ns-aurora', `🌌 The Northern Lights might be out tonight — ask a grown-up to look north!`);
-        setHTML('lks2-ns-aurora', `🌌 Northern Lights possible tonight (Kp ${kp}). Look north, away from lights.`);
-        setHTML('uks2-ns-aurora', `🌌 Aurora chance tonight: Kp ${kp}. From 54.6°N aurora can appear at Kp 4+. We're near the Solar Cycle 25 peak.`);
+        setHTML('lks2-ns-aurora', `🌌 Northern Lights might be visible tonight — look north, away from streetlights.`);
+        setHTML('uks2-ns-aurora', `🌌 Aurora possible tonight. The Sun is in a very active phase right now, and Threlkeld's dark northern skies give a real chance — look north.`);
       } else {
         ['ks1','lks2','uks2'].forEach(b=>setHTML(b+'-ns-aurora',''));
       }
@@ -1272,8 +1272,8 @@
         const day = diff===0?'tonight':diff===1?'tomorrow':n.rise.toLocaleDateString('en-GB',{weekday:'long'});
         const tm=n.rise.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
         setHTML('ks1-ns-iss', `🛰️ The Space Station flies over <b>${day} at ${tm}</b> — look up and wave!`);
-        setHTML('lks2-ns-iss', `🛰️ Spot the Space Station ${day} at <b>${tm}</b> (rises ${n.elev}° high). It looks like a fast, steady star.`);
-        setHTML('uks2-ns-iss', `🛰️ ISS visible pass ${day} at <b>${tm}</b>, peaking ${n.elev}° elevation. It orbits ~400 km up at 28,000 km/h — sunlight glinting off it makes it shine.`);
+        setHTML('lks2-ns-iss', `🛰️ Spot the Space Station ${day} at <b>${tm}</b> — it looks like a fast, steady star moving across the sky.`);
+        setHTML('uks2-ns-iss', `🛰️ The Space Station passes ${day} at <b>${tm}</b>. It orbits about 400 km up at 28,000 km/h — it's sunlight glinting off it that makes it shine.`);
       } else {
         ['ks1','lks2','uks2'].forEach(b=>setHTML(b+'-ns-iss', b==='ks1'?'🛰️ No Space Station passes to see just now — check back soon!':'🛰️ No visible ISS passes right now (it\u2019s passing in daylight or Earth\u2019s shadow).'));
       }
