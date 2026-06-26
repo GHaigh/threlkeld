@@ -127,12 +127,14 @@
     #worksheet .ws-head{border-bottom:2px solid #000;padding-bottom:8px;margin-bottom:16px}
     #worksheet .ws-title{font-family:'Baloo 2',sans-serif;font-size:22px;font-weight:700}
     #worksheet .ws-sub{font-size:13px;color:#333}
-    #worksheet h3{font-family:'Baloo 2',sans-serif;font-size:16px;margin:0 0 6px}
-    #worksheet p{font-size:14px;line-height:1.5;margin:0 0 8px}
+    #worksheet h3{font-family:'Baloo 2',sans-serif;font-size:15px;margin:0 0 5px}
+    #worksheet p{font-size:13px;line-height:1.4;margin:0 0 6px}
     /* rounded section cards, echoing the site's card look but ink-light for print */
-    #worksheet .ws-card{border:1.5px solid #cfd9cb;border-radius:14px;padding:12px 16px;margin:0 0 14px;break-inside:avoid}
+    #worksheet .ws-card{border:1.5px solid #cfd9cb;border-radius:14px;padding:9px 14px;margin:0 0 9px;break-inside:avoid}
     #worksheet .ws-card h3{margin-top:0}
     #worksheet .ws-card > :last-child{margin-bottom:0}
+    /* the weekly recording grid prints on its own page */
+    #worksheet .ws-weekly{break-before:page}
     #worksheet .ws-lines{margin-top:6px}
     #worksheet .ws-line{border-bottom:1px solid #999;height:26px}
     #worksheet .ws-box{border:1px solid #999;border-radius:6px;height:150px;margin-top:6px}
@@ -1061,20 +1063,23 @@
     // age-appropriate response space
     if(band==='ks1'){
       body+=`<div class="ws-card"><h3>🎨 Draw what you would like to see</h3><div class="ws-box"></div></div>`;
+      body+=`<div class="ws-foot">Real data from sensors in Threlkeld, Cumbria · Made for Threlkeld C of E Primary School</div>`;
     } else {
       body+=`<div class="ws-card"><h3>✍️ Your notes</h3><div class="ws-lines">`+Array.from({length:6}).map(()=>`<div class="ws-line"></div>`).join('')+`</div></div>`;
-      // weekly data-recording grid for young scientists
+      // end of the daily (page 1) sheet
+      body+=`<div class="ws-foot">Real data from sensors in Threlkeld, Cumbria · Made for Threlkeld C of E Primary School</div>`;
+      // weekly data-recording grid — prints on its OWN page (page 2)
       const metrics = (band==='uks2')
         ? ['Birds','Species','Bats','Bat sp','High °C','Low °C','Rain mm','River m','Moon']
         : ['Birds','Species','Bats','High °C','Low °C','Rain mm','River m'];
       const days=['Mon','Tue','Wed','Thu','Fri'];
-      let grid=`<div class="ws-card"><h3>🔬 Record this week&rsquo;s data</h3><table class="ws-grid"><tr><th>Day</th>`+metrics.map(m=>`<th>${m}</th>`).join('')+`</tr>`;
+      let grid=`<div class="ws-card ws-weekly"><div class="ws-head"><div class="ws-title">🔬 ${titles[band]} — Weekly Data</div><div class="ws-sub">Week beginning: ____________  ·  Name: ____________________</div></div>`;
+      grid+=`<table class="ws-grid"><tr><th>Day</th>`+metrics.map(m=>`<th>${m}</th>`).join('')+`</tr>`;
       grid+=days.map(d=>`<tr><td>${d}</td>`+metrics.map(()=>`<td></td>`).join('')+`</tr>`).join('');
       grid+=`</table><p class="ws-hint">Fill this in each day, then draw a graph of one column. What patterns can you see?</p></div>`;
       body+=grid;
     }
 
-    body+=`<div class="ws-foot">Real data from sensors in Threlkeld, Cumbria · threlkeld.info · Made for Threlkeld C of E Primary School</div>`;
     ws.innerHTML=body;
   }
   window.addEventListener('beforeprint', buildWorksheet);
