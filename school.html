@@ -339,7 +339,7 @@
         <li><strong>River level</strong> — the Glenderamackin's height (Years 3–6 only), shown purely as a water-cycle story: rain on the fells runs off into the river hours later.</li>
       </ul>
       <p>The page presents this live data three ways, pitched by age — <strong>Little Explorers</strong> (Reception–Y2), <strong>Nature Detectives</strong> (Y3–4) and <strong>Wild Scientists</strong> (Y5–6). Each band has a daily nature diary, today's weather &amp; sky, a "this season" note, a daily challenge, a rotating "did you know?" fact, real photographs, and real bat recordings from the village. The two older bands also get a river/water-cycle card and a <strong>"what a scientist would record" data box</strong> — yesterday's complete figures children can copy or print as a weekly grid and graph themselves.</p>
-      <p class="t-note">Honest status: photos, the diary, weather &amp; sky, seasons, daily challenges, the fell camera and real bat-call playback are live now. Real bird-sound playback (using the village's own recordings) is in progress. A few data-box measurements (bird/bat species counts, rainfall in mm, lowest temperature) will fill in as they're added to the daily record — a dash means "coming soon", not an error.</p>
+      <p class="t-note">Honest status: photos, the diary, weather &amp; sky, seasons, daily challenges, the fell camera, real bat-call playback and bird-song playback are all live. Bird songs play for today's detected species that we hold a recording for, and the collection grows over time. Lowest temperature fills in from the daily record as it accrues — a dash means "coming soon", not an error.</p>
     </div>
 
     <div class="t-block">
@@ -619,6 +619,7 @@
     A learning page from <a href="https://www.threlkeld.info">Threlkeld Nature Watch</a><br>
     Made for <strong>Threlkeld C of E Primary School</strong> · Real data from sensors in Threlkeld, Cumbria<br>
     Bird &amp; wildlife photos from <a href="https://www.inaturalist.org">iNaturalist</a><br>
+    Bird songs from <a href="https://xeno-canto.org">xeno-canto</a>, shared by their recordists under Creative Commons<br>
     Perseverance · Patience · Courage · <strong>Curiosity</strong> · Friendship<br>
     <span style="opacity:0.6">Updated 23 Jun 2026 (b)</span>
   </footer>
@@ -669,50 +670,85 @@
     return src;
   }
 
-  // ---------- real birdsong (Xeno-canto) for KS1 ----------
-  const songCache={};                 // species name -> recording URL (or false if none)
-
-  async function findSong(name){
-    if(songCache[name]!==undefined) return songCache[name];
-    try{
-      const q=encodeURIComponent(`${name} q:A`);
-      const r=await fetch(`https://xeno-canto.org/api/2/recordings?query=${q}`);
-      const j=await r.json();
-      const rec=(j && j.recordings && j.recordings.length) ? j.recordings[0] : null;
-      let url=rec && rec.file ? rec.file : null;
-      if(url && url.startsWith('//')) url='https:'+url;
-      songCache[name]=url||false;
-      return songCache[name];
-    }catch(e){ songCache[name]=false; return false; }
+  // ---------- real birdsong (our own BirdNET recordings) for KS1 ----------
+  // The BirdNET-Pi stages its best clip per species to /local/birdsongs/, named
+  // by the species (lowercased, spaces->underscores). The page derives the same
+  // filename from the detected species name — so it is SELF-EXTENDING: any newly
+  // detected bird whose clip has synced will simply start playing, with no edits
+  // here. We only show a button for a detected species whose clip actually loads.
+  const BIRDSONG_BASE = NABU + '/local/birdsongs/';
+  // Turn a detected species name into its clip filename (no extension).
+  // "Eurasian Blackbird" -> "eurasian_blackbird"; "Common Wood-Pigeon" -> "common_wood-pigeon".
+  function birdFile(name){
+    return String(name).trim().toLowerCase().replace(/\s+/g,'_');
+  }
+  // Friendly short label for the button: last word, title-cased, with a few nicer cases.
+  function birdLabel(name){
+    const nice={ 'European Robin':'Robin','Eurasian Blackbird':'Blackbird','Eurasian Wren':'Wren',
+      'Eurasian Blue Tit':'Blue Tit','Common Chaffinch':'Chaffinch','European Goldfinch':'Goldfinch',
+      'European Greenfinch':'Greenfinch','Eurasian Jackdaw':'Jackdaw','Common Wood-Pigeon':'Wood Pigeon',
+      'Eurasian Nuthatch':'Nuthatch','Eurasian Magpie':'Magpie','Carrion Crow':'Crow' };
+    if(nice[name]) return nice[name];
+    return name; // full name is fine for the rest
   }
 
-  async function playSong(name, btn){
-    // Resume the audio context synchronously inside this tap (critical for iOS).
-    getCtx();
-    const label=btn.dataset.label||name;
-    btn.textContent='⏳ '+label;
+  let currentBirdAudio = null;
+  function playBirdClip(file, btn){
+    const label = btn.dataset.label || 'bird';
     try{
-      const url=await findSong(name);
-      if(!url){ btn.textContent='🔇 none found'; setTimeout(()=>btn.textContent='🐦 '+label,1600); return; }
-      const src=await playUrl(url);
-      btn.textContent='🔊 '+label;
-      src.onended=()=>{ btn.textContent='🐦 '+label; };
+      if(currentBirdAudio){ try{ currentBirdAudio.pause(); }catch(e){} currentBirdAudio=null; }
+      const a = new Audio(BIRDSONG_BASE + file + '.mp3');
+      currentBirdAudio = a;
+      btn.textContent = '🔊 ' + label;
+      a.onended = ()=>{ btn.textContent = '🐦 ' + label; };
+      a.onerror = ()=>{ btn.textContent = '🔇 ' + label; setTimeout(()=>btn.textContent='🐦 '+label,1600); };
+      a.play().catch(()=>{ btn.textContent='🔈 tap again'; setTimeout(()=>btn.textContent='🐦 '+label,1600); });
     }catch(e){
-      btn.textContent='🔈 tap again';
-      setTimeout(()=>btn.textContent='🐦 '+label,1600);
+      btn.textContent='🔈 tap again'; setTimeout(()=>btn.textContent='🐦 '+label,1600);
     }
   }
 
-  // Common fallback birds if today's list is empty (quiet day / no data).
-  const FALLBACK_SONG_BIRDS=['Robin','Blackbird','Wren','Chaffinch','Great Tit'];
+  // Cache of which species have a working clip (probed once via HEAD).
+  const birdClipOK = {};
+  function probeClip(name){
+    return new Promise(resolve=>{
+      const file = birdFile(name);
+      if(birdClipOK[file]!==undefined){ resolve(birdClipOK[file]); return; }
+      // Probe by attempting to load metadata; cheap and cached.
+      const a = new Audio();
+      a.preload = 'metadata';
+      let done=false;
+      const finish=(ok)=>{ if(done) return; done=true; birdClipOK[file]=ok; resolve(ok); };
+      a.onloadedmetadata = ()=>finish(true);
+      a.onerror = ()=>finish(false);
+      a.src = BIRDSONG_BASE + file + '.mp3';
+      setTimeout(()=>finish(birdClipOK[file]||false), 4000); // safety timeout
+    });
+  }
 
-  function buildSongRow(birds){
+  async function buildSongRow(birds){
     const row=document.getElementById('ks1-songrow');
     if(!row) return;
-    const names=(birds && birds.length ? birds.slice(0,5).map(b=>b.bird) : FALLBACK_SONG_BIRDS);
-    row.innerHTML=names.map(n=>{
-      const safe=n.replace(/'/g,"\\'");
-      return `<button class="sound-btn" data-label="${n}" onclick="playSong('${safe}', this)">🐦 ${n}</button>`;
+    const detected = (birds && birds.length) ? birds.map(b=>b.bird) : [];
+    // De-dupe, keep order, probe each for a real clip, show up to 6 that have one.
+    const seen=new Set(); const uniq=[];
+    detected.forEach(n=>{ if(!seen.has(n)){ seen.add(n); uniq.push(n); } });
+    row.innerHTML = '<span style="color:#5f7a59;font-size:15px">Listening for today\u2019s birds\u2026</span>';
+    const playable=[];
+    for(const name of uniq){
+      if(playable.length>=6) break;
+      // eslint-disable-next-line no-await-in-loop
+      const ok = await probeClip(name);
+      if(ok) playable.push(name);
+    }
+    if(!playable.length){
+      row.innerHTML = '<span style="color:#5f7a59;font-size:15px">When we hear birds we have recordings of, you\u2019ll be able to listen to them here! 🐦</span>';
+      return;
+    }
+    row.innerHTML = playable.map(name=>{
+      const file = birdFile(name);
+      const label = birdLabel(name);
+      return `<button class="sound-btn" data-label="${label}" onclick="playBirdClip('${file}', this)">🐦 ${label}</button>`;
     }).join('');
   }
 
