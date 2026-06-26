@@ -699,7 +699,22 @@
     views.forEach(v=>document.getElementById('view-'+v).classList.toggle('active', v===id));
     window.scrollTo({top:0,behavior:'smooth'});
     if(id==='ks1'||id==='lks2'||id==='uks2'){ primeTicker(id); }
+    trackBand(id);
     try{ localStorage && null; }catch(e){}
+  }
+  // Tell the analytics webhook which band/section a teacher opened. Fire-and-forget;
+  // if Node-RED isn't yet tallying the 'select-band' event, the ping is simply ignored.
+  let _lastTrackedBand=null;
+  function trackBand(id){
+    if(id===_lastTrackedBand) return; // don't double-count rapid re-renders
+    _lastTrackedBand=id;
+    try{
+      fetch('https://rlpzmepeautd1v5pgoumz9aa2qhd92xd.ui.nabu.casa/api/webhook/-FGc31SjPhOeecG848YzrwkwP', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({ page:'school.html', event:'select-band', band:id })
+      }).catch(()=>{});
+    }catch(e){}
   }
   function showTeachers(){ showView('teachers'); }
   function goHome(){
