@@ -159,6 +159,15 @@
   .bignum.acorn{color:var(--acorn)}
   .bignum.berry{color:var(--berry)}
   .num-label{font-size:16px;color:#5f7a59;font-weight:600;margin-top:2px}
+  .trend-line{font-size:14px;color:#1f6f3f;font-weight:600;margin-top:8px;min-height:0}
+  .trend-line:empty{display:none}
+  .records-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px;margin-top:10px}
+  .rec-card{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:10px 8px;text-align:center}
+  .rec-icon{font-size:20px}
+  .rec-val{font-family:'Baloo 2',sans-serif;font-weight:700;font-size:20px;color:#fff;line-height:1.1;margin-top:2px}
+  .rec-label{font-size:11px;color:#cfe0cd;text-transform:uppercase;letter-spacing:0.04em;margin-top:2px}
+  .rec-date{font-size:11px;color:#9fb89d;margin-top:1px}
+  .records-grid:empty{display:none}
   .mini-fact{font-size:15px;color:#7a5a8a;font-weight:600;margin-top:10px}
 
   /* bird/critter list */
@@ -411,6 +420,7 @@
         <div class="sound-row" id="ks1-songrow" style="margin-top:6px">
           <span style="color:#5f7a59;font-size:15px">Listening for today's birds…</span>
         </div>
+        <p class="trend-line" id="ks1-birds-trend"></p>
       </div>
 
       <div class="card">
@@ -422,6 +432,7 @@
         <h2>🦇 While you were asleep…</h2>
         <div class="bignum berry" id="ks1-batnum">…</div>
         <div class="num-label" id="ks1-batlabel">bats flew past last night</div>
+        <p class="trend-line" id="ks1-bats-trend"></p>
         <p class="mini-fact">Bats "see" in the dark with their ears! 🦇</p>
         <div class="sound-row" style="margin-top:12px">
           <button class="sound-btn" onclick="batSqueak(this)">🦇 Hear a real bat</button>
@@ -480,6 +491,7 @@
       <div class="river-card" id="river-lks2" hidden>
         <h2>🌊 Our River Today</h2>
         <div class="river-body" id="lks2-river"></div>
+        <p class="trend-line" id="lks2-river-trend"></p>
       </div>
       <div class="twocol">
         <div class="card">
@@ -503,12 +515,14 @@
         <div class="critters" id="lks2-birds"></div>
         <p class="listen-hint" id="lks2-songhint" style="margin:10px 0 2px;font-size:15px;color:#1f4f6f;font-weight:600;display:none">🔊 Tap a bird to hear its real call, recorded here in Threlkeld</p>
         <div class="sound-row" id="lks2-songrow" style="margin-top:6px"></div>
+        <p class="trend-line" id="lks2-birds-trend"></p>
       </div>
 
       <div class="card">
         <h2>🦇 Night detectives</h2>
         <div class="sub">A special detector listens for bats after dark.</div>
         <div class="bignum berry" id="lks2-batnum">…</div>
+        <p class="trend-line" id="lks2-bats-trend"></p>
         <div class="num-label">bat passes last night · <span id="lks2-batspecies">…</span> kinds of bat</div>
         <div class="tile fact" style="margin-top:14px">
           <h3>💡 Clue</h3>
@@ -532,6 +546,11 @@
         <table class="data-table" id="lks2-datatable"></table>
         <p class="data-soon">A dash (—) means that measurement isn't ready yet — more numbers are coming soon!</p>
         <button class="copy-btn" onclick="copyData('lks2')">📋 Copy yesterday's numbers</button>
+      </div>
+      <div class="data-card">
+        <h2>🏆 Nature Records</h2>
+        <div class="sub-light">The biggest, hottest, wettest and busiest days since our sensors started watching Threlkeld.</div>
+        <div class="records-grid" id="lks2-records"></div>
       </div>
     </div>
     <div class="change-bottom"><button class="change-btn" onclick="goHome()">↩ Change class</button></div>
@@ -566,6 +585,7 @@
       <div class="river-card" id="river-uks2" hidden>
         <h2>🌊 Our River Today</h2>
         <div class="river-body" id="uks2-river"></div>
+        <p class="trend-line" id="uks2-river-trend"></p>
       </div>
       <div class="twocol">
         <div class="card">
@@ -576,6 +596,7 @@
         <div class="card">
           <h2>🦇 Bats &amp; 🐿️ Squirrels</h2>
           <div class="bignum berry" id="uks2-batnum">…</div>
+        <p class="trend-line" id="uks2-bats-trend"></p>
           <div class="num-label"><span id="uks2-batspecies">…</span> bat species · last night's passes</div>
           <div style="margin-top:10px"><span class="bignum acorn" style="font-size:36px" id="uks2-sqtotal">…</span> <span class="num-label" style="display:inline">squirrel sightings all-time</span></div>
         </div>
@@ -596,6 +617,7 @@
         <div class="critters" id="uks2-birds"></div>
         <p class="listen-hint" id="uks2-songhint" style="margin:10px 0 2px;font-size:15px;color:#1f4f6f;font-weight:600;display:none">🔊 Tap a species to hear the actual recording the AI identified</p>
         <div class="sound-row" id="uks2-songrow" style="margin-top:6px"></div>
+        <p class="trend-line" id="uks2-birds-trend"></p>
       </div>
 
       <div class="twocol">
@@ -614,6 +636,11 @@
         <table class="data-table" id="uks2-datatable"></table>
         <p class="data-soon">A dash (—) indicates a measurement not yet published to the daily record — more metrics are being added.</p>
         <button class="copy-btn" onclick="copyData('uks2')">📋 Copy yesterday's data</button>
+      </div>
+      <div class="data-card">
+        <h2>🏆 Nature Records</h2>
+        <div class="sub-light">Extremes recorded since monitoring began. What conditions produced each record — and how long before one is broken?</div>
+        <div class="records-grid" id="uks2-records"></div>
       </div>
     </div>
     <div class="change-bottom"><button class="change-btn" onclick="goHome()">↩ Change class</button></div>
@@ -837,7 +864,47 @@
     'Bats hibernate through winter because there are no insects to eat.',
     'A robin&rsquo;s red breast is used to warn other robins to stay off its patch.',
     'Threlkeld sits in one of England&rsquo;s last strongholds for red squirrels.',
-    'Bats are brilliant for the environment — they eat midges, moths and mosquitoes!'
+    'Bats are brilliant for the environment — they eat midges, moths and mosquitoes!',
+    'A chaffinch&rsquo;s song often ends in a little flourish, like a tune signing its name.',
+    'Nuthatches are the only British birds that can climb head-first <em>down</em> a tree trunk.',
+    'A song thrush will smash snails open on a favourite stone it uses again and again.',
+    'Jackdaws pair for life and often nest in chimneys and old trees together.',
+    'A bat&rsquo;s heartbeat can race to over 1,000 beats a minute when flying, then slow right down when resting.',
+    'Greenfinches have a wheezing, drawn-out call mixed in with their twittering song.',
+    'Swallows return to almost exactly the same barn each year after flying back from Africa.',
+    'A wren weighs about the same as a £1 coin.',
+    'Long-tailed tits build domed nests from moss, cobwebs and hundreds of feathers.',
+    'Bats clean themselves carefully, grooming their fur like cats do.',
+    'A buzzard&rsquo;s mewing call sounds a little like a cat high in the sky.',
+    'Coal tits hide seeds to eat later, tucking them into bark and moss.',
+    'The dawn chorus often starts with the same few species each morning, like an order of singers.',
+    'A red squirrel can rotate its back feet right round to grip a branch as it climbs down.',
+    'Dunnocks shuffle quietly along the ground and are easy to miss despite their sweet song.',
+    'Some moths can hear a hunting bat coming and drop suddenly to escape.',
+    'A great tit&rsquo;s &ldquo;teacher-teacher&rdquo; song is one of the easiest to learn to recognise.',
+    'Goldcrests are Britain&rsquo;s smallest birds, even tinier than a wren.',
+    'Bats use different calls for hunting, for finding their way, and for talking to each other.',
+    'A blackbird singing from a rooftop is usually a male marking his territory.',
+    'Kingfishers dive so fast they have a special third eyelid to protect their eyes underwater.',
+    'Pipistrelle bats can make tiny turns in the air to catch an insect every few seconds.',
+    'Robins will often follow a gardener, hoping the digging turns up worms.',
+    'A jay can bury thousands of acorns in autumn and remembers many of their hiding places.',
+    'Tawny owls have such soft-edged feathers that they fly almost silently.',
+    'Siskins are small green finches that love alder and birch seeds in winter flocks.',
+    'A bat&rsquo;s wing is so thin you can see light through it, yet it is incredibly tough.',
+    'Mistle thrushes will sing right through wind and rain, earning the old name &ldquo;stormcock&rdquo;.',
+    'Treecreepers spiral up tree trunks looking for insects, then fly down to start again.',
+    'In a single summer, a small colony of bats can eat millions of insects.',
+    'A chiffchaff is named after its song, which really does sound like &ldquo;chiff-chaff&rdquo;.',
+    'Red squirrels can find food buried under thick snow by smell alone.',
+    'Some bats drink by swooping low and skimming the surface of a pond in flight.',
+    'A bullfinch&rsquo;s soft call is so quiet you often hear it before you see the bird.',
+    'Birds have hollow bones, which keeps them light enough to fly.',
+    'Bats are more closely related to humans than they are to mice.',
+    'A flock of starlings swirling together at dusk is called a murmuration.',
+    'Wrens sometimes roost together in a single nest box on cold nights to share warmth.',
+    'The colours in a bird&rsquo;s feathers can come from its food, like a flamingo&rsquo;s pink.',
+    'Every winter, woodland birds form mixed flocks so more eyes can watch for danger.'
   ];
   function renderDYK(){
     const el=document.getElementById('lks2-fact');
@@ -1004,6 +1071,122 @@
     renderSky();
     renderChallenges();
     renderDataBoxes();
+    computeTrends(sorted);
+    computeRecords(sorted);
+  }
+
+  // ---------- "what's changing" trends (this week vs last week) ----------
+  // Honest, data-driven phenology: compare the most recent 7 COMPLETE days with
+  // the 7 before them, for birds, bats and the river. Pitched per band and woven
+  // subtly into the existing cards. Extends naturally to month/year as data grows.
+  function computeTrends(sorted){
+    // sorted is newest-first; drop today (partial) and use complete days only.
+    const days = sorted.slice(1); // index 0 is today (partial)
+    if(days.length < 6){ return; } // not enough history yet — stay silent
+    const recent = days.slice(0,7);
+    const prev = days.slice(7,14);
+    function avg(arr, pick){
+      const vals = arr.map(pick).filter(v=>v!=null && !isNaN(v));
+      if(!vals.length) return null;
+      return vals.reduce((s,v)=>s+v,0)/vals.length;
+    }
+    const pickBirds = d => d.data && d.data.birds ? d.data.birds.total24h : null;
+    const pickBats  = d => d.data && d.data.bats ? d.data.bats.lastNightTotal : null;
+    const pickRiver = d => d.data && d.data.river ? d.data.river.levelNow : null;
+
+    function trend(pick){
+      const r = avg(recent, pick);
+      const p = prev.length ? avg(prev, pick) : null;
+      if(r==null) return null;
+      if(p==null || p===0) return { dir:'flat', pct:0, recent:r, prev:p };
+      const pct = Math.round((r - p) / p * 100);
+      let dir = 'flat';
+      if(pct >= 15) dir = 'up';
+      else if(pct <= -15) dir = 'down';
+      return { dir, pct, recent:r, prev:p };
+    }
+    const tBirds = trend(pickBirds);
+    const tBats  = trend(pickBats);
+    const tRiver = trend(pickRiver);
+
+    setTrend('birds', tBirds);
+    setTrend('bats', tBats);
+    setTrend('river', tRiver);
+  }
+
+  function setTrend(kind, t){
+    if(!t) return;
+    // Wording per kind and direction, pitched simply (KS1/LKS2) and with a figure (UKS2).
+    const W = {
+      birds: {
+        up:   ['🔼 Even more birds singing than last week!', `Bird detections are up about ${Math.abs(t.pct)}% on last week.`],
+        down: ['🔽 A bit quieter for birds than last week.', `Bird detections are down about ${Math.abs(t.pct)}% on last week.`],
+        flat: ['About as many birds as last week.', 'Bird numbers are steady compared with last week.']
+      },
+      bats: {
+        up:   ['🔼 The bats have been busier than last week!', `Bat passes are up about ${Math.abs(t.pct)}% on last week.`],
+        down: ['🔽 Fewer bats about than last week.', `Bat passes are down about ${Math.abs(t.pct)}% on last week.`],
+        flat: ['About as many bats as last week.', 'Bat activity is steady compared with last week.']
+      },
+      river: {
+        up:   ['🔼 The river is higher than last week.', `The river is running higher than last week (up about ${Math.abs(t.pct)}%).`],
+        down: ['🔽 The river is lower than last week.', `The river is running lower than last week (down about ${Math.abs(t.pct)}%).`],
+        flat: ['The river is about the same as last week.', 'The river level is steady compared with last week.']
+      }
+    };
+    const simple = W[kind][t.dir][0];
+    const grown  = W[kind][t.dir][1];
+    // Write to whichever trend slots exist for this kind.
+    const ks1El = document.getElementById('ks1-'+kind+'-trend');
+    const lks2El = document.getElementById('lks2-'+kind+'-trend');
+    const uks2El = document.getElementById('uks2-'+kind+'-trend');
+    if(ks1El) ks1El.textContent = simple;
+    if(lks2El) lks2El.textContent = simple;
+    if(uks2El) uks2El.textContent = grown;
+  }
+
+  // ---------- Nature Records (LKS2/UKS2): the extremes seen so far ----------
+  // Built from the daily history the page already holds. Records delight children
+  // and make a lovely data-handling hook. Honest: these are "since recording began".
+  function computeRecords(sorted){
+    const days = sorted.filter(d=>d && d.data); // every day with data (today included is fine for records)
+    if(days.length < 3) return; // too little to call anything a "record"
+    function fmtDate(dstr){
+      if(!dstr) return '';
+      return new Date(dstr).toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+    }
+    // Find the day maximising/minimising a picked value.
+    function best(pick, dir){
+      let bestDay=null, bestVal=null;
+      days.forEach(d=>{
+        const v=pick(d);
+        if(v==null || isNaN(v)) return;
+        if(bestVal==null || (dir==='max'? v>bestVal : v<bestVal)){ bestVal=v; bestDay=d; }
+      });
+      return bestDay ? {val:bestVal, date:bestDay.date} : null;
+    }
+    const recs = [];
+    const hot = best(d=>d.data.weather&&d.data.weather.tempMax, 'max');
+    if(hot) recs.push(['🌡️', Math.round(hot.val)+'°C', 'Warmest day', fmtDate(hot.date)]);
+    const cold = best(d=>d.data.weather&&d.data.weather.tempMin, 'min');
+    if(cold) recs.push(['🥶', Math.round(cold.val)+'°C', 'Coldest night', fmtDate(cold.date)]);
+    const wet = best(d=>d.data.weather&&d.data.weather.rainToday, 'max');
+    if(wet && wet.val>0) recs.push(['🌧️', (Math.round(wet.val*10)/10)+'mm', 'Wettest day', fmtDate(wet.date)]);
+    const windy = best(d=>d.data.weather&&d.data.weather.maxDailyGust, 'max');
+    if(windy && windy.val>0) recs.push(['💨', Math.round(windy.val)+'mph', 'Windiest day', fmtDate(windy.date)]);
+    const bird = best(d=>d.data.birds&&d.data.birds.total24h, 'max');
+    if(bird && bird.val>0) recs.push(['🐦', bird.val.toLocaleString(), 'Busiest bird day', fmtDate(bird.date)]);
+    const bat = best(d=>d.data.bats&&d.data.bats.lastNightTotal, 'max');
+    if(bat && bat.val>0) recs.push(['🦇', bat.val.toLocaleString(), 'Best bat night', fmtDate(bat.date)]);
+
+    if(!recs.length) return;
+    const html = recs.map(([icon,val,label,date])=>
+      `<div class="rec-card"><div class="rec-icon">${icon}</div><div class="rec-val">${val}</div><div class="rec-label">${label}</div><div class="rec-date">${date}</div></div>`
+    ).join('');
+    ['lks2','uks2'].forEach(b=>{
+      const el=document.getElementById(b+'-records');
+      if(el) el.innerHTML = html;
+    });
   }
   function setHTML(id,html){ const e=document.getElementById(id); if(e) e.innerHTML=html; }
 
@@ -1134,7 +1317,67 @@
     "If you had wings, where would you fly first?",
     "Make the happiest bird song you can!",
     "Why do birds have feathers but we don't?",
-    "Draw a picture of a bat catching a moth in the dark."
+    "Draw a picture of a bat catching a moth in the dark.",
+    "Spread your arms like a buzzard and glide slowly around the room.",
+    "What might a wren be saying with its loud little song?",
+    "Draw a tree full of birds. How many can you fit?",
+    "If you were a bat, what would you have for your midnight snack?",
+    "Can you hop like a sparrow looking for crumbs?",
+    "What do you think a squirrel dreams about?",
+    "Make a nest shape with your hands. Could an egg fit inside?",
+    "Which bird would win a singing contest? Sing for it!",
+    "Pretend to swoop like a swallow catching a fly.",
+    "What colour eggs do you think a blackbird lays?",
+    "Can you stand on one leg like a heron by the river?",
+    "Draw the moon and a bat flying past it.",
+    "If birds wrote letters, what would a robin write to you?",
+    "Flap fast like a tiny bird, then slow like a big crow.",
+    "What would you pack if you were a bird flying somewhere warm?",
+    "Can you find two birds that are different colours today?",
+    "Why do you think a woodpecker taps on trees?",
+    "Make up a dance for a happy squirrel who found a nut.",
+    "Draw a bird bath. Which birds would come to splash?",
+    "Can you whistle? Birds whistle to talk to each other!",
+    "What do you think it feels like to fly?",
+    "Pretend to be an owl turning its head all the way round.",
+    "Which is faster: you running, or a bird flying? What about a squirrel?",
+    "Draw a worm hiding from a hungry blackbird.",
+    "Can you puff up like a robin keeping warm in winter?",
+    "What sound would you make to warn other birds of a cat?",
+    "Imagine a squirrel's busy day. What does it do first?",
+    "Draw the prettiest feather you can think of.",
+    "Can you creep slowly like a fox so the birds don't notice?",
+    "Why do you think baby birds have such big mouths?",
+    "Make a map of where you'd fly if you were a bird over Threlkeld.",
+    "What would a bat say to the moon if it could talk?",
+    "Can you count the trees you can see? Birds love every one.",
+    "Draw a squirrel with the bushiest tail ever.",
+    "If you could hear like a bat, what tiny sounds would you find?",
+    "Pretend to peck for seeds like a chaffinch.",
+    "What's your favourite weather? What do you think birds like best?",
+    "Draw a cosy hole in a tree where a squirrel sleeps.",
+    "Can you flutter your fingers like wings in the wind?",
+    "Why do you think birds like the morning so much?",
+    "Make the softest hoot, then the loudest tweet you can.",
+    "Draw a rainbow of birds, one for every colour.",
+    "If you left out food, which animal would come first?",
+    "Can you balance like a bird on a thin branch?",
+    "What would you name a bat that visits every night?",
+    "Imagine you're a leaf a squirrel is using for its nest.",
+    "Draw the night sky with all the bats out hunting.",
+    "Can you sing a good-morning song to the birds outside?",
+    "Why do you think squirrels bury their nuts?",
+    "Make a happy face like a bird who found a big juicy worm.",
+    "Draw a bird teaching its chick to fly.",
+    "Can you stretch tall like a tree where birds build their nests?",
+    "What would a robin think of your garden?",
+    "Pretend to glide silently like an owl at night.",
+    "Draw the busiest bird you heard about today.",
+    "If you were tiny like a wren, where would you hide?",
+    "Can you flap and land as gently as a feather?",
+    "What do you think birds do when it rains?",
+    "Make up a lullaby for a sleepy baby squirrel.",
+    "Draw your own special bird that nobody has ever seen."
   ];
   const KS1_TEMPLATES=[
     d=> d.topBird ? `We heard lots of ${d.topBird}s today! Can you draw one and make its song?` : null,
@@ -1169,7 +1412,67 @@
     "If you ran the nature sensors, what new animal would you most want to detect?",
     "Why do you think birdsong is louder in spring than in autumn?",
     "What clues in the woods would tell you a squirrel had been there?",
-    "How does the weather change what animals do each day?"
+    "How does the weather change what animals do each day?",
+    "Why might a wood with many different trees support more kinds of bird than a wood with just one?",
+    "Predict which bird will be busiest tomorrow, then check if you were right.",
+    "How could you find out whether birds prefer to sing when it is sunny or cloudy?",
+    "Why do you think bats are active for more hours in summer than in winter?",
+    "Design a fair test to see which bird food the garden birds like best.",
+    "What might happen to red squirrels if grey squirrels arrived in Threlkeld?",
+    "Why is it useful to know the exact time a bird was first heard each day?",
+    "List three ways a bird's beak shape might match the food it eats.",
+    "Why do you think rivers are good places for bats to hunt?",
+    "How is recording wildlife with sensors fairer than counting by hand?",
+    "What could the number of bat passes tell you about how many insects are flying?",
+    "Why might a bird sing from the very top of a tree?",
+    "Imagine the woodland in 100 years. What might have changed for its wildlife?",
+    "How could you tell whether a quiet day means fewer birds, or just quieter birds?",
+    "Why do many birds have brown females and brightly coloured males?",
+    "What might a sudden cold snap in spring do to nesting birds?",
+    "Design a safe, dry home a bat could roost in.",
+    "Why do you think some birds are heard all year and others only in summer?",
+    "How might street lights at night change what bats and moths do?",
+    "What evidence would convince you that a habitat is healthy?",
+    "Why is the dawn chorus louder some mornings than others?",
+    "If you could add one new sensor to Threlkeld, what would it measure and why?",
+    "How do you think baby birds learn which song to sing?",
+    "Why might the same bird be common in one village but rare in another?",
+    "What would you expect to happen to insect numbers as the day warms up?",
+    "Why do you think woodpeckers don't get headaches when they drill trees?",
+    "Plan how you would prove that more rain means a higher river.",
+    "Why might a mixed flock of small birds be safer than a single bird alone?",
+    "How could a scientist tell two very similar bird species apart?",
+    "What might the first bird of the morning tell you about the time of sunrise?",
+    "Why do you think some animals are nocturnal while others are not?",
+    "Design a chart that would best show how bird numbers change across a week.",
+    "Why might a hedge be just as important to wildlife as a wood?",
+    "What questions would you ask if you found a bird you had never seen before?",
+    "How does a long, cold winter make life hard for small birds?",
+    "Why do you think the river rises hours after rain falls on the fells, not straight away?",
+    "What might cause more birds to be detected on a still day than a windy one?",
+    "How could you check whether the moon changes how active bats are?",
+    "Why are dead and rotting trees surprisingly full of life?",
+    "If birdsong is a kind of language, what do you think the birds are saying?",
+    "Why might spring be the busiest and noisiest season for birds?",
+    "What would you need to measure to compare this June with last June?",
+    "How do you think a bat avoids bumping into branches in total darkness?",
+    "Why might a sensor sometimes mishear one bird as another?",
+    "Design an experiment to find out which time of day is best for birdwatching.",
+    "Why do some birds puff up their feathers when it is cold?",
+    "What might happen to the food chain if all the bats left the valley?",
+    "How could you record evidence that squirrels prefer some trees over others?",
+    "Why is it important to protect places where rare animals still survive?",
+    "What might the weather tomorrow tell you to expect from the wildlife?",
+    "Why do you think young birds leave the nest before they can fly well?",
+    "How would you explain echolocation to a younger child?",
+    "Why might two different woods have completely different birds?",
+    "What clues help a scientist guess the season just from the bird data?",
+    "Why do you think birds choose particular trees to sing from each morning?",
+    "How might climate change alter which birds visit Threlkeld?",
+    "What would make a really good wildlife pond for the school grounds?",
+    "Why do bats and swifts both hunt insects in the air but at different times?",
+    "How could you tell, from data alone, that spring had arrived?",
+    "Why is curiosity such an important tool for a scientist?"
   ];
   const LKS2_TEMPLATES=[
     d=> d.topBird ? `Today's busiest bird was the ${d.topBird}. Why might that species do well around Threlkeld?` : null,
@@ -1205,7 +1508,67 @@
     "Why is it important that conservation decisions are based on data, not just opinion?",
     "What might explain a sudden drop in detections on an otherwise normal day?",
     "How could you tell the difference between a quiet wildlife day and a broken sensor?",
-    "Design a citizen-science project your whole village could take part in."
+    "Design a citizen-science project your whole village could take part in.",
+    "How would you design a study to test whether warmer springs make birds sing earlier in the year?",
+    "Counts of bird calls aren't the same as counts of birds. How could you estimate actual numbers more fairly?",
+    "Why might a rare species be more important to a habitat than its small numbers suggest?",
+    "The river rises hours after fell rainfall. Explain the journey water takes and why there's a delay.",
+    "Suggest two reasons a normally common bird might vanish from the data for a week.",
+    "How could you separate the effect of temperature from the effect of daylight on bird activity?",
+    "Why is repeating measurements over many days more reliable than a single careful measurement?",
+    "An AI is trained on recordings. Why might it struggle with an unusual local accent in a bird's song?",
+    "Design an experiment to test whether bats avoid the brightest moonlit nights.",
+    "Why might biodiversity make an ecosystem more resilient to a sudden change?",
+    "How would you investigate whether wind speed reduces how many birds the microphone detects?",
+    "What ethical questions arise when we monitor wildlife continuously with cameras and microphones?",
+    "Why do you think populations of predators and their prey often rise and fall in cycles?",
+    "How could long-term data from Threlkeld contribute to national conservation science?",
+    "Explain how a food web could collapse if one keystone species were removed.",
+    "Why might detections peak at dawn even though birds are active all day?",
+    "Design a fair way to compare bird diversity between the village and the open fell.",
+    "How would you test whether the first bird of the morning changes with the seasons?",
+    "Why can two scientists looking at the same data sometimes reach different conclusions?",
+    "What could cause a species to be detected far outside its normal range?",
+    "How might you use the data to argue for protecting a particular habitat near the school?",
+    "Why is it useful to publish data openly so other people can check your work?",
+    "Suggest how rising temperatures could shift when bats emerge from hibernation.",
+    "How would you distinguish a genuine ecological trend from random year-to-year variation?",
+    "Why might a habitat that looks healthy to us still be missing something important?",
+    "Design a graph that would reveal a relationship between rainfall and river level.",
+    "How could citizen-science data be biased, and how would you reduce that bias?",
+    "Why do some species adapt quickly to human changes while others decline?",
+    "How would you test whether planting more trees increased bird diversity over time?",
+    "Why is the timing of natural events (phenology) such a sensitive sign of climate change?",
+    "What might explain bats appearing earlier in the evening as summer progresses?",
+    "How could you check whether the AI is better at identifying some species than others?",
+    "Why might protecting a top predator also protect many other species below it?",
+    "Design a method to estimate how far the microphone can actually hear a singing bird.",
+    "Why is a control group important when testing an idea in ecology?",
+    "How might the loss of insects affect birds, bats, and the wider food web together?",
+    "What patterns would you look for to decide whether a population is growing or shrinking?",
+    "Why can correlation between two measurements not prove that one causes the other?",
+    "How would you design a sensor network to monitor an entire valley fairly?",
+    "Why do you think some birds have adapted to thrive in towns and villages?",
+    "How could the school's data be combined with other villages' to see a regional picture?",
+    "What would convince you that an unusual reading was real and not a sensor error?",
+    "Why might conservationists disagree about the best way to help a declining species?",
+    "Design an investigation into whether quieter, less busy areas have more wildlife.",
+    "How does echolocation timing let a bat judge both distance and the size of its prey?",
+    "Why is it important to record what you did, not just what you found?",
+    "How might warmer winters change which birds need to migrate at all?",
+    "What could a sudden change in the dawn chorus time tell a scientist?",
+    "Why are long-term datasets sometimes called the 'memory' of an ecosystem?",
+    "How would you test whether a hedgerow corridor helps animals move between woods?",
+    "Why might the most interesting scientific result be the one you didn't expect?",
+    "Design a way to measure whether the village is getting noisier for wildlife over time.",
+    "How could you use today's data to make, and then test, a prediction about tomorrow?",
+    "Why is it valuable for scientists to share negative results, not just successes?",
+    "How might the health of insects, birds, and bats all be linked to the weather?",
+    "What evidence would you need to claim that a species is genuinely returning to the area?",
+    "Why do you think careful observation is the foundation of all good science?",
+    "How could you investigate whether the river's health affects the wildlife around it?",
+    "Why might a single very cold night matter more to wildlife than a cold month?",
+    "If you led this project for ten years, what one question would you most want to answer?"
   ];
   const UKS2_TEMPLATES=[
     d=> d.topBird ? `Today's most-detected bird was the ${d.topBird}${d.birdTotal?` (${d.birdTotal} calls)`:''}. What features of Threlkeld's habitat might favour it?` : null,
