@@ -302,6 +302,15 @@
       <div class="chart-container" id="referrerBreakdown" style="padding:0"><div style="padding:20px;color:var(--cream-dim);font-style:italic">Loading...</div></div>
     </div>
 
+    <!-- School page sections -->
+    <div style="margin-bottom:8px" id="schoolBandsSection">
+      <div class="section-header">
+        <div class="section-title">School Page — Sections Opened</div>
+        <div class="section-subtitle">Which age bands teachers are using</div>
+      </div>
+      <div class="chart-container" id="schoolBands" style="padding:0"><div style="padding:20px;color:var(--cream-dim);font-style:italic">No section opens recorded yet</div></div>
+    </div>
+
     <!-- Recent visits -->
     <div class="section-header">
       <div class="section-title">Recent Visits</div>
@@ -540,7 +549,31 @@
     }
     setInterval(renderDevices, 30000);
 
-    function render(visits) {
+    function renderSchoolBands(events) {
+      const el = document.getElementById('schoolBands');
+      if (!el) return;
+      const LABELS = { ks1:'🐿️ Little Explorers (R–Y2)', lks2:'🔎 Nature Detectives (Y3–4)', uks2:'📊 Wild Scientists (Y5–6)', teachers:'📋 For Teachers' };
+      const counts = { ks1:0, lks2:0, uks2:0, teachers:0 };
+      events.forEach(e => { if (e && e.band && counts[e.band] !== undefined) counts[e.band]++; });
+      const order = ['ks1','lks2','uks2','teachers'];
+      const total = order.reduce((s,k) => s + counts[k], 0);
+      if (!total) { el.innerHTML = '<div style="padding:20px;color:var(--cream-dim);font-style:italic">No section opens recorded yet</div>'; return; }
+      const max = Math.max(...order.map(k => counts[k]), 1);
+      el.innerHTML = order.map(k => `
+        <div class="page-bar-row">
+          <div class="page-bar-label">${LABELS[k]}</div>
+          <div class="page-bar-track"><div class="page-bar-fill" style="width:${Math.round(counts[k]/max*100)}%"></div></div>
+          <div class="page-bar-count">${counts[k]}</div>
+        </div>`).join('');
+    }
+
+    function render(allEntries) {
+      // Band-selection events share the analytics array but aren't page visits —
+      // split them out so they don't inflate visit counts.
+      const bandEvents = allEntries.filter(v => v && v.event === 'select-band');
+      const visits = allEntries.filter(v => !v || v.event !== 'select-band');
+      renderSchoolBands(bandEvents);
+
       const today = visits.filter(v => isToday(v.timestamp));
       const week = visits.filter(v => isThisWeek(v.timestamp));
       const mobile = visits.filter(v => /Mobile|Android|iPhone|iPad/.test(v.userAgent || ''));
