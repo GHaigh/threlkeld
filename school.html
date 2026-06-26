@@ -892,7 +892,7 @@
     const bats  = d.bats && d.bats.lastNightTotal!=null ? d.bats.lastNightTotal : null;
     const tmax  = d.weather && d.weather.tempMax!=null ? d.weather.tempMax : null;
     const moon  = d.sky && d.sky.moonPhase ? d.sky.moonPhase : null;
-    const wet   = d.weather && d.weather.rain!=null ? d.weather.rain>0 : null;
+    const wet   = d.weather && d.weather.rainToday!=null ? d.weather.rainToday>0 : (d.weather && d.weather.rain!=null ? d.weather.rain>0 : null);
 
     // ---- KS1: one or two simple, happy sentences ----
     let ks1=[];
@@ -947,10 +947,10 @@
     setHTML('uks2-diary', txt.uks2);
     // feed weather/moon to daily challenge
     const dd=(entry && entry.data)||{};
-    if(dd.weather){ if(dd.weather.tempMax!=null) challengeData.tempMax=dd.weather.tempMax; if(dd.weather.rain!=null) challengeData.wet=dd.weather.rain>0; }
+    if(dd.weather){ if(dd.weather.tempMax!=null) challengeData.tempMax=dd.weather.tempMax; const r=(dd.weather.rainToday!=null?dd.weather.rainToday:dd.weather.rain); if(r!=null) challengeData.wet=r>0; }
     if(dd.sky && dd.sky.moonPhase) challengeData.moon=dd.sky.moonPhase;
     // feed the sky/weather card
-    if(dd.weather){ if(dd.weather.tempMax!=null) skyState.tempMax=dd.weather.tempMax; if(dd.weather.rain!=null) skyState.rain=dd.weather.rain; }
+    if(dd.weather){ if(dd.weather.tempMax!=null) skyState.tempMax=dd.weather.tempMax; const r=(dd.weather.rainToday!=null?dd.weather.rainToday:dd.weather.rain); if(r!=null) skyState.rain=r; }
     if(dd.sky && dd.sky.moonPhase) skyState.moon=dd.sky.moonPhase;
     renderSky();
     renderChallenges();
@@ -1422,7 +1422,7 @@
     const batSpecies = d.bats && d.bats.species24h!=null ? d.bats.species24h : (d.bats && d.bats.speciesCount!=null ? d.bats.speciesCount : null);
     const tmax = d.weather && d.weather.tempMax!=null ? Math.round(d.weather.tempMax) : null;
     const tmin = d.weather && d.weather.tempMin!=null ? Math.round(d.weather.tempMin) : null;
-    const rainMm = d.weather && d.weather.rain!=null ? d.weather.rain : null;
+    const rainMm = d.weather && d.weather.rainToday!=null ? d.weather.rainToday : (d.weather && d.weather.rain!=null ? d.weather.rain : null);
     const moon = d.sky && d.sky.moonPhase ? d.sky.moonPhase : null;
 
     rows.push(['Date', dateLabel]);
