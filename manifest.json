@@ -1,7 +1,7 @@
 {
-  "name": "Threlkeld Projects",
-  "short_name": "Threlkeld Projects",
-  "description": "Live nature monitoring from Threlkeld, Cumbria — birds, weather, planes, rivers, fells and wildlife",
+  "name": "Threlkeld Nature Watch",
+  "short_name": "Nature Watch",
+  "description": "Live nature monitoring from Threlkeld, Cumbria — birds, bats, weather, rivers, fells and wildlife",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0d1a0d",
@@ -29,8 +29,8 @@
   ],
   "shortcuts": [
     { "name": "Birds", "short_name": "Birds", "url": "/birds.html", "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Bats", "short_name": "Bats", "url": "/bats.html", "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }] },
     { "name": "Weather", "short_name": "Weather", "url": "/weather.html", "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }] },
-    { "name": "Planes", "short_name": "Planes", "url": "/planes.html", "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }] },
-    { "name": "Rivers", "short_name": "Rivers", "url": "/river.html", "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }] }
+    { "name": "Wildlife", "short_name": "Wildlife", "url": "/wildlife.html", "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }] }
   ]
 }
