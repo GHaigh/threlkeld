@@ -127,8 +127,12 @@
     #worksheet .ws-head{border-bottom:2px solid #000;padding-bottom:8px;margin-bottom:16px}
     #worksheet .ws-title{font-family:'Baloo 2',sans-serif;font-size:22px;font-weight:700}
     #worksheet .ws-sub{font-size:13px;color:#333}
-    #worksheet h3{font-family:'Baloo 2',sans-serif;font-size:16px;margin:18px 0 6px}
+    #worksheet h3{font-family:'Baloo 2',sans-serif;font-size:16px;margin:0 0 6px}
     #worksheet p{font-size:14px;line-height:1.5;margin:0 0 8px}
+    /* rounded section cards, echoing the site's card look but ink-light for print */
+    #worksheet .ws-card{border:1.5px solid #cfd9cb;border-radius:14px;padding:12px 16px;margin:0 0 14px;break-inside:avoid}
+    #worksheet .ws-card h3{margin-top:0}
+    #worksheet .ws-card > :last-child{margin-bottom:0}
     #worksheet .ws-lines{margin-top:6px}
     #worksheet .ws-line{border-bottom:1px solid #999;height:26px}
     #worksheet .ws-box{border:1px solid #999;border-radius:6px;height:150px;margin-top:6px}
@@ -1029,13 +1033,13 @@
     body+=`<div class="ws-head"><div class="ws-title">🌿 Threlkeld Nature Watch — Worksheet</div>`
         + `<div class="ws-sub">${titles[band]} · ${date} · Name: ____________________</div></div>`;
 
-    if(diary){ body+=`<h3>📖 Today\u2019s Nature Diary</h3><p>${diary}</p>`; }
+    if(diary){ body+=`<div class="ws-card"><h3>📖 Today\u2019s Nature Diary</h3><p>${diary}</p></div>`; }
 
     // this season
     {
       const season=seasonName(new Date().getMonth());
       const c=SEASON_CONTENT[season];
-      if(c){ const text=(band==='ks1'?c.ks1:band==='lks2'?c.lks2:c.uks2).replace(/&rsquo;/g,'\u2019'); body+=`<h3>🌿 This season: ${season}</h3><p>${text}</p>`; }
+      if(c){ const text=(band==='ks1'?c.ks1:band==='lks2'?c.lks2:c.uks2).replace(/&rsquo;/g,'\u2019'); body+=`<div class="ws-card"><h3>🌿 This season: ${season}</h3><p>${text}</p></div>`; }
     }
 
     // weather & sky line
@@ -1045,28 +1049,28 @@
       if(t!=null) bits.push(t+'°C');
       if(skyState.rain!=null) bits.push(skyState.rain>0?'rainy':'dry');
       if(skyState.moon) bits.push('moon: '+skyState.moon);
-      if(bits.length) body+=`<h3>🌤️ Today\u2019s weather &amp; sky</h3><p>${bits.join(' · ')}</p>`;
+      if(bits.length) body+=`<div class="ws-card"><h3>🌤️ Today\u2019s weather &amp; sky</h3><p>${bits.join(' · ')}</p></div>`;
     }
 
     if(birds.length){
-      body+=`<h3>🐦 Birds heard in Threlkeld today</h3><div class="ws-birds">`+birds.join(' &nbsp;·&nbsp; ')+`</div>`;
+      body+=`<div class="ws-card"><h3>🐦 Birds heard in Threlkeld today</h3><div class="ws-birds">`+birds.join(' &nbsp;·&nbsp; ')+`</div></div>`;
     }
 
-    body+=`<h3>${challTitle.replace(/^[^A-Za-z]*/,'')||'Today\u2019s challenge'}</h3><p>${challenge}</p>`;
+    body+=`<div class="ws-card"><h3>${challTitle.replace(/^[^A-Za-z]*/,'')||'Today\u2019s challenge'}</h3><p>${challenge}</p></div>`;
 
     // age-appropriate response space
     if(band==='ks1'){
-      body+=`<h3>🎨 Draw what you would like to see</h3><div class="ws-box"></div>`;
+      body+=`<div class="ws-card"><h3>🎨 Draw what you would like to see</h3><div class="ws-box"></div></div>`;
     } else {
-      body+=`<div class="ws-lines">`+Array.from({length:6}).map(()=>`<div class="ws-line"></div>`).join('')+`</div>`;
+      body+=`<div class="ws-card"><h3>✍️ Your notes</h3><div class="ws-lines">`+Array.from({length:6}).map(()=>`<div class="ws-line"></div>`).join('')+`</div></div>`;
       // weekly data-recording grid for young scientists
       const metrics = (band==='uks2')
-        ? ['Birds','Species','Bats','Bat sp','High °C','Low °C','Rain mm','Moon']
-        : ['Birds','Species','Bats','High °C','Low °C','Rain mm'];
+        ? ['Birds','Species','Bats','Bat sp','High °C','Low °C','Rain mm','River m','Moon']
+        : ['Birds','Species','Bats','High °C','Low °C','Rain mm','River m'];
       const days=['Mon','Tue','Wed','Thu','Fri'];
-      let grid=`<h3>🔬 Record this week&rsquo;s data</h3><table class="ws-grid"><tr><th>Day</th>`+metrics.map(m=>`<th>${m}</th>`).join('')+`</tr>`;
+      let grid=`<div class="ws-card"><h3>🔬 Record this week&rsquo;s data</h3><table class="ws-grid"><tr><th>Day</th>`+metrics.map(m=>`<th>${m}</th>`).join('')+`</tr>`;
       grid+=days.map(d=>`<tr><td>${d}</td>`+metrics.map(()=>`<td></td>`).join('')+`</tr>`).join('');
-      grid+=`</table><p class="ws-hint">Fill this in each day, then draw a graph of one column. What patterns can you see?</p>`;
+      grid+=`</table><p class="ws-hint">Fill this in each day, then draw a graph of one column. What patterns can you see?</p></div>`;
       body+=grid;
     }
 
@@ -1466,6 +1470,7 @@
     const tmax = d.weather && d.weather.tempMax!=null ? Math.round(d.weather.tempMax) : null;
     const tmin = d.weather && d.weather.tempMin!=null ? Math.round(d.weather.tempMin) : null;
     const rainMm = d.weather && d.weather.rainToday!=null ? d.weather.rainToday : (d.weather && d.weather.rain!=null ? d.weather.rain : null);
+    const riverLvl = d.river && d.river.levelNow!=null ? d.river.levelNow : null;
     const moon = d.sky && d.sky.moonPhase ? d.sky.moonPhase : null;
 
     rows.push(['Date', dateLabel]);
@@ -1476,6 +1481,7 @@
     rows.push(['Highest temperature (°C)', tmax!=null?tmax:dash]);
     rows.push(['Lowest temperature (°C)', tmin!=null?tmin:dash]);
     rows.push(['Rainfall (mm)', rainMm!=null?(Math.round(rainMm*10)/10):dash]);
+    rows.push(['River level (m)', riverLvl!=null?(Math.round(riverLvl*100)/100):dash]);
     if(full){
       rows.push(['Moon phase', moon||dash]);
     }
