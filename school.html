@@ -1136,7 +1136,7 @@
     }
     const pickBirds = d => d.data && d.data.birds ? d.data.birds.total24h : null;
     const pickBats  = d => d.data && d.data.bats ? d.data.bats.lastNightTotal : null;
-    const pickRiver = d => d.data && d.data.river ? d.data.river.levelNow : null;
+    const pickRiver = d => d.data && d.data.river ? (d.data.river.level!=null ? d.data.river.level : d.data.river.levelNow) : null;
 
     function trend(pick){
       const r = avg(recent, pick);
@@ -1988,7 +1988,7 @@
     const tmax = d.weather && d.weather.tempMax!=null ? Math.round(d.weather.tempMax) : null;
     const tmin = d.weather && d.weather.tempMin!=null ? Math.round(d.weather.tempMin) : null;
     const rainMm = d.weather && d.weather.rainToday!=null ? d.weather.rainToday : (d.weather && d.weather.rain!=null ? d.weather.rain : null);
-    const riverLvl = d.river && d.river.levelNow!=null ? d.river.levelNow : null;
+    const riverLvl = d.river && d.river.level!=null ? d.river.level : (d.river && d.river.levelNow!=null ? d.river.levelNow : null);
     const moon = d.sky && d.sky.moonPhase ? d.sky.moonPhase : null;
 
     rows.push(['Date', dateLabel]);
