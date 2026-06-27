@@ -96,6 +96,20 @@
   .teachers .t-list li{font-size:15px;color:#e6f1e4;padding:7px 0 7px 22px;position:relative;line-height:1.55}
   .teachers .t-list li::before{content:'•';position:absolute;left:4px;color:var(--leaf)}
   .teachers .t-note{font-size:13.5px;color:#a9c7a8;font-style:italic}
+  /* teacher feedback form */
+  .tf-form{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);border-radius:16px;padding:20px;margin-top:18px}
+  .tf-form h3{font-family:'Baloo 2',sans-serif;margin:0 0 4px;color:#fff;font-size:20px}
+  .tf-form .tf-intro{font-size:14px;color:#cfe0cd;margin:0 0 16px}
+  .tf-group{margin-bottom:14px}
+  .tf-group label{display:block;font-size:13px;font-weight:600;color:#dce6cf;margin-bottom:5px}
+  .tf-form input[type=text], .tf-form textarea, .tf-form select{width:100%;box-sizing:border-box;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.18);border-radius:10px;padding:10px 12px;color:#fff;font:inherit;font-size:15px}
+  .tf-form textarea{min-height:64px;resize:vertical}
+  .tf-form input:focus, .tf-form textarea:focus, .tf-form select:focus{outline:2px solid #8fd3ff;border-color:#8fd3ff}
+  .tf-form ::placeholder{color:#9fb89d}
+  .tf-submit{background:#2f7d4f;color:#fff;border:none;border-radius:12px;padding:12px 22px;font:inherit;font-weight:700;font-size:16px;cursor:pointer;margin-top:4px}
+  .tf-submit:hover{background:#36915b}
+  .tf-success{display:none;background:rgba(120,200,140,0.15);border:1px solid rgba(120,200,140,0.4);border-radius:12px;padding:16px;margin-top:18px;color:#dceede;font-size:15px}
+  .tf-success.visible{display:block}
   .teachers .t-block.feedback{background:linear-gradient(135deg,rgba(122,199,79,0.14),rgba(143,211,255,0.12));border-color:rgba(122,199,79,0.3)}
   .feedback-btn{display:inline-block;margin-top:8px;background:var(--sun);color:#3a2a00;text-decoration:none;border-radius:999px;padding:12px 22px;font-family:'Baloo 2',sans-serif;font-weight:700;font-size:15px;box-shadow:0 4px 0 #c79a1d}
   .feedback-btn:active{transform:translateY(2px);box-shadow:0 2px 0 #c79a1d}
@@ -397,6 +411,54 @@
     <div class="t-block">
       <p class="t-note">💡 Tip: on an iPad or tablet, tap your browser's Share button and choose <strong>"Add to Home Screen"</strong> to save this page like an app — handy for opening it quickly each morning.</p>
       <p class="t-note">Thank you for taking a look. The hope is simply that it sparks a bit of curiosity about the wild things living all around Threlkeld.</p>
+
+      <div class="tf-form">
+        <h3>📝 Tell us what you think</h3>
+        <p class="tf-intro">Your feedback shapes this page. A minute of your thoughts — from you or the children — would be hugely helpful. Nothing is required; share whatever's useful.</p>
+        <form id="tfForm" action="https://formspree.io/f/mzdwrgol" method="POST">
+          <input type="hidden" name="_subject" value="School page feedback — Threlkeld Nature Watch">
+          <input type="hidden" name="source" value="school.html teacher feedback">
+          <div class="tf-group">
+            <label for="tf-class">Which class or age group are you?</label>
+            <select id="tf-class" name="class">
+              <option value="">Choose…</option>
+              <option>Reception – Year 2 (Little Explorers)</option>
+              <option>Years 3–4 (Nature Detectives)</option>
+              <option>Years 5–6 (Wild Scientists)</option>
+              <option>Whole school / more than one</option>
+              <option>Other</option>
+            </select>
+          </div>
+          <div class="tf-group">
+            <label for="tf-worked">What worked well for the children?</label>
+            <textarea id="tf-worked" name="what_worked" placeholder="What did they enjoy or understand easily?"></textarea>
+          </div>
+          <div class="tf-group">
+            <label for="tf-confusing">Was anything confusing, too busy, or not quite right?</label>
+            <textarea id="tf-confusing" name="what_confusing" placeholder="Be honest — this is the most useful bit!"></textarea>
+          </div>
+          <div class="tf-group">
+            <label for="tf-add">Anything you'd like added or changed?</label>
+            <textarea id="tf-add" name="what_to_add" placeholder="Ideas, wishes, requests…"></textarea>
+          </div>
+          <div class="tf-group">
+            <label for="tf-use">Would you use this regularly?</label>
+            <select id="tf-use" name="would_use">
+              <option value="">Choose…</option>
+              <option>Yes — regularly</option>
+              <option>Sometimes</option>
+              <option>Probably not</option>
+              <option>Not sure yet</option>
+            </select>
+          </div>
+          <div class="tf-group">
+            <label for="tf-name">Your name (optional)</label>
+            <input type="text" id="tf-name" name="name" placeholder="So we can say thank you — optional">
+          </div>
+          <button type="submit" class="tf-submit">Send feedback →</button>
+        </form>
+        <div class="tf-success" id="tfSuccess">✅ Thank you so much — your feedback has been sent. It really does help shape the page.</div>
+      </div>
     </div>
 
     <div class="change-bottom"><button class="change-btn" onclick="goHome()">↩ Back</button></div>
@@ -2170,6 +2232,22 @@
   renderDataBoxes();
   // Night sky (auto-hides out of the dark season; fills in from APIs when shown)
   renderNightSky();
+
+  // Teacher feedback form — submits via Formspree (keeps the real email private),
+  // same pattern as the index suggestions form. Shows a thank-you on success.
+  (function(){
+    const tf = document.getElementById('tfForm');
+    const ok = document.getElementById('tfSuccess');
+    if(!tf) return;
+    tf.addEventListener('submit', async (e)=>{
+      e.preventDefault();
+      try{
+        const res = await fetch(tf.action, { method:'POST', body:new FormData(tf), headers:{'Accept':'application/json'} });
+        if(res.ok){ tf.style.display='none'; if(ok) ok.classList.add('visible'); }
+        else { alert('Sorry — something went wrong sending that. Please try again.'); }
+      }catch(err){ alert('Sorry — something went wrong sending that. Please try again.'); }
+    });
+  })();
   // Show today's "Did you know?" fact (rotates daily at 07:30 like the challenges)
   renderDYK();
 
