@@ -227,7 +227,7 @@
     <div style="margin-bottom:24px">
       <div class="section-header">
         <div class="section-title">Detector Hardware</div>
-        <div class="section-subtitle">PoE HAT temperature, fan, voltage &amp; IP</div>
+        <div class="section-subtitle">PoE HAT temperature, fan, voltage, load &amp; system health</div>
       </div>
       <div id="deviceStrip" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px">
         <div style="padding:14px;color:var(--cream-dim);font-style:italic">Waiting for devices…</div>
@@ -532,16 +532,47 @@
         const throttled = s ? s.throttled : null;
         const uvNow = s ? s.uvNow : null;
         const uvBoot = s ? s.uvBoot : null;
+        const thrNow = s ? s.thrNow : null;
+        const thrBoot = s ? s.thrBoot : null;
+        const cpuMhz = s ? s.cpuMhz : null;
+        const load = s ? s.load : null;
+        const memPct = s ? s.memPct : null;
+        const diskPct = s ? s.diskPct : null;
+        const uptimeS = s ? s.uptimeS : null;
         const ts = s ? s.ts : null;
         const tStr = (temp == null) ? '—' : (Math.round(temp*10)/10) + '°C';
         const fanStr = (fan == null) ? '—' : (String(fan).toLowerCase() === 'on' || fan === true ? 'on' : 'off');
         const ipStr = ip || '—';
         const vStr = (volts == null) ? '—' : (Math.round(volts*100)/100) + 'V';
         const vColor = (volts == null) ? 'var(--cream)' : (volts < 4.75 ? '#c86a6a' : '#7ab87a');
+        // secondary stats
+        function uptimeStr(sec){
+          if (sec == null) return '—';
+          const d = Math.floor(sec/86400), h = Math.floor((sec%86400)/3600);
+          if (d > 0) return d + 'd ' + h + 'h';
+          const m = Math.floor((sec%3600)/60);
+          return h + 'h ' + m + 'm';
+        }
+        const loadStr = (load && load.length) ? load[0].toFixed(2) : '—';
+        const memStr = (memPct == null) ? '—' : Math.round(memPct) + '%';
+        const diskStr = (diskPct == null) ? '—' : Math.round(diskPct) + '%';
+        const diskColor = (diskPct == null) ? 'var(--cream-dim)' : (diskPct >= 90 ? '#c86a6a' : (diskPct >= 75 ? '#d4a04a' : 'var(--cream-dim)'));
+        const cpuStr = (cpuMhz == null) ? '—' : cpuMhz + 'MHz';
+        const secondaryRow = '<div style="display:flex;gap:14px;margin-top:10px;flex-wrap:wrap">'
+          + '<div style="font-size:11px;color:var(--cream-dim)">Load <span style="color:var(--cream)">'+loadStr+'</span></div>'
+          + '<div style="font-size:11px;color:var(--cream-dim)">Mem <span style="color:var(--cream)">'+memStr+'</span></div>'
+          + '<div style="font-size:11px;color:var(--cream-dim)">Disk <span style="color:'+diskColor+'">'+diskStr+'</span></div>'
+          + '<div style="font-size:11px;color:var(--cream-dim)">CPU <span style="color:var(--cream)">'+cpuStr+'</span></div>'
+          + '<div style="font-size:11px;color:var(--cream-dim)">Up <span style="color:var(--cream)">'+uptimeStr(uptimeS)+'</span></div>'
+          + '</div>';
         // Under-voltage flag: warn if currently under-volting or it happened since boot
         let uvHtml = '';
         if (uvNow === true) uvHtml = '<div style="font-size:11px;color:#c86a6a;margin-top:6px;font-weight:600">⚠ Under-voltage now</div>';
         else if (uvBoot === true) uvHtml = '<div style="font-size:11px;color:#d4a04a;margin-top:6px">⚠ Under-voltage since boot</div>';
+        // Throttle flag (thermal/freq capping)
+        let thrHtml = '';
+        if (thrNow === true) thrHtml = '<div style="font-size:11px;color:#c86a6a;margin-top:4px;font-weight:600">⚠ Throttling now</div>';
+        else if (thrBoot === true) thrHtml = '<div style="font-size:11px;color:#d4a04a;margin-top:4px">⚠ Throttled since boot</div>';
         return '<div style="background:var(--forest-mid,#16241a);border:1px solid var(--divider,#24382a);border-radius:10px;padding:14px">'
           + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">'
           + '<span style="font-size:14px">'+d.label+'</span>'
@@ -555,6 +586,8 @@
           + '<div style="font-size:10px;color:var(--cream-dim);text-transform:uppercase;letter-spacing:0.08em">Core</div></div>'
           + '</div>'
           + uvHtml
+          + thrHtml
+          + secondaryRow
           + '<div style="font-size:11px;color:var(--cream-dim);margin-top:10px;font-family:monospace">'+ipStr+'</div>'
           + '</div>';
       }).join('');
@@ -735,6 +768,13 @@
             throttled: p.throttled != null ? p.throttled : null,
             uvNow: p.under_voltage_now,
             uvBoot: p.under_voltage_since_boot,
+            thrNow: p.throttled_now,
+            thrBoot: p.throttled_since_boot,
+            cpuMhz: (p.cpu_clock_mhz != null ? Number(p.cpu_clock_mhz) : null),
+            load: Array.isArray(p.load) ? p.load : null,
+            memPct: (p.mem_pct != null ? Number(p.mem_pct) : null),
+            diskPct: (p.disk_pct != null ? Number(p.disk_pct) : null),
+            uptimeS: (p.uptime_s != null ? Number(p.uptime_s) : null),
             ts: Date.now()
           };
           renderDevices();
