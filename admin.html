@@ -417,7 +417,15 @@
       if (page === 'weather.html') return '🌤️ Weather';
       if (page === 'planes.html') return '✈️ Planes';
       if (page === 'admin.html') return '⚙️ Admin';
-      return page;
+      if (page === 'school.html') return '🎒 School';
+      if (page === 'river.html') return '🌊 River';
+      if (page === 'rivers.html') return '🌊 River';
+      if (page === 'fells.html') return '⛰️ Fells';
+      if (page === 'bats.html') return '🦇 Bats';
+      if (page === 'wildlife.html') return '🦊 Wildlife';
+      if (page === 'phenology.html') return '🌱 Phenology';
+      if (page === 'weekly.html') return '📅 Weekly';
+      return page.replace(/\.html$/, '');
     }
 
     function cleanReferrer(ref) {
