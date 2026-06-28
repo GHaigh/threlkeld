@@ -224,12 +224,23 @@
     </div>
 
     <!-- Dam Mire Camera -->
-    <div style="margin-bottom:24px">
+    <div style="margin-bottom:16px">
       <div class="section-header">
         <div class="section-title">Dam Mire Camera</div>
         <div class="section-subtitle">Wildlife detections · Friends of the Lake District</div>
       </div>
       <div id="damMireStrip" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px">
+        <div style="padding:14px;color:var(--cream-dim);font-style:italic">Loading…</div>
+      </div>
+    </div>
+
+    <!-- Dam Mire Infrastructure -->
+    <div style="margin-bottom:24px">
+      <div class="section-header">
+        <div class="section-title">Dam Mire Infrastructure</div>
+        <div class="section-subtitle">Worker · D1 · R2 · FTP last seen</div>
+      </div>
+      <div id="damMireInfra" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px">
         <div style="padding:14px;color:var(--cream-dim);font-style:italic">Loading…</div>
       </div>
     </div>
@@ -562,6 +573,57 @@
     }
     renderDamMire();
     setInterval(renderDamMire, 5 * 60 * 1000); // refresh every 5 minutes
+
+    // Dam Mire infrastructure health
+    async function renderDamMireInfra() {
+      const el = document.getElementById('damMireInfra');
+      if (!el) return;
+      const WORKER = 'https://threlkeld-wildlife-processor.haigh-greg.workers.dev';
+      function card(label, value, color, sub) {
+        return '<div style="background:var(--forest-mid);border:1px solid var(--divider);border-radius:10px;padding:14px">'
+          + '<div style="font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--cream-dim);margin-bottom:6px">'+label+'</div>'
+          + '<div style="font-size:13px;font-weight:600;color:'+color+'">'+value+'</div>'
+          + (sub ? '<div style="font-size:11px;color:var(--cream-dim);margin-top:4px">'+sub+'</div>' : '')
+          + '</div>';
+      }
+      function fmtAgo(isoStr) {
+        if (!isoStr) return 'never';
+        const diff = Date.now() - new Date(isoStr).getTime();
+        const m = Math.floor(diff/60000);
+        if (m < 60) return m + 'm ago';
+        const h = Math.floor(m/60);
+        if (h < 24) return h + 'h ago';
+        return Math.floor(h/24) + 'd ago';
+      }
+      // Worker check
+      let workerOk = false;
+      try {
+        const r = await fetch(WORKER + '/');
+        workerOk = r.ok;
+      } catch(e) {}
+      // Health endpoint
+      let d1Ok = false, r2Ok = false, lastDetection = null, totalDetections = null, d1Error = '', r2Error = '';
+      try {
+        const r = await fetch(WORKER + '/health');
+        if (r.ok) {
+          const h = await r.json();
+          d1Ok = h.d1;
+          r2Ok = h.r2;
+          lastDetection = h.lastDetection;
+          totalDetections = h.totalDetections;
+          d1Error = h.d1Error || '';
+          r2Error = h.r2Error || '';
+        }
+      } catch(e) {}
+      el.innerHTML = [
+        card('⚡ Worker', workerOk ? 'Online' : 'Offline', workerOk ? '#7ab87a' : '#c86a6a', workerOk ? 'haigh-greg.workers.dev' : 'not reachable'),
+        card('🗄️ D1 Database', d1Ok ? 'Online' : 'Error', d1Ok ? '#7ab87a' : '#c86a6a', d1Ok ? (totalDetections + ' detections') : d1Error),
+        card('🪣 R2 Storage', r2Ok ? 'Online' : 'Error', r2Ok ? '#7ab87a' : '#c86a6a', r2Ok ? 'threlkeld-wildlife' : r2Error),
+        card('📡 FTP Last Upload', lastDetection ? fmtAgo(lastDetection) : '—', lastDetection ? '#7ab87a' : 'var(--cream-dim)', lastDetection ? new Date(lastDetection).toLocaleString('en-GB', {day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : 'no data yet')
+      ].join('');
+    }
+    renderDamMireInfra();
+    setInterval(renderDamMireInfra, 5 * 60 * 1000);
 
     function renderDevices() {
       const el = document.getElementById('deviceStrip');
