@@ -3,397 +3,553 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Wildlife Camera — Dam Mire | Threlkeld Nature Watch</title>
   <meta name="robots" content="noindex">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+  <meta name="theme-color" content="#0d1a0d">
+  <title>Dam Mire Wildlife Camera | Threlkeld Nature Watch</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Source+Sans+3:wght@300;400;500&display=swap" rel="stylesheet">
   <style>
     :root {
-      --forest-deep:  #1a2e1a;
-      --forest-dark:  #0f1f0f;
-      --forest-mid:   #2d4a2d;
-      --forest-light: #3d6b3d;
-      --sage:         #7aab7a;
-      --sage-light:   #a8c8a8;
-      --cream:        #f0ead8;
-      --cream-dim:    #c8bfa8;
-      --ink:          #1a1a1a;
-      --card-bg:      rgba(255,255,255,0.05);
-      --card-border:  rgba(122,171,122,0.2);
+      --forest-deep:  #0d1a0d;
+      --forest-dark:  #1a2e1a;
+      --forest-mid:   #243022;
+      --forest-light: #3b6d11;
+      --sage:         #7ab87a;
+      --sage-light:   #a8d4a8;
+      --cream:        #e8f0e4;
+      --cream-dim:    #b8c8b4;
+      --divider:      rgba(122, 184, 122, 0.15);
     }
 
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
-      background: var(--forest-dark);
+      background: var(--forest-deep);
       color: var(--cream);
-      font-family: 'Inter', sans-serif;
-      font-size: 15px;
-      line-height: 1.7;
+      font-family: 'Source Sans 3', sans-serif;
+      font-weight: 300;
       min-height: 100vh;
+      display: flex;
+      flex-direction: column;
     }
 
-    /* NAV */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        radial-gradient(ellipse at 20% 50%, rgba(59,109,17,0.08) 0%, transparent 60%),
+        radial-gradient(ellipse at 80% 20%, rgba(122,184,122,0.05) 0%, transparent 50%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .page {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 0 24px;
+      position: relative;
+      z-index: 1;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── NAV ── */
     nav {
-      background: rgba(15,31,15,0.95);
-      backdrop-filter: blur(8px);
-      border-bottom: 1px solid var(--card-border);
       position: sticky;
       top: 0;
-      z-index: 100;
-      padding: 0 1.5rem;
+      z-index: 200;
+      background: rgba(13,26,13,0.96);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--divider);
+      padding: 0 24px;
     }
     .nav-inner {
-      max-width: 1200px;
+      max-width: 900px;
       margin: 0 auto;
+      height: 56px;
       display: flex;
       align-items: center;
-      gap: 0.25rem;
-      height: 52px;
-      overflow-x: auto;
-      scrollbar-width: none;
+      gap: 0;
     }
-    .nav-inner::-webkit-scrollbar { display: none; }
     .nav-home {
       font-family: 'Playfair Display', serif;
-      font-size: 1rem;
-      color: var(--sage);
+      font-size: 15px;
+      color: var(--cream);
       text-decoration: none;
+      margin-right: 8px;
       white-space: nowrap;
-      margin-right: 1rem;
+      letter-spacing: 0.01em;
+    }
+    .nav-divider {
+      width: 1px;
+      height: 16px;
+      background: var(--divider);
+      margin: 0 12px;
+      flex-shrink: 0;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      flex: 1;
+      overflow: hidden;
     }
     .nav-link {
+      font-size: 13px;
+      font-weight: 400;
       color: var(--cream-dim);
       text-decoration: none;
-      font-size: 0.8rem;
-      padding: 0.3rem 0.6rem;
-      border-radius: 4px;
+      padding: 6px 10px;
+      border-radius: 6px;
       white-space: nowrap;
-      transition: color 0.2s, background 0.2s;
+      transition: color 0.15s, background 0.15s;
     }
-    .nav-link:hover { color: var(--cream); background: var(--card-bg); }
-    .nav-link.active { color: var(--sage); background: rgba(122,171,122,0.12); }
+    .nav-link:hover { color: var(--cream); background: rgba(255,255,255,0.05); }
+    .nav-link.active { color: var(--sage); }
 
-    /* LOGIN SCREEN */
+    .nav-hamburger {
+      display: none;
+      flex-direction: column;
+      gap: 5px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 4px;
+      margin-left: auto;
+    }
+    .nav-hamburger span {
+      display: block;
+      width: 22px;
+      height: 2px;
+      background: var(--cream-dim);
+      border-radius: 2px;
+      transition: all 0.25s;
+    }
+    .nav-hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+    .nav-hamburger.open span:nth-child(2) { opacity: 0; }
+    .nav-hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+    @media (max-width: 700px) {
+      .nav-hamburger { display: flex; }
+      .nav-links {
+        display: none;
+        position: absolute;
+        top: 56px;
+        left: 0;
+        right: 0;
+        background: var(--forest-dark);
+        border-bottom: 1px solid var(--divider);
+        padding: 12px 24px;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 14px;
+        z-index: 100;
+      }
+      .nav-links.open { display: flex; }
+      .nav-divider { display: none; }
+      nav { position: relative; }
+    }
+
+    /* ── LOGIN ── */
     #login-screen {
-      min-height: 100vh;
+      flex: 1;
       display: flex;
       align-items: center;
       justify-content: center;
       padding: 2rem;
+      position: relative;
+      z-index: 1;
     }
     .login-card {
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
+      background: var(--forest-dark);
+      border: 1px solid var(--divider);
       border-radius: 12px;
-      padding: 2.5rem;
+      padding: 40px 36px;
       width: 100%;
-      max-width: 380px;
+      max-width: 360px;
       text-align: center;
     }
-    .login-card h1 {
+    .login-icon { font-size: 2.5rem; margin-bottom: 16px; }
+    .login-card h2 {
       font-family: 'Playfair Display', serif;
-      font-size: 1.6rem;
-      color: var(--sage);
-      margin-bottom: 0.5rem;
+      font-size: 24px;
+      font-weight: 400;
+      color: var(--cream);
+      margin-bottom: 6px;
     }
     .login-card p {
+      font-size: 13px;
       color: var(--cream-dim);
-      font-size: 0.85rem;
-      margin-bottom: 1.5rem;
+      line-height: 1.6;
+      margin-bottom: 24px;
     }
     .login-card input {
       width: 100%;
-      padding: 0.75rem 1rem;
-      background: rgba(255,255,255,0.06);
-      border: 1px solid var(--card-border);
-      border-radius: 8px;
+      background: var(--forest-mid);
+      border: 1px solid var(--divider);
+      border-radius: 6px;
+      padding: 10px 14px;
       color: var(--cream);
-      font-family: 'Inter', sans-serif;
-      font-size: 1rem;
-      margin-bottom: 1rem;
+      font-family: 'Source Sans 3', sans-serif;
+      font-size: 15px;
+      font-weight: 300;
       outline: none;
+      margin-bottom: 12px;
+      transition: border-color 0.2s;
     }
-    .login-card input:focus { border-color: var(--sage); }
+    .login-card input:focus { border-color: rgba(122,184,122,0.4); }
+    .login-card input::placeholder { color: var(--cream-dim); opacity: 0.5; }
     .login-card button {
       width: 100%;
-      padding: 0.75rem;
       background: var(--forest-light);
-      border: none;
-      border-radius: 8px;
       color: var(--cream);
-      font-family: 'Inter', sans-serif;
-      font-size: 0.95rem;
+      border: none;
+      border-radius: 6px;
+      padding: 11px 24px;
+      font-family: 'Source Sans 3', sans-serif;
+      font-size: 14px;
       font-weight: 500;
       cursor: pointer;
+      letter-spacing: 0.04em;
       transition: background 0.2s;
     }
-    .login-card button:hover { background: var(--sage); color: var(--forest-dark); }
+    .login-card button:hover { background: var(--sage); color: var(--forest-deep); }
     .login-error {
-      color: #e88;
-      font-size: 0.8rem;
-      margin-top: 0.75rem;
+      font-size: 13px;
+      color: #e05555;
+      margin-top: 10px;
       display: none;
     }
 
-    /* MAIN CONTENT */
-    #main-content { display: none; }
+    /* ── MAIN ── */
+    #main-content { display: none; flex: 1; flex-direction: column; }
 
-    .page {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 2rem 1.5rem;
+    /* ── PAGE HEADER ── */
+    .page-header {
+      padding: 48px 0 32px;
+      border-bottom: 1px solid var(--divider);
+      margin-bottom: 40px;
     }
-
-    /* HERO */
-    .hero {
-      padding: 2rem 0 1.5rem;
-      border-bottom: 1px solid var(--card-border);
-      margin-bottom: 2rem;
-    }
-    .hero h1 {
-      font-family: 'Playfair Display', serif;
-      font-size: 2rem;
+    .page-eyebrow {
+      font-size: 10px;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
       color: var(--sage);
-      margin-bottom: 0.4rem;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
     }
-    .hero p {
+    .page-eyebrow::before {
+      content: '';
+      display: inline-block;
+      width: 24px;
+      height: 1px;
+      background: var(--sage);
+    }
+    .page-header h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(28px, 5vw, 48px);
+      font-weight: 400;
+      color: var(--cream);
+      line-height: 1.15;
+      margin-bottom: 10px;
+    }
+    .page-header h1 em { font-style: italic; color: var(--sage-light); }
+    .page-header p {
+      font-size: 15px;
       color: var(--cream-dim);
-      font-size: 0.9rem;
+      max-width: 560px;
+      line-height: 1.7;
     }
-    .hero-meta {
+
+    /* ── STATS STRIP ── */
+    .stats-strip {
       display: flex;
-      gap: 1.5rem;
-      margin-top: 1rem;
+      gap: 32px;
       flex-wrap: wrap;
+      margin-top: 28px;
     }
-    .hero-stat {
-      display: flex;
-      flex-direction: column;
-    }
-    .hero-stat .num {
-      font-size: 1.5rem;
-      font-weight: 600;
+    .stat-item { display: flex; flex-direction: column; }
+    .stat-num {
+      font-family: 'Playfair Display', serif;
+      font-size: 28px;
+      font-weight: 400;
       color: var(--cream);
       line-height: 1;
     }
-    .hero-stat .lbl {
-      font-size: 0.75rem;
+    .stat-lbl {
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
       color: var(--cream-dim);
-      margin-top: 0.2rem;
+      margin-top: 4px;
     }
 
-    /* CONTROLS */
+    /* ── CONTROLS ── */
     .controls {
       display: flex;
-      gap: 0.75rem;
-      flex-wrap: wrap;
+      gap: 12px;
       align-items: center;
-      margin-bottom: 2rem;
+      flex-wrap: wrap;
+      margin-bottom: 32px;
     }
     .tab-group {
       display: flex;
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
+      background: var(--forest-dark);
+      border: 1px solid var(--divider);
       border-radius: 8px;
       overflow: hidden;
     }
     .tab-btn {
-      padding: 0.5rem 1rem;
+      padding: 8px 16px;
       background: none;
       border: none;
       color: var(--cream-dim);
-      font-family: 'Inter', sans-serif;
-      font-size: 0.82rem;
+      font-family: 'Source Sans 3', sans-serif;
+      font-size: 13px;
+      font-weight: 400;
       cursor: pointer;
       transition: all 0.2s;
       white-space: nowrap;
     }
     .tab-btn:hover { color: var(--cream); }
-    .tab-btn.active {
-      background: var(--forest-light);
-      color: var(--cream);
-    }
+    .tab-btn.active { background: var(--forest-light); color: var(--cream); }
+
     .filter-select {
-      padding: 0.5rem 0.8rem;
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
+      padding: 8px 12px;
+      background: var(--forest-dark);
+      border: 1px solid var(--divider);
       border-radius: 8px;
       color: var(--cream);
-      font-family: 'Inter', sans-serif;
-      font-size: 0.82rem;
+      font-family: 'Source Sans 3', sans-serif;
+      font-size: 13px;
+      font-weight: 300;
       cursor: pointer;
       outline: none;
+      transition: border-color 0.2s;
     }
-    .filter-select:focus { border-color: var(--sage); }
+    .filter-select:focus { border-color: rgba(122,184,122,0.4); }
     .filter-select option { background: var(--forest-deep); }
 
     .result-count {
       margin-left: auto;
-      font-size: 0.8rem;
+      font-size: 12px;
       color: var(--cream-dim);
+      letter-spacing: 0.05em;
     }
 
-    /* GALLERY */
+    /* ── GALLERY ── */
     .gallery {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 1.25rem;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 20px;
+      margin-bottom: 60px;
     }
 
     .detection-card {
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 10px;
+      background: var(--forest-dark);
+      border: 1px solid var(--divider);
+      border-radius: 12px;
       overflow: hidden;
-      transition: border-color 0.2s, transform 0.15s;
+      text-decoration: none;
+      display: flex;
+      flex-direction: column;
+      transition: background 0.2s, border-color 0.2s, transform 0.2s;
+      position: relative;
+    }
+    .detection-card::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: var(--sage);
+      transform: scaleX(0);
+      transition: transform 0.3s ease;
     }
     .detection-card:hover {
-      border-color: var(--sage);
+      background: var(--forest-mid);
+      border-color: rgba(122,184,122,0.3);
       transform: translateY(-2px);
     }
-    .detection-card img {
+    .detection-card:hover::after { transform: scaleX(1); }
+
+    .card-img {
       width: 100%;
       aspect-ratio: 16/9;
       object-fit: cover;
       display: block;
       background: var(--forest-mid);
     }
-    .card-body {
-      padding: 0.9rem 1rem;
+    .card-body { padding: 20px; flex: 1; display: flex; flex-direction: column; gap: 8px; }
+
+    .card-tag {
+      font-size: 9px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--sage);
     }
     .card-species {
-      font-weight: 600;
-      font-size: 0.95rem;
+      font-family: 'Playfair Display', serif;
+      font-size: 18px;
+      font-weight: 400;
       color: var(--cream);
-      margin-bottom: 0.2rem;
-      text-transform: capitalize;
+      line-height: 1.2;
     }
-    .card-species.unknown { color: var(--cream-dim); font-weight: 400; font-style: italic; }
+    .card-species.unknown {
+      font-style: italic;
+      color: var(--cream-dim);
+      font-size: 15px;
+      font-family: 'Source Sans 3', sans-serif;
+    }
     .card-meta {
-      font-size: 0.75rem;
+      font-size: 12px;
       color: var(--cream-dim);
       display: flex;
       justify-content: space-between;
       align-items: center;
+      margin-top: auto;
     }
     .confidence-badge {
-      font-size: 0.68rem;
-      padding: 0.15rem 0.45rem;
-      border-radius: 4px;
+      font-size: 9px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 2px 8px;
+      border-radius: 20px;
       font-weight: 500;
     }
-    .confidence-badge.high { background: rgba(122,171,122,0.2); color: var(--sage); }
-    .confidence-badge.medium { background: rgba(255,200,100,0.15); color: #ffc864; }
-    .confidence-badge.low { background: rgba(255,120,120,0.15); color: #ff9090; }
+    .confidence-badge.high  { background: rgba(122,184,122,0.15); color: var(--sage); border: 1px solid rgba(122,184,122,0.3); }
+    .confidence-badge.medium { background: rgba(255,200,100,0.1); color: #ffc864; border: 1px solid rgba(255,200,100,0.3); }
+    .confidence-badge.low   { background: rgba(255,120,120,0.1); color: #ff9090; border: 1px solid rgba(255,120,120,0.3); }
 
     .card-video-links {
-      margin-top: 0.6rem;
       display: flex;
-      gap: 0.5rem;
+      gap: 8px;
+      margin-top: 4px;
     }
     .video-link {
-      font-size: 0.72rem;
+      font-size: 11px;
+      font-weight: 500;
       color: var(--sage);
       text-decoration: none;
-      padding: 0.2rem 0.5rem;
-      border: 1px solid var(--card-border);
-      border-radius: 4px;
-      transition: background 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      letter-spacing: 0.04em;
+      transition: color 0.15s, gap 0.15s;
     }
-    .video-link:hover { background: var(--card-bg); }
+    .video-link:hover { color: var(--sage-light); gap: 6px; }
 
-    /* EMPTY / LOADING */
+    /* ── EMPTY / LOADING ── */
     .gallery-empty {
       grid-column: 1/-1;
       text-align: center;
-      padding: 4rem 2rem;
+      padding: 80px 24px;
       color: var(--cream-dim);
     }
-    .gallery-empty .icon { font-size: 2.5rem; margin-bottom: 0.75rem; }
-    .gallery-empty p { font-size: 0.9rem; }
+    .gallery-empty .icon { font-size: 3rem; margin-bottom: 16px; display: block; }
+    .gallery-empty p { font-size: 15px; line-height: 1.7; }
 
-    .loading-spinner {
+    .loading-msg {
       grid-column: 1/-1;
       text-align: center;
-      padding: 4rem;
+      padding: 60px 24px;
+      font-size: 13px;
       color: var(--sage);
-      font-size: 0.9rem;
+      letter-spacing: 0.05em;
     }
 
-    /* FOOTER */
+    /* ── FOOTER HILLS ── */
+    .footer-hills {
+      width: 100vw;
+      position: relative;
+      left: 50%;
+      margin-left: -50vw;
+      display: block;
+      margin-top: 40px;
+      line-height: 0;
+    }
+    .footer-hills svg { width: 100%; height: auto; display: block; }
+
     footer {
-      border-top: 1px solid var(--card-border);
-      margin-top: 4rem;
-      padding: 2rem 1.5rem;
-      text-align: center;
-      color: var(--cream-dim);
-      font-size: 0.78rem;
+      padding: 20px 0 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
     }
-    footer a { color: var(--sage); text-decoration: none; }
-
-    @media (max-width: 600px) {
-      .hero h1 { font-size: 1.5rem; }
-      .controls { gap: 0.5rem; }
-      .tab-btn { padding: 0.45rem 0.7rem; font-size: 0.78rem; }
-      .result-count { width: 100%; margin-left: 0; }
-    }
+    .footer-text { font-size: 11px; color: var(--cream-dim); }
+    .footer-location { font-size: 11px; color: var(--sage); letter-spacing: 0.1em; }
   </style>
 </head>
 <body>
 
-<!-- LOGIN SCREEN -->
+<!-- NAV -->
+<nav>
+  <div class="nav-inner">
+    <a href="index.html" class="nav-home">Threlkeld Nature Watch</a>
+    <div class="nav-divider"></div>
+    <div class="nav-links">
+      <a href="birds.html" class="nav-link">🐦 Birds</a>
+      <a href="bats.html" class="nav-link">🦇 Bats</a>
+      <a href="wildlife.html" class="nav-link">🦔 Wildlife</a>
+      <a href="weather.html" class="nav-link">🌤 Weather</a>
+      <a href="river.html" class="nav-link">🌊 River</a>
+      <a href="fells.html" class="nav-link">🏔 Fells</a>
+      <a href="planes.html" class="nav-link">✈️ Planes</a>
+      <a href="dam_mire_camera.html" class="nav-link active">📷 Dam Mire</a>
+    </div>
+    <button class="nav-hamburger" id="navHamburger" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</nav>
+
+<!-- LOGIN -->
 <div id="login-screen">
   <div class="login-card">
-    <div style="font-size:2rem;margin-bottom:0.75rem;">📷</div>
-    <h1>Wildlife Camera</h1>
-    <p>Dam Mire · Friends of the Lake District<br>Password required to access</p>
+    <div class="login-icon">📷</div>
+    <h2>Dam Mire Camera</h2>
+    <p>Friends of the Lake District wildlife camera · Threlkeld Nature Watch<br>Password required</p>
     <input type="password" id="password-input" placeholder="Enter password" autocomplete="current-password">
     <button onclick="tryLogin()">Access Camera Feed</button>
-    <div class="login-error" id="login-error">Incorrect password</div>
+    <div class="login-error" id="login-error">Incorrect password — please try again</div>
   </div>
 </div>
 
-<!-- MAIN CONTENT -->
+<!-- MAIN -->
 <div id="main-content">
-  <nav>
-    <div class="nav-inner">
-      <a href="index.html" class="nav-home">🌿 Threlkeld</a>
-      <a href="birds.html" class="nav-link">🐦 Birds</a>
-      <a href="bats.html" class="nav-link">🦇 Bats</a>
-      <a href="wildlife.html" class="nav-link">🦊 Wildlife</a>
-      <a href="weather.html" class="nav-link">🌦 Weather</a>
-      <a href="river.html" class="nav-link">💧 River</a>
-      <a href="fells.html" class="nav-link">⛰ Fells</a>
-      <a href="dam_mire_camera.html" class="nav-link active">📷 Dam Mire Cam</a>
-    </div>
-  </nav>
-
   <div class="page">
-    <div class="hero">
-      <h1>📷 Dam Mire Wildlife Camera</h1>
-      <p>Automated trail camera at Dam Mire, Cumbria · Friends of the Lake District site · AI species identification</p>
-      <div class="hero-meta">
-        <div class="hero-stat">
-          <span class="num" id="stat-today">—</span>
-          <span class="lbl">detections today</span>
+    <div class="page-header">
+      <div class="page-eyebrow">Friends of the Lake District · Dam Mire, Cumbria</div>
+      <h1>Dam Mire <em>Wildlife Camera</em></h1>
+      <p>Automated 4G trail camera at Dam Mire nature reserve. Motion-triggered detections with AI species identification using Claude Vision. Images and video uploaded directly from the field.</p>
+      <div class="stats-strip">
+        <div class="stat-item">
+          <span class="stat-num" id="stat-today">—</span>
+          <span class="stat-lbl">detections today</span>
         </div>
-        <div class="hero-stat">
-          <span class="num" id="stat-species">—</span>
-          <span class="lbl">species this week</span>
+        <div class="stat-item">
+          <span class="stat-num" id="stat-species">—</span>
+          <span class="stat-lbl">species this week</span>
         </div>
-        <div class="hero-stat">
-          <span class="num" id="stat-latest">—</span>
-          <span class="lbl">last detection</span>
+        <div class="stat-item">
+          <span class="stat-num" id="stat-latest">—</span>
+          <span class="stat-lbl">last detection</span>
         </div>
       </div>
     </div>
 
     <div class="controls">
       <div class="tab-group">
-        <button class="tab-btn active" data-period="today" onclick="switchPeriod('today',this)">Today</button>
-        <button class="tab-btn" data-period="week" onclick="switchPeriod('week',this)">This Week</button>
-        <button class="tab-btn" data-period="month" onclick="switchPeriod('month',this)">This Month</button>
+        <button class="tab-btn active" onclick="switchPeriod('today',this)">Today</button>
+        <button class="tab-btn" onclick="switchPeriod('week',this)">This Week</button>
+        <button class="tab-btn" onclick="switchPeriod('month',this)">This Month</button>
       </div>
       <select class="filter-select" id="species-filter" onchange="applyFilter()">
         <option value="all">All species</option>
@@ -402,19 +558,26 @@
     </div>
 
     <div class="gallery" id="gallery">
-      <div class="loading-spinner">Loading detections…</div>
+      <div class="loading-msg">Loading detections…</div>
     </div>
-  </div>
 
-  <footer>
-    <p>Threlkeld Nature Watch · Dam Mire Wildlife Camera · <a href="index.html">threlkeld.info</a></p>
-    <p style="margin-top:0.4rem;">Powered by Reolink TrackMix LTE-C · Cloudflare R2 · Claude Vision AI</p>
-  </footer>
+    <div class="footer-hills">
+      <svg viewBox="0 0 1440 200" xmlns="http://www.w3.org/2000/svg" width="100%" style="display:block">
+        <path d="M0,200 L0,180 C30,178 60,175 90,170 C120,165 150,158 175,150 C195,143 210,136 222,128 C232,121 239,115 245,108 C250,103 254,98 258,93 C262,88 266,83 270,78 C274,73 278,68 282,64 C286,60 290,57 294,54 C298,51 302,49 306,47 C310,45 314,44 318,44 C322,44 326,45 330,47 C334,50 338,54 342,52 C346,49 350,44 355,38 C360,32 365,26 370,20 C374,15 378,10 382,7 C386,4 390,2 394,1 C398,0 402,1 406,3 C410,6 414,11 418,8 C422,5 426,1 431,2 C436,4 441,9 446,7 C450,5 454,1 459,3 C464,6 469,12 474,10 C479,8 484,4 490,6 C496,9 502,15 508,13 C513,11 518,7 524,10 C530,14 536,21 542,19 C547,17 552,13 558,17 C564,22 570,30 576,28 C581,26 586,22 592,27 C598,33 604,42 610,48 C616,43 622,37 629,43 C636,50 643,60 650,70 C657,80 664,91 672,99 C680,107 689,114 699,120 C709,126 720,131 733,136 C746,141 760,145 778,150 C798,155 822,159 852,163 C885,167 924,170 970,173 C1020,176 1078,178 1145,181 C1220,183 1320,186 1440,188 L1440,200 Z" fill="#1a2e1a"/>
+        <path d="M0,200 L0,193 C150,191 300,189 420,188 C510,187 580,187 640,188 C700,189 750,191 800,190 C850,189 900,187 960,188 C1020,189 1090,191 1180,193 C1280,194 1370,195 1440,196 L1440,200 Z" fill="#0d1a0d"/>
+      </svg>
+    </div>
+
+    <footer>
+      <div class="footer-text">Threlkeld Nature Watch · Dam Mire Wildlife Camera · <a href="index.html" style="color:var(--sage);text-decoration:none">threlkeld.info</a></div>
+      <div class="footer-location">54.6°N 3.0°W</div>
+    </footer>
+  </div>
 </div>
 
 <script>
-  const WORKER_URL = 'https://threlkeld-wildlife-processor.haigh-greg.workers.dev';
-  const PASSWORD   = 'Thr3lk3ld!';
+  const WORKER_URL  = 'https://threlkeld-wildlife-processor.haigh-greg.workers.dev';
+  const PASSWORD    = 'Thr3lk3ld!';
   const SESSION_KEY = 'dm_auth';
 
   let currentPeriod  = 'today';
@@ -440,18 +603,18 @@
 
   function showMain() {
     document.getElementById('login-screen').style.display = 'none';
-    document.getElementById('main-content').style.display = 'block';
+    const main = document.getElementById('main-content');
+    main.style.display = 'flex';
+    main.style.flexDirection = 'column';
     init();
   }
 
-  // Check session on load
   if (sessionStorage.getItem(SESSION_KEY) === '1') showMain();
 
   // ── Init ────────────────────────────────────────────────────
   async function init() {
     await loadSpecies();
     await loadGallery('today');
-    updateStats();
   }
 
   // ── Species filter ──────────────────────────────────────────
@@ -464,28 +627,25 @@
         if (!s) return;
         const opt = document.createElement('option');
         opt.value = s;
-        opt.textContent = capitalise(s);
+        opt.textContent = cap(s);
         sel.appendChild(opt);
       });
-    } catch (e) {
-      console.warn('Species load failed', e);
-    }
+    } catch (e) {}
   }
 
   // ── Gallery ─────────────────────────────────────────────────
   async function loadGallery(period) {
     const gallery = document.getElementById('gallery');
-    gallery.innerHTML = '<div class="loading-spinner">Loading detections…</div>';
-
+    gallery.innerHTML = '<div class="loading-msg">Loading detections…</div>';
     try {
       const params = new URLSearchParams({ period });
       if (currentSpecies !== 'all') params.set('species', currentSpecies);
-      const res  = await fetch(`${WORKER_URL}/gallery?${params}`);
+      const res = await fetch(`${WORKER_URL}/gallery?${params}`);
       allDetections = await res.json();
       renderGallery(allDetections);
       updateStats();
     } catch (e) {
-      gallery.innerHTML = '<div class="gallery-empty"><div class="icon">⚠️</div><p>Could not load detections. Try again shortly.</p></div>';
+      gallery.innerHTML = '<div class="gallery-empty"><span class="icon">⚠️</span><p>Could not load detections. Please try again shortly.</p></div>';
     }
   }
 
@@ -497,49 +657,32 @@
     if (!detections.length) {
       gallery.innerHTML = `
         <div class="gallery-empty">
-          <div class="icon">🦔</div>
-          <p>No detections found for this period.<br>The wildlife might be hiding!</p>
+          <span class="icon">🦌</span>
+          <p>No detections for this period.<br>The wildlife might be resting!</p>
         </div>`;
       return;
     }
 
-    // Group images with their associated videos
-    const grouped = groupDetections(detections);
-
-    gallery.innerHTML = grouped.map(item => {
-      const timeStr  = formatTime(item.timestamp);
-      const dateStr  = formatDate(item.timestamp);
-      const species  = item.species || 'unidentified';
-      const isUnknown = !item.species || item.species === 'unknown';
-
-      const videoLinks = (item.videos || []).map((v, i) =>
-        `<a href="${v.url}" target="_blank" class="video-link">▶ Clip ${i + 1}</a>`
-      ).join('');
+    gallery.innerHTML = detections.map(item => {
+      const species   = item.species || null;
+      const isUnknown = !species || species === 'unknown';
+      const timeStr   = fmtTime(item.timestamp);
+      const dateStr   = fmtDate(item.timestamp);
 
       return `
         <div class="detection-card">
-          <img src="${item.url}" alt="${species}" loading="lazy"
-               onerror="this.style.background='var(--forest-mid)';this.alt='Image unavailable'">
+          <img class="card-img" src="${item.url}" alt="${species || 'wildlife detection'}" loading="lazy"
+               onerror="this.style.opacity='0.3'">
           <div class="card-body">
-            <div class="card-species ${isUnknown ? 'unknown' : ''}">${capitalise(species)}</div>
+            <div class="card-tag">Wildlife Detection · ${dateStr}</div>
+            <div class="card-species ${isUnknown ? 'unknown' : ''}">${isUnknown ? 'Unidentified' : cap(species)}</div>
             <div class="card-meta">
-              <span>${dateStr} · ${timeStr}</span>
+              <span>${timeStr}</span>
               ${item.confidence ? `<span class="confidence-badge ${item.confidence}">${item.confidence}</span>` : ''}
             </div>
-            ${videoLinks ? `<div class="card-video-links">${videoLinks}</div>` : ''}
           </div>
         </div>`;
     }).join('');
-  }
-
-  // Group images with nearby video clips (within 60 seconds)
-  function groupDetections(detections) {
-    // detections from worker are images only (videos logged in D1 but not in KV gallery)
-    // For now just return images - video linking via filename timestamp match
-    return detections.map(d => ({
-      ...d,
-      videos: [] // TODO: match videos by timestamp from D1
-    }));
   }
 
   // ── Controls ─────────────────────────────────────────────────
@@ -557,43 +700,53 @@
 
   // ── Stats ────────────────────────────────────────────────────
   async function updateStats() {
-    // Today count
-    document.getElementById('stat-today').textContent =
-      currentPeriod === 'today' ? allDetections.length : '—';
-
-    // Unique species this week
+    // Today count from current results if period is today
+    if (currentPeriod === 'today') {
+      document.getElementById('stat-today').textContent = allDetections.length;
+    }
     try {
-      const res   = await fetch(`${WORKER_URL}/gallery?period=week`);
-      const week  = await res.json();
-      const spp   = new Set(week.map(d => d.species).filter(Boolean));
-      document.getElementById('stat-species').textContent = spp.size;
-
-      // Latest detection time
+      const res  = await fetch(`${WORKER_URL}/gallery?period=week`);
+      const week = await res.json();
+      const spp  = new Set(week.map(d => d.species).filter(Boolean));
+      document.getElementById('stat-species').textContent = spp.size || '—';
       if (week.length) {
-        const latest = new Date(week[0].timestamp);
-        document.getElementById('stat-latest').textContent = formatTime(latest.toISOString());
+        document.getElementById('stat-latest').textContent = fmtTime(week[0].timestamp);
+      }
+      if (currentPeriod !== 'today') {
+        // count just today from week data
+        const today = new Date().toDateString();
+        const todayCount = week.filter(d => new Date(d.timestamp).toDateString() === today).length;
+        document.getElementById('stat-today').textContent = todayCount;
       }
     } catch (e) {}
   }
 
   // ── Helpers ──────────────────────────────────────────────────
-  function capitalise(s) {
+  function cap(s) {
     if (!s) return '';
     return s.charAt(0).toUpperCase() + s.slice(1);
   }
-
-  function formatTime(iso) {
-    const d = new Date(iso);
-    return d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+  function fmtTime(iso) {
+    return new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
   }
-
-  function formatDate(iso) {
+  function fmtDate(iso) {
     const d   = new Date(iso);
     const now = new Date();
-    const isToday = d.toDateString() === now.toDateString();
-    if (isToday) return 'Today';
+    if (d.toDateString() === now.toDateString()) return 'Today';
     return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
   }
+
+  // ── Nav hamburger ─────────────────────────────────────────────
+  document.getElementById('navHamburger').addEventListener('click', function() {
+    this.classList.toggle('open');
+    document.querySelector('.nav-links').classList.toggle('open');
+  });
+  document.querySelectorAll('.nav-link').forEach(l => {
+    l.addEventListener('click', () => {
+      document.getElementById('navHamburger').classList.remove('open');
+      document.querySelector('.nav-links').classList.remove('open');
+    });
+  });
 </script>
 </body>
 </html>
