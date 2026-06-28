@@ -553,13 +553,13 @@
             + '</div>',
           '<div style="background:var(--forest-mid);border:1px solid var(--divider);border-radius:10px;padding:14px">'
             + '<div style="font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--cream-dim);margin-bottom:6px">Detections Today</div>'
-            + '<div style="font-family:'Playfair Display',serif;font-size:28px;color:var(--cream);line-height:1">'+todayCount+'</div>'
+            + '<div style="font-family:"Playfair Display",serif;font-size:28px;color:var(--cream);line-height:1">'+todayCount+'</div>'
             + '<div style="font-size:11px;color:var(--cream-dim);margin-top:4px">'+weekCount+' this week</div>'
             + '</div>',
           '<div style="background:var(--forest-mid);border:1px solid var(--divider);border-radius:10px;padding:14px">'
             + '<div style="font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--cream-dim);margin-bottom:6px">Species This Week</div>'
-            + '<div style="font-family:'Playfair Display',serif;font-size:28px;color:var(--cream);line-height:1">'+spp+'</div>'
-            + '<div style="font-size:11px;color:var(--cream-dim);margin-top:4px">unique species ID'd</div>'
+            + '<div style="font-family:"Playfair Display",serif;font-size:28px;color:var(--cream);line-height:1">'+spp+'</div>'
+            + '<div style="font-size:11px;color:var(--cream-dim);margin-top:4px">unique species identified</div>'
             + '</div>',
           '<div style="background:var(--forest-mid);border:1px solid var(--divider);border-radius:10px;padding:14px">'
             + '<div style="font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--cream-dim);margin-bottom:6px">Latest Detection</div>'
@@ -571,8 +571,8 @@
         el.innerHTML = '<div style="padding:14px;color:#c86a6a;font-style:italic">Could not reach Dam Mire worker</div>';
       }
     }
-    renderDamMire();
-    setInterval(renderDamMire, 5 * 60 * 1000); // refresh every 5 minutes
+    try { renderDamMire(); } catch(e) { console.error('renderDamMire error:', e); }
+    setInterval(function(){ try { renderDamMire(); } catch(e) {} }, 5 * 60 * 1000);
 
     // Dam Mire infrastructure health
     async function renderDamMireInfra() {
@@ -622,8 +622,8 @@
         card('📡 FTP Last Upload', lastDetection ? fmtAgo(lastDetection) : '—', lastDetection ? '#7ab87a' : 'var(--cream-dim)', lastDetection ? new Date(lastDetection).toLocaleString('en-GB', {day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : 'no data yet')
       ].join('');
     }
-    renderDamMireInfra();
-    setInterval(renderDamMireInfra, 5 * 60 * 1000);
+    try { renderDamMireInfra(); } catch(e) { console.error('renderDamMireInfra error:', e); }
+    setInterval(function(){ try { renderDamMireInfra(); } catch(e) {} }, 5 * 60 * 1000);
 
     function renderDevices() {
       const el = document.getElementById('deviceStrip');
