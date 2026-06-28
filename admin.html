@@ -595,16 +595,12 @@
         if (h < 24) return h + 'h ago';
         return Math.floor(h/24) + 'd ago';
       }
-      // Worker check
+      // Worker + health check in one call
       let workerOk = false;
-      try {
-        const r = await fetch(WORKER + '/');
-        workerOk = r.ok;
-      } catch(e) {}
-      // Health endpoint
       let d1Ok = false, r2Ok = false, lastDetection = null, totalDetections = null, d1Error = '', r2Error = '';
       try {
         const r = await fetch(WORKER + '/health');
+        workerOk = r.ok;
         if (r.ok) {
           const h = await r.json();
           d1Ok = h.d1;
