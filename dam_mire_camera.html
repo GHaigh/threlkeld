@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wildlife Camera — Dam Mire | Threlkeld Nature Watch</title>
+  <meta name="robots" content="noindex">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --forest-deep:  #1a2e1a;
+      --forest-dark:  #0f1f0f;
+      --forest-mid:   #2d4a2d;
+      --forest-light: #3d6b3d;
+      --sage:         #7aab7a;
+      --sage-light:   #a8c8a8;
+      --cream:        #f0ead8;
+      --cream-dim:    #c8bfa8;
+      --ink:          #1a1a1a;
+      --card-bg:      rgba(255,255,255,0.05);
+      --card-border:  rgba(122,171,122,0.2);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--forest-dark);
+      color: var(--cream);
+      font-family: 'Inter', sans-serif;
+      font-size: 15px;
+      line-height: 1.7;
+      min-height: 100vh;
+    }
+
+    /* NAV */
+    nav {
+      background: rgba(15,31,15,0.95);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--card-border);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      padding: 0 1.5rem;
+    }
+    .nav-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      height: 52px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .nav-inner::-webkit-scrollbar { display: none; }
+    .nav-home {
+      font-family: 'Playfair Display', serif;
+      font-size: 1rem;
+      color: var(--sage);
+      text-decoration: none;
+      white-space: nowrap;
+      margin-right: 1rem;
+    }
+    .nav-link {
+      color: var(--cream-dim);
+      text-decoration: none;
+      font-size: 0.8rem;
+      padding: 0.3rem 0.6rem;
+      border-radius: 4px;
+      white-space: nowrap;
+      transition: color 0.2s, background 0.2s;
+    }
+    .nav-link:hover { color: var(--cream); background: var(--card-bg); }
+    .nav-link.active { color: var(--sage); background: rgba(122,171,122,0.12); }
+
+    /* LOGIN SCREEN */
+    #login-screen {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+    .login-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 2.5rem;
+      width: 100%;
+      max-width: 380px;
+      text-align: center;
+    }
+    .login-card h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.6rem;
+      color: var(--sage);
+      margin-bottom: 0.5rem;
+    }
+    .login-card p {
+      color: var(--cream-dim);
+      font-size: 0.85rem;
+      margin-bottom: 1.5rem;
+    }
+    .login-card input {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      color: var(--cream);
+      font-family: 'Inter', sans-serif;
+      font-size: 1rem;
+      margin-bottom: 1rem;
+      outline: none;
+    }
+    .login-card input:focus { border-color: var(--sage); }
+    .login-card button {
+      width: 100%;
+      padding: 0.75rem;
+      background: var(--forest-light);
+      border: none;
+      border-radius: 8px;
+      color: var(--cream);
+      font-family: 'Inter', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .login-card button:hover { background: var(--sage); color: var(--forest-dark); }
+    .login-error {
+      color: #e88;
+      font-size: 0.8rem;
+      margin-top: 0.75rem;
+      display: none;
+    }
+
+    /* MAIN CONTENT */
+    #main-content { display: none; }
+
+    .page {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem;
+    }
+
+    /* HERO */
+    .hero {
+      padding: 2rem 0 1.5rem;
+      border-bottom: 1px solid var(--card-border);
+      margin-bottom: 2rem;
+    }
+    .hero h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: 2rem;
+      color: var(--sage);
+      margin-bottom: 0.4rem;
+    }
+    .hero p {
+      color: var(--cream-dim);
+      font-size: 0.9rem;
+    }
+    .hero-meta {
+      display: flex;
+      gap: 1.5rem;
+      margin-top: 1rem;
+      flex-wrap: wrap;
+    }
+    .hero-stat {
+      display: flex;
+      flex-direction: column;
+    }
+    .hero-stat .num {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: var(--cream);
+      line-height: 1;
+    }
+    .hero-stat .lbl {
+      font-size: 0.75rem;
+      color: var(--cream-dim);
+      margin-top: 0.2rem;
+    }
+
+    /* CONTROLS */
+    .controls {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-bottom: 2rem;
+    }
+    .tab-group {
+      display: flex;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .tab-btn {
+      padding: 0.5rem 1rem;
+      background: none;
+      border: none;
+      color: var(--cream-dim);
+      font-family: 'Inter', sans-serif;
+      font-size: 0.82rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    .tab-btn:hover { color: var(--cream); }
+    .tab-btn.active {
+      background: var(--forest-light);
+      color: var(--cream);
+    }
+    .filter-select {
+      padding: 0.5rem 0.8rem;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      color: var(--cream);
+      font-family: 'Inter', sans-serif;
+      font-size: 0.82rem;
+      cursor: pointer;
+      outline: none;
+    }
+    .filter-select:focus { border-color: var(--sage); }
+    .filter-select option { background: var(--forest-deep); }
+
+    .result-count {
+      margin-left: auto;
+      font-size: 0.8rem;
+      color: var(--cream-dim);
+    }
+
+    /* GALLERY */
+    .gallery {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1.25rem;
+    }
+
+    .detection-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      overflow: hidden;
+      transition: border-color 0.2s, transform 0.15s;
+    }
+    .detection-card:hover {
+      border-color: var(--sage);
+      transform: translateY(-2px);
+    }
+    .detection-card img {
+      width: 100%;
+      aspect-ratio: 16/9;
+      object-fit: cover;
+      display: block;
+      background: var(--forest-mid);
+    }
+    .card-body {
+      padding: 0.9rem 1rem;
+    }
+    .card-species {
+      font-weight: 600;
+      font-size: 0.95rem;
+      color: var(--cream);
+      margin-bottom: 0.2rem;
+      text-transform: capitalize;
+    }
+    .card-species.unknown { color: var(--cream-dim); font-weight: 400; font-style: italic; }
+    .card-meta {
+      font-size: 0.75rem;
+      color: var(--cream-dim);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .confidence-badge {
+      font-size: 0.68rem;
+      padding: 0.15rem 0.45rem;
+      border-radius: 4px;
+      font-weight: 500;
+    }
+    .confidence-badge.high { background: rgba(122,171,122,0.2); color: var(--sage); }
+    .confidence-badge.medium { background: rgba(255,200,100,0.15); color: #ffc864; }
+    .confidence-badge.low { background: rgba(255,120,120,0.15); color: #ff9090; }
+
+    .card-video-links {
+      margin-top: 0.6rem;
+      display: flex;
+      gap: 0.5rem;
+    }
+    .video-link {
+      font-size: 0.72rem;
+      color: var(--sage);
+      text-decoration: none;
+      padding: 0.2rem 0.5rem;
+      border: 1px solid var(--card-border);
+      border-radius: 4px;
+      transition: background 0.2s;
+    }
+    .video-link:hover { background: var(--card-bg); }
+
+    /* EMPTY / LOADING */
+    .gallery-empty {
+      grid-column: 1/-1;
+      text-align: center;
+      padding: 4rem 2rem;
+      color: var(--cream-dim);
+    }
+    .gallery-empty .icon { font-size: 2.5rem; margin-bottom: 0.75rem; }
+    .gallery-empty p { font-size: 0.9rem; }
+
+    .loading-spinner {
+      grid-column: 1/-1;
+      text-align: center;
+      padding: 4rem;
+      color: var(--sage);
+      font-size: 0.9rem;
+    }
+
+    /* FOOTER */
+    footer {
+      border-top: 1px solid var(--card-border);
+      margin-top: 4rem;
+      padding: 2rem 1.5rem;
+      text-align: center;
+      color: var(--cream-dim);
+      font-size: 0.78rem;
+    }
+    footer a { color: var(--sage); text-decoration: none; }
+
+    @media (max-width: 600px) {
+      .hero h1 { font-size: 1.5rem; }
+      .controls { gap: 0.5rem; }
+      .tab-btn { padding: 0.45rem 0.7rem; font-size: 0.78rem; }
+      .result-count { width: 100%; margin-left: 0; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div id="login-screen">
+  <div class="login-card">
+    <div style="font-size:2rem;margin-bottom:0.75rem;">📷</div>
+    <h1>Wildlife Camera</h1>
+    <p>Dam Mire · Friends of the Lake District<br>Password required to access</p>
+    <input type="password" id="password-input" placeholder="Enter password" autocomplete="current-password">
+    <button onclick="tryLogin()">Access Camera Feed</button>
+    <div class="login-error" id="login-error">Incorrect password</div>
+  </div>
+</div>
+
+<!-- MAIN CONTENT -->
+<div id="main-content">
+  <nav>
+    <div class="nav-inner">
+      <a href="index.html" class="nav-home">🌿 Threlkeld</a>
+      <a href="birds.html" class="nav-link">🐦 Birds</a>
+      <a href="bats.html" class="nav-link">🦇 Bats</a>
+      <a href="wildlife.html" class="nav-link">🦊 Wildlife</a>
+      <a href="weather.html" class="nav-link">🌦 Weather</a>
+      <a href="river.html" class="nav-link">💧 River</a>
+      <a href="fells.html" class="nav-link">⛰ Fells</a>
+      <a href="dam_mire_camera.html" class="nav-link active">📷 Dam Mire Cam</a>
+    </div>
+  </nav>
+
+  <div class="page">
+    <div class="hero">
+      <h1>📷 Dam Mire Wildlife Camera</h1>
+      <p>Automated trail camera at Dam Mire, Cumbria · Friends of the Lake District site · AI species identification</p>
+      <div class="hero-meta">
+        <div class="hero-stat">
+          <span class="num" id="stat-today">—</span>
+          <span class="lbl">detections today</span>
+        </div>
+        <div class="hero-stat">
+          <span class="num" id="stat-species">—</span>
+          <span class="lbl">species this week</span>
+        </div>
+        <div class="hero-stat">
+          <span class="num" id="stat-latest">—</span>
+          <span class="lbl">last detection</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <div class="tab-group">
+        <button class="tab-btn active" data-period="today" onclick="switchPeriod('today',this)">Today</button>
+        <button class="tab-btn" data-period="week" onclick="switchPeriod('week',this)">This Week</button>
+        <button class="tab-btn" data-period="month" onclick="switchPeriod('month',this)">This Month</button>
+      </div>
+      <select class="filter-select" id="species-filter" onchange="applyFilter()">
+        <option value="all">All species</option>
+      </select>
+      <span class="result-count" id="result-count"></span>
+    </div>
+
+    <div class="gallery" id="gallery">
+      <div class="loading-spinner">Loading detections…</div>
+    </div>
+  </div>
+
+  <footer>
+    <p>Threlkeld Nature Watch · Dam Mire Wildlife Camera · <a href="index.html">threlkeld.info</a></p>
+    <p style="margin-top:0.4rem;">Powered by Reolink TrackMix LTE-C · Cloudflare R2 · Claude Vision AI</p>
+  </footer>
+</div>
+
+<script>
+  const WORKER_URL = 'https://threlkeld-wildlife-processor.haigh-greg.workers.dev';
+  const PASSWORD   = 'Thr3lk3ld!';
+  const SESSION_KEY = 'dm_auth';
+
+  let currentPeriod  = 'today';
+  let currentSpecies = 'all';
+  let allDetections  = [];
+
+  // ── Auth ────────────────────────────────────────────────────
+  function tryLogin() {
+    const val = document.getElementById('password-input').value;
+    if (val === PASSWORD) {
+      sessionStorage.setItem(SESSION_KEY, '1');
+      showMain();
+    } else {
+      document.getElementById('login-error').style.display = 'block';
+      document.getElementById('password-input').value = '';
+      document.getElementById('password-input').focus();
+    }
+  }
+
+  document.getElementById('password-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') tryLogin();
+  });
+
+  function showMain() {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('main-content').style.display = 'block';
+    init();
+  }
+
+  // Check session on load
+  if (sessionStorage.getItem(SESSION_KEY) === '1') showMain();
+
+  // ── Init ────────────────────────────────────────────────────
+  async function init() {
+    await loadSpecies();
+    await loadGallery('today');
+    updateStats();
+  }
+
+  // ── Species filter ──────────────────────────────────────────
+  async function loadSpecies() {
+    try {
+      const res  = await fetch(`${WORKER_URL}/species`);
+      const list = await res.json();
+      const sel  = document.getElementById('species-filter');
+      list.forEach(s => {
+        if (!s) return;
+        const opt = document.createElement('option');
+        opt.value = s;
+        opt.textContent = capitalise(s);
+        sel.appendChild(opt);
+      });
+    } catch (e) {
+      console.warn('Species load failed', e);
+    }
+  }
+
+  // ── Gallery ─────────────────────────────────────────────────
+  async function loadGallery(period) {
+    const gallery = document.getElementById('gallery');
+    gallery.innerHTML = '<div class="loading-spinner">Loading detections…</div>';
+
+    try {
+      const params = new URLSearchParams({ period });
+      if (currentSpecies !== 'all') params.set('species', currentSpecies);
+      const res  = await fetch(`${WORKER_URL}/gallery?${params}`);
+      allDetections = await res.json();
+      renderGallery(allDetections);
+      updateStats();
+    } catch (e) {
+      gallery.innerHTML = '<div class="gallery-empty"><div class="icon">⚠️</div><p>Could not load detections. Try again shortly.</p></div>';
+    }
+  }
+
+  function renderGallery(detections) {
+    const gallery = document.getElementById('gallery');
+    document.getElementById('result-count').textContent =
+      detections.length === 1 ? '1 detection' : `${detections.length} detections`;
+
+    if (!detections.length) {
+      gallery.innerHTML = `
+        <div class="gallery-empty">
+          <div class="icon">🦔</div>
+          <p>No detections found for this period.<br>The wildlife might be hiding!</p>
+        </div>`;
+      return;
+    }
+
+    // Group images with their associated videos
+    const grouped = groupDetections(detections);
+
+    gallery.innerHTML = grouped.map(item => {
+      const timeStr  = formatTime(item.timestamp);
+      const dateStr  = formatDate(item.timestamp);
+      const species  = item.species || 'unidentified';
+      const isUnknown = !item.species || item.species === 'unknown';
+
+      const videoLinks = (item.videos || []).map((v, i) =>
+        `<a href="${v.url}" target="_blank" class="video-link">▶ Clip ${i + 1}</a>`
+      ).join('');
+
+      return `
+        <div class="detection-card">
+          <img src="${item.url}" alt="${species}" loading="lazy"
+               onerror="this.style.background='var(--forest-mid)';this.alt='Image unavailable'">
+          <div class="card-body">
+            <div class="card-species ${isUnknown ? 'unknown' : ''}">${capitalise(species)}</div>
+            <div class="card-meta">
+              <span>${dateStr} · ${timeStr}</span>
+              ${item.confidence ? `<span class="confidence-badge ${item.confidence}">${item.confidence}</span>` : ''}
+            </div>
+            ${videoLinks ? `<div class="card-video-links">${videoLinks}</div>` : ''}
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  // Group images with nearby video clips (within 60 seconds)
+  function groupDetections(detections) {
+    // detections from worker are images only (videos logged in D1 but not in KV gallery)
+    // For now just return images - video linking via filename timestamp match
+    return detections.map(d => ({
+      ...d,
+      videos: [] // TODO: match videos by timestamp from D1
+    }));
+  }
+
+  // ── Controls ─────────────────────────────────────────────────
+  function switchPeriod(period, btn) {
+    currentPeriod = period;
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    loadGallery(period);
+  }
+
+  function applyFilter() {
+    currentSpecies = document.getElementById('species-filter').value;
+    loadGallery(currentPeriod);
+  }
+
+  // ── Stats ────────────────────────────────────────────────────
+  async function updateStats() {
+    // Today count
+    document.getElementById('stat-today').textContent =
+      currentPeriod === 'today' ? allDetections.length : '—';
+
+    // Unique species this week
+    try {
+      const res   = await fetch(`${WORKER_URL}/gallery?period=week`);
+      const week  = await res.json();
+      const spp   = new Set(week.map(d => d.species).filter(Boolean));
+      document.getElementById('stat-species').textContent = spp.size;
+
+      // Latest detection time
+      if (week.length) {
+        const latest = new Date(week[0].timestamp);
+        document.getElementById('stat-latest').textContent = formatTime(latest.toISOString());
+      }
+    } catch (e) {}
+  }
+
+  // ── Helpers ──────────────────────────────────────────────────
+  function capitalise(s) {
+    if (!s) return '';
+    return s.charAt(0).toUpperCase() + s.slice(1);
+  }
+
+  function formatTime(iso) {
+    const d = new Date(iso);
+    return d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  function formatDate(iso) {
+    const d   = new Date(iso);
+    const now = new Date();
+    const isToday = d.toDateString() === now.toDateString();
+    if (isToday) return 'Today';
+    return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+  }
+</script>
+</body>
+</html>
