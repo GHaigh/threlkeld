@@ -223,6 +223,17 @@
       </div>
     </div>
 
+    <!-- Dam Mire Camera -->
+    <div style="margin-bottom:24px">
+      <div class="section-header">
+        <div class="section-title">Dam Mire Camera</div>
+        <div class="section-subtitle">Wildlife detections · Friends of the Lake District</div>
+      </div>
+      <div id="damMireStrip" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px">
+        <div style="padding:14px;color:var(--cream-dim);font-style:italic">Loading…</div>
+      </div>
+    </div>
+
     <!-- Detector hardware (PoE HAT telemetry) -->
     <div style="margin-bottom:24px">
       <div class="section-header">
@@ -428,6 +439,7 @@
       if (page === 'bats.html') return '🦇 Bats';
       if (page === 'wildlife.html') return '🦊 Wildlife';
       if (page === 'phenology.html') return '🌱 Phenology';
+      if (page === 'dam_mire_camera.html') return '📷 Dam Mire';
       if (page === 'weekly.html') return '📅 Weekly';
       return page.replace(/\.html$/, '');
     }
@@ -498,6 +510,58 @@
     }
     // Refresh the relative times every 30s even without new messages.
     setInterval(renderHealth, 30000);
+
+    // Dam Mire camera health — polls Cloudflare Worker
+    async function renderDamMire() {
+      const el = document.getElementById('damMireStrip');
+      if (!el) return;
+      const WORKER = 'https://threlkeld-wildlife-processor.haigh-greg.workers.dev';
+      try {
+        const [todayRes, weekRes, latestRes] = await Promise.all([
+          fetch(WORKER + '/gallery?period=today'),
+          fetch(WORKER + '/gallery?period=week'),
+          fetch(WORKER + '/gallery?period=today')
+        ]);
+        const today = await todayRes.json();
+        const week  = await weekRes.json();
+        const todayCount = Array.isArray(today) ? today.length : 0;
+        const weekCount  = Array.isArray(week)  ? week.length  : 0;
+        const spp = Array.isArray(week) ? new Set(week.map(d => d.species).filter(Boolean)).size : 0;
+        const latest = Array.isArray(today) && today.length ? today[0] : null;
+        const latestTime = latest ? new Date(latest.timestamp).toLocaleTimeString('en-GB', {hour:'2-digit',minute:'2-digit'}) : '—';
+        const latestSpecies = latest && latest.species ? latest.species.charAt(0).toUpperCase() + latest.species.slice(1) : '—';
+        const statusColor = todayCount > 0 ? '#7ab87a' : 'var(--cream-dim)';
+        const statusDot   = todayCount > 0 ? '🟢' : '⚪';
+        const statusText  = todayCount > 0 ? 'active today' : 'no detections today';
+        el.innerHTML = [
+          '<div style="background:var(--forest-mid);border:1px solid var(--divider);border-radius:10px;padding:14px">'
+            + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">'
+            + '<span style="font-size:14px">📷 Dam Mire</span><span style="font-size:13px">'+statusDot+'</span></div>'
+            + '<div style="font-size:13px;font-weight:600;color:'+statusColor+';text-transform:capitalize">'+statusText+'</div>'
+            + '<div style="font-size:11px;color:var(--cream-dim);margin-top:2px"><a href="dam_mire_camera.html" style="color:var(--sage);text-decoration:none">View camera →</a></div>'
+            + '</div>',
+          '<div style="background:var(--forest-mid);border:1px solid var(--divider);border-radius:10px;padding:14px">'
+            + '<div style="font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--cream-dim);margin-bottom:6px">Detections Today</div>'
+            + '<div style="font-family:'Playfair Display',serif;font-size:28px;color:var(--cream);line-height:1">'+todayCount+'</div>'
+            + '<div style="font-size:11px;color:var(--cream-dim);margin-top:4px">'+weekCount+' this week</div>'
+            + '</div>',
+          '<div style="background:var(--forest-mid);border:1px solid var(--divider);border-radius:10px;padding:14px">'
+            + '<div style="font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--cream-dim);margin-bottom:6px">Species This Week</div>'
+            + '<div style="font-family:'Playfair Display',serif;font-size:28px;color:var(--cream);line-height:1">'+spp+'</div>'
+            + '<div style="font-size:11px;color:var(--cream-dim);margin-top:4px">unique species ID'd</div>'
+            + '</div>',
+          '<div style="background:var(--forest-mid);border:1px solid var(--divider);border-radius:10px;padding:14px">'
+            + '<div style="font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--cream-dim);margin-bottom:6px">Latest Detection</div>'
+            + '<div style="font-size:15px;font-weight:500;color:var(--cream);margin-bottom:4px">'+latestSpecies+'</div>'
+            + '<div style="font-size:11px;color:var(--cream-dim)">'+latestTime+'</div>'
+            + '</div>'
+        ].join('');
+      } catch(e) {
+        el.innerHTML = '<div style="padding:14px;color:#c86a6a;font-style:italic">Could not reach Dam Mire worker</div>';
+      }
+    }
+    renderDamMire();
+    setInterval(renderDamMire, 5 * 60 * 1000); // refresh every 5 minutes
 
     function renderDevices() {
       const el = document.getElementById('deviceStrip');
