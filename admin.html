@@ -83,6 +83,19 @@
     .tab-btn.active { color: var(--sage); border-bottom-color: var(--sage); }
     .tab-panel { display: none; }
     .tab-panel.active { display: block; }
+    /* Backup Status layout: bird row + bat row on the left, separator, Flows centred on the right */
+    .backup-layout { display: flex; align-items: stretch; gap: 16px; }
+    .backup-groups { flex: 1 1 auto; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+    .backup-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    .backup-sep { width: 1px; background: rgba(255,255,255,0.10); align-self: stretch; }
+    .backup-flows { flex: 0 0 200px; display: flex; align-items: center; }
+    .backup-flows > div { width: 100%; }
+    @media (max-width: 760px) {
+      .backup-layout { flex-direction: column; }
+      .backup-sep { width: auto; height: 1px; }
+      .backup-row { grid-template-columns: 1fr 1fr; }
+      .backup-flows { flex-basis: auto; }
+    }
     .section-subtitle { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--sage); }
 
     /* Stats */
@@ -244,8 +257,15 @@
         <div class="section-title">Backup Status</div>
         <div class="section-subtitle">Last successful run per backup</div>
       </div>
-      <div id="backupStrip" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px">
-        <div style="padding:14px;color:var(--cream-dim);font-style:italic">Waiting for backups…</div>
+      <div id="backupStrip" class="backup-layout">
+        <div class="backup-groups">
+          <div class="backup-row" id="backupRowBird">
+            <div style="padding:14px;color:var(--cream-dim);font-style:italic">Waiting for backups…</div>
+          </div>
+          <div class="backup-row" id="backupRowBat"></div>
+        </div>
+        <div class="backup-sep"></div>
+        <div class="backup-flows" id="backupRowFlows"></div>
       </div>
     </div>
 
@@ -565,9 +585,11 @@
         const hr = Math.floor(m/60); if (hr < 24) return hr + 'h ago';
         return Math.floor(hr/24) + 'd ago';
       }
-      const el = document.getElementById('backupStrip');
-      if (!el) return;
-      el.innerHTML = BACKUP_FEEDS.map(function(f){
+      const byId = {};
+      BACKUP_FEEDS.forEach(function(f){ byId[f.id] = f; });
+
+      function cardHtml(f){
+        if (!f) return '';
         const seen = feedLastSeen[f.id];
         // thresholds depend on cadence: daily backups ~26h/50h; weekly (SD images) ~8d/15d
         const DAY = 24*HOUR;
@@ -590,7 +612,14 @@
           + (f.sched ? '<div style="font-size:10px;color:var(--cream-dim);margin-top:6px;opacity:0.75;border-top:1px solid rgba(255,255,255,0.06);padding-top:5px">'+f.sched+'</div>' : '')
           + (f.dest ? '<div style="font-size:10px;color:var(--cream-dim);margin-top:3px;opacity:0.7">'+f.dest+'</div>' : '')
           + '</div>';
-      }).join('');
+      }
+
+      const birdRow = document.getElementById('backupRowBird');
+      const batRow  = document.getElementById('backupRowBat');
+      const flowsEl = document.getElementById('backupRowFlows');
+      if (birdRow) birdRow.innerHTML = ['bk_db','bk_repo','bk_birdimg'].map(function(id){ return cardHtml(byId[id]); }).join('');
+      if (batRow)  batRow.innerHTML  = ['bk_batdb','bk_batrepo','bk_batimg'].map(function(id){ return cardHtml(byId[id]); }).join('');
+      if (flowsEl) flowsEl.innerHTML = cardHtml(byId['bk_flows']);
     }
     setInterval(renderBackups, 30000);
 
