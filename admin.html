@@ -238,6 +238,17 @@
       </div>
     </div>
 
+    <!-- Backup status -->
+    <div style="margin-bottom:24px">
+      <div class="section-header">
+        <div class="section-title">Backup Status</div>
+        <div class="section-subtitle">Last successful run per backup</div>
+      </div>
+      <div id="backupStrip" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px">
+        <div style="padding:14px;color:var(--cream-dim);font-style:italic">Waiting for backups…</div>
+      </div>
+    </div>
+
     <!-- Detector hardware (PoE HAT telemetry) -->
     <div style="margin-bottom:24px">
       <div class="section-header">
@@ -381,11 +392,17 @@
       { id: 'birds',   label: '🐦 Birds',    topic: 'birdnetpi/greg2026/detections' },
       { id: 'bats',    label: '🦇 Bats',     topic: 'birdnetpi/greg2026/bats/stats' },
       { id: 'weather', label: '🌤️ Weather',  topic: 'birdnetpi/greg2026/weather/current' },
-      { id: 'river',   label: '🌊 River',    topic: 'birdnetpi/greg2026/river' },
-      { id: 'backup',  label: '💾 Flows backup', topic: 'threlkeld/backup/flows' },
-      { id: 'repobackup', label: '🗄️ Repo backup', topic: 'threlkeld/backup/repo' }
+      { id: 'river',   label: '🌊 River',    topic: 'birdnetpi/greg2026/river' }
+    ];
+    // Backup feeds — each backup job publishes a retained heartbeat {ts, ...} on success.
+    const BACKUP_FEEDS = [
+      { id: 'bk_flows',   label: '💾 Flows',    topic: 'threlkeld/backup/flows' },
+      { id: 'bk_db',      label: '🗄️ Database', topic: 'threlkeld/backup/db' },
+      { id: 'bk_scripts', label: '📜 Scripts',  topic: 'threlkeld/backup/scripts' },
+      { id: 'bk_repo',    label: '☁️ Repo push', topic: 'threlkeld/backup/repo' }
     ];
     const feedLastSeen = {};   // id -> timestamp(ms)
+    const feedDetail = {};     // id -> optional detail string (e.g. backup counts)
 
     // Detector hardware telemetry — each Pi's PoE HAT publishes {temperature, fan, ip,
     // volts, throttled, under_voltage_now, under_voltage_since_boot} to its own system
@@ -528,6 +545,40 @@
     }
     // Refresh the relative times every 30s even without new messages.
     setInterval(renderHealth, 30000);
+
+    // Backup strip: per-backup freshness. All daily — green within ~26h, red if >2 days.
+    function renderBackups() {
+      const now = Date.now();
+      const HOUR = 60*60*1000;
+      const LIVE = 26*HOUR, STALE = 50*HOUR;
+      function fmtAgo(ms) {
+        if (ms == null) return 'never';
+        const s = Math.round((now - ms)/1000);
+        if (s < 60) return s + 's ago';
+        const m = Math.floor(s/60); if (m < 60) return m + 'm ago';
+        const hr = Math.floor(m/60); if (hr < 24) return hr + 'h ago';
+        return Math.floor(hr/24) + 'd ago';
+      }
+      const el = document.getElementById('backupStrip');
+      if (!el) return;
+      el.innerHTML = BACKUP_FEEDS.map(function(f){
+        const seen = feedLastSeen[f.id];
+        let color, dot, state;
+        if (seen == null)              { color = 'var(--cream-dim)'; dot = '\u26AA'; state = 'no data yet'; }
+        else if (now - seen <= LIVE)   { color = '#7ab87a';          dot = '\uD83D\uDFE2'; state = 'ok'; }
+        else if (now - seen <= STALE)  { color = '#d4a04a';          dot = '\uD83D\uDFE1'; state = 'overdue'; }
+        else                           { color = '#c86a6a';          dot = '\uD83D\uDD34'; state = 'failed?'; }
+        const detail = (feedDetail[f.id] || '');
+        return '<div style="background:var(--forest-mid,#16241a);border:1px solid var(--divider,#24382a);border-radius:10px;padding:14px">'
+          + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">'
+          + '<span style="font-size:14px">'+f.label+'</span><span style="font-size:13px">'+dot+'</span></div>'
+          + '<div style="font-size:13px;font-weight:600;color:'+color+';text-transform:capitalize">'+state+'</div>'
+          + '<div style="font-size:11px;color:var(--cream-dim);margin-top:2px">'+fmtAgo(seen)+'</div>'
+          + (detail ? '<div style="font-size:11px;color:var(--cream-dim);margin-top:2px">'+detail+'</div>' : '')
+          + '</div>';
+      }).join('');
+    }
+    setInterval(renderBackups, 30000);
 
     function renderDevices() {
       const el = document.getElementById('deviceStrip');
@@ -763,6 +814,7 @@
       client.subscribe(ANALYTICS_TOPIC);
       // Subscribe to each monitored feed so we can show live freshness.
       HEALTH_FEEDS.forEach(function(f){ client.subscribe(f.topic); });
+      BACKUP_FEEDS.forEach(function(f){ client.subscribe(f.topic); });
       DEVICES.forEach(function(d){ client.subscribe(d.topic); });
     });
     client.on('error', () => {
@@ -770,18 +822,31 @@
       document.getElementById('statusText').textContent = 'Offline';
     });
     client.on('message', (topic, message) => {
+      // Backup feeds: each publishes {ts, ...optional detail} on success (retained).
+      const bk = BACKUP_FEEDS.find(function(f){ return f.topic === topic; });
+      if (bk) {
+        let beatTs = null;
+        try {
+          const p = JSON.parse(message.toString());
+          if (p && p.ts) beatTs = p.ts;
+          // optional detail per backup: db -> detection count, scripts -> file count
+          if (p && p.count != null) feedDetail[bk.id] = p.count.toLocaleString() + ' detections';
+          else if (p && p.files != null) feedDetail[bk.id] = p.files + ' files';
+        } catch(e) {}
+        feedLastSeen[bk.id] = beatTs || Date.now();
+        renderBackups();
+        return;
+      }
       // Health feeds: just record that we heard from them, and when.
       const feed = HEALTH_FEEDS.find(function(f){ return f.topic === topic; });
       if (feed) {
         // For bats, ignore fallback re-sends so a quiet night doesn't look 'live'.
-        let isFallback = false, beatTs = null;
+        let isFallback = false;
         try {
           const p = JSON.parse(message.toString());
           isFallback = (p && p.isFallback === true);
-          if ((feed.id === 'backup' || feed.id === 'repobackup') && p && p.ts) beatTs = p.ts;   // use the backup's own timestamp
         } catch(e) {}
-        if (feed.id === 'backup' || feed.id === 'repobackup') { feedLastSeen[feed.id] = beatTs || Date.now(); }
-        else if (!(feed.id === 'bats' && isFallback)) { feedLastSeen[feed.id] = Date.now(); }
+        if (!(feed.id === 'bats' && isFallback)) { feedLastSeen[feed.id] = Date.now(); }
         renderHealth();
         return;
       }
