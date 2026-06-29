@@ -398,14 +398,17 @@
     // Bird Pi: DB snapshot (02:00) + GitHub push (02:30). Bat Pi: DB snapshot (12:00) +
     // GitHub push (12:30). Flows: Node-RED (05:00). All independently failable.
     const BACKUP_FEEDS = [
-      { id: 'bk_flows',   label: '💾 Flows',    topic: 'threlkeld/backup/flows' },
-      { id: 'bk_db',      label: '🐦 Bird DB',  topic: 'threlkeld/backup/db' },
-      { id: 'bk_repo',    label: '🐦 Bird repo + scripts', topic: 'threlkeld/backup/repo' },
-      { id: 'bk_batdb',   label: '🦇 Bat DB',   topic: 'threlkeld/backup/bat_db' },
-      { id: 'bk_batrepo', label: '🦇 Bat repo + scripts', topic: 'threlkeld/backup/bat_repo' }
+      { id: 'bk_flows',   label: '💾 Flows',    topic: 'threlkeld/backup/flows',   sched: 'Daily · 05:00', dest: 'GitHub: threlkeld_pi_db_backups / flows' },
+      { id: 'bk_db',      label: '🐦 Bird DB',  topic: 'threlkeld/backup/db',      sched: 'Daily · 02:00', dest: 'Local: ~/birdnet_backups (14 kept)' },
+      { id: 'bk_repo',    label: '🐦 Bird repo + scripts', topic: 'threlkeld/backup/repo', sched: 'Daily · 02:30', dest: 'GitHub: …_backups / birds + scripts/birdnet' },
+      { id: 'bk_batdb',   label: '🦇 Bat DB',   topic: 'threlkeld/backup/bat_db',  sched: 'Daily · 12:00', dest: 'Local: ~/bat_backups (14 kept)' },
+      { id: 'bk_batrepo', label: '🦇 Bat repo + scripts', topic: 'threlkeld/backup/bat_repo', sched: 'Daily · 12:30', dest: 'GitHub: …_backups / bats + scripts/bat' },
+      { id: 'bk_birdimg', label: '🐦 Bird SD image', topic: 'threlkeld/backup/bird_image', sched: 'Weekly · Sun 03:00', dest: 'rpi-clone → USB stick', cadence: 'weekly' },
+      { id: 'bk_batimg',  label: '🦇 Bat SD image',  topic: 'threlkeld/backup/bat_image',  sched: 'Weekly · Sun 03:00', dest: 'rpi-clone → USB stick', cadence: 'weekly' }
     ];
     const feedLastSeen = {};   // id -> timestamp(ms)
     const feedDetail = {};     // id -> optional detail string (e.g. backup counts)
+    const feedOk = {};         // id -> success flag (e.g. SD clone completed cleanly)
 
     // Detector hardware telemetry — each Pi's PoE HAT publishes {temperature, fan, ip,
     // volts, throttled, under_voltage_now, under_voltage_since_boot} to its own system
@@ -566,10 +569,16 @@
       if (!el) return;
       el.innerHTML = BACKUP_FEEDS.map(function(f){
         const seen = feedLastSeen[f.id];
+        // thresholds depend on cadence: daily backups ~26h/50h; weekly (SD images) ~8d/15d
+        const DAY = 24*HOUR;
+        const live = (f.cadence === 'weekly') ? 8*DAY  : LIVE;
+        const stale = (f.cadence === 'weekly') ? 15*DAY : STALE;
+        const failed = (feedOk[f.id] === false);   // ran but did not complete successfully
         let color, dot, state;
         if (seen == null)              { color = 'var(--cream-dim)'; dot = '\u26AA'; state = 'no data yet'; }
-        else if (now - seen <= LIVE)   { color = '#7ab87a';          dot = '\uD83D\uDFE2'; state = 'ok'; }
-        else if (now - seen <= STALE)  { color = '#d4a04a';          dot = '\uD83D\uDFE1'; state = 'overdue'; }
+        else if (failed)               { color = '#c86a6a';          dot = '\uD83D\uDD34'; state = 'clone failed'; }
+        else if (now - seen <= live)   { color = '#7ab87a';          dot = '\uD83D\uDFE2'; state = 'ok'; }
+        else if (now - seen <= stale)  { color = '#d4a04a';          dot = '\uD83D\uDFE1'; state = 'overdue'; }
         else                           { color = '#c86a6a';          dot = '\uD83D\uDD34'; state = 'failed?'; }
         const detail = (feedDetail[f.id] || '');
         return '<div style="background:var(--forest-mid,#16241a);border:1px solid var(--divider,#24382a);border-radius:10px;padding:14px">'
@@ -578,6 +587,8 @@
           + '<div style="font-size:13px;font-weight:600;color:'+color+';text-transform:capitalize">'+state+'</div>'
           + '<div style="font-size:11px;color:var(--cream-dim);margin-top:2px">'+fmtAgo(seen)+'</div>'
           + (detail ? '<div style="font-size:11px;color:var(--cream-dim);margin-top:2px">'+detail+'</div>' : '')
+          + (f.sched ? '<div style="font-size:10px;color:var(--cream-dim);margin-top:6px;opacity:0.75;border-top:1px solid rgba(255,255,255,0.06);padding-top:5px">'+f.sched+'</div>' : '')
+          + (f.dest ? '<div style="font-size:10px;color:var(--cream-dim);margin-top:3px;opacity:0.7">'+f.dest+'</div>' : '')
           + '</div>';
       }).join('');
     }
@@ -835,6 +846,7 @@
           // optional detail per backup: db -> detection count, scripts -> file count
           if (p && p.count != null) feedDetail[bk.id] = p.count.toLocaleString() + ' detections';
           else if (p && p.files != null) feedDetail[bk.id] = p.files + ' files';
+          if (p && typeof p.ok === 'boolean') feedOk[bk.id] = p.ok;
         } catch(e) {}
         feedLastSeen[bk.id] = beatTs || Date.now();
         renderBackups();
