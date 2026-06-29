@@ -1900,7 +1900,12 @@
     const today = d && d.today!=null ? d.today : 0;
     const week  = d && d.week!=null ? d.week : 0;
     const total = d && d.total!=null ? d.total : 0;
-    const img   = d && d.latest && d.latest.image ? (NABU+'/local/'+d.latest.image) : null;
+    // NOTE: photo display intentionally suppressed until the human-confirm-before-publish
+    // moderation gate is live (the AI classifier can mis-ID — e.g. a red-tinged bird as a
+    // squirrel). Until then we never show an unverified image; the friendly illustration
+    // shows instead. Re-enable by restoring the line below once moderation is in place.
+    // const img = d && d.latest && d.latest.image ? (NABU+'/local/'+d.latest.image) : null;
+    const img   = null;
 
     setText('lks2-sqtoday', today);
     setText('lks2-sqweek', week);
