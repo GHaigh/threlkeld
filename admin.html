@@ -395,11 +395,14 @@
       { id: 'river',   label: '🌊 River',    topic: 'birdnetpi/greg2026/river' }
     ];
     // Backup feeds — each backup job publishes a retained heartbeat {ts, ...} on success.
+    // Bird Pi: DB snapshot (02:00) + GitHub push (02:30). Bat Pi: DB snapshot (12:00) +
+    // GitHub push (12:30). Flows: Node-RED (05:00). All independently failable.
     const BACKUP_FEEDS = [
       { id: 'bk_flows',   label: '💾 Flows',    topic: 'threlkeld/backup/flows' },
-      { id: 'bk_db',      label: '🗄️ Database', topic: 'threlkeld/backup/db' },
-      { id: 'bk_scripts', label: '📜 Scripts',  topic: 'threlkeld/backup/scripts' },
-      { id: 'bk_repo',    label: '☁️ Repo push', topic: 'threlkeld/backup/repo' }
+      { id: 'bk_db',      label: '🐦 Bird DB',  topic: 'threlkeld/backup/db' },
+      { id: 'bk_repo',    label: '🐦 Bird repo', topic: 'threlkeld/backup/repo' },
+      { id: 'bk_batdb',   label: '🦇 Bat DB',   topic: 'threlkeld/backup/bat_db' },
+      { id: 'bk_batrepo', label: '🦇 Bat repo', topic: 'threlkeld/backup/bat_repo' }
     ];
     const feedLastSeen = {};   // id -> timestamp(ms)
     const feedDetail = {};     // id -> optional detail string (e.g. backup counts)
