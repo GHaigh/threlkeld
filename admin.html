@@ -77,6 +77,12 @@
 
     .section-header { display: flex; align-items: baseline; gap: 10px; margin-bottom: 16px; margin-top: 28px; }
     .section-title { font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 400; color: var(--cream); }
+    .tab-bar { display: flex; gap: 4px; margin-bottom: 28px; border-bottom: 1px solid rgba(255,255,255,0.08); flex-wrap: wrap; }
+    .tab-btn { background: none; border: none; color: var(--cream-dim); font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; padding: 12px 18px; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; font-family: inherit; transition: color 0.15s; }
+    .tab-btn:hover { color: var(--cream); }
+    .tab-btn.active { color: var(--sage); border-bottom-color: var(--sage); }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
     .section-subtitle { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--sage); }
 
     /* Stats */
@@ -212,6 +218,15 @@
       </div>
     </header>
 
+    <div class="tab-bar">
+      <button class="tab-btn active" data-tab="health">Health</button>
+      <button class="tab-btn" data-tab="analytics">Analytics</button>
+      <button class="tab-btn" data-tab="visits">Visits</button>
+      <button class="tab-btn" data-tab="school">School</button>
+    </div>
+
+    <div class="tab-panel active" id="tab-health">
+
     <!-- Health / status strip -->
     <div style="margin-bottom:24px">
       <div class="section-header">
@@ -233,6 +248,10 @@
         <div style="padding:14px;color:var(--cream-dim);font-style:italic">Waiting for devices…</div>
       </div>
     </div>
+
+    </div><!-- /tab-health -->
+
+    <div class="tab-panel" id="tab-analytics">
 
     <!-- Stats -->
     <div class="section-header">
@@ -306,6 +325,10 @@
       <div class="chart-container" id="referrerBreakdown" style="padding:0"><div style="padding:20px;color:var(--cream-dim);font-style:italic">Loading...</div></div>
     </div>
 
+    </div><!-- /tab-analytics -->
+
+    <div class="tab-panel" id="tab-school">
+
     <!-- School page sections -->
     <div style="margin-bottom:8px" id="schoolBandsSection">
       <div class="section-header">
@@ -314,6 +337,10 @@
       </div>
       <div class="chart-container" id="schoolBands" style="padding:0"><div style="padding:20px;color:var(--cream-dim);font-style:italic">No section opens recorded yet</div></div>
     </div>
+
+    </div><!-- /tab-school -->
+
+    <div class="tab-panel" id="tab-visits">
 
     <!-- Recent visits -->
     <div class="section-header">
@@ -336,6 +363,8 @@
         </tbody>
       </table>
     </div>
+
+    </div><!-- /tab-visits -->
 
     <footer>
       <div class="footer-text">Threlkeld, Cumbria · Private Administration · Not linked publicly · Updated 23 Jun 2026 (g)</div>
@@ -789,6 +818,15 @@
       } catch(e) { console.error('Parse error:', e); }
     });
   
+    // Tab switching
+    document.querySelectorAll('.tab-btn').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        const tab = this.getAttribute('data-tab');
+        document.querySelectorAll('.tab-btn').forEach(function(b){ b.classList.toggle('active', b === btn); });
+        document.querySelectorAll('.tab-panel').forEach(function(p){ p.classList.toggle('active', p.id === 'tab-' + tab); });
+      });
+    });
+
     // Mobile nav
     document.getElementById('navHamburger').addEventListener('click', function() {
       this.classList.toggle('open');
