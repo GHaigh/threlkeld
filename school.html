@@ -374,6 +374,7 @@
       </ul>
       <p>The page presents this live data three ways, pitched by age — <strong>Little Explorers</strong> (Reception–Y2), <strong>Nature Detectives</strong> (Y3–4) and <strong>Wild Scientists</strong> (Y5–6). Each band has a daily nature diary, today's weather &amp; sky, a "this season" note, a daily challenge, a rotating "did you know?" fact, real photographs, and <strong>real bird and bat recordings made in the village</strong> — children can tap a species heard today and hear the actual call our sensors picked up. The two older bands also get a river/water-cycle card and a <strong>"what a scientist would record" data box</strong> — yesterday's complete figures (birds, species, bats, temperatures, rainfall and river level) that children can copy or print as a weekly grid and graph themselves.</p>
       <p class="t-note">Honest status: everything here is live — photos, the diary, weather &amp; sky, seasons, daily challenges, the fell camera, and real bird- and bat-call playback. Bird and bat sounds play for species detected here that we hold a recording for, and the collection grows over time. In the data box, a dash means that day's figure isn't in the record yet ("coming soon"), not an error — each new day is recorded complete.</p>
+      <p>🌙 <strong>Seasonal — when the nights draw in:</strong> from autumn through winter (October–March), each band gains a <strong>"Tonight's Sky"</strong> card. It shows the real moon phase (drawn to its actual shape that night), a simple stargazing forecast based on cloud cover and moonlight, when the <strong>International Space Station</strong> will pass over Threlkeld, and an alert when the <strong>Northern Lights</strong> might be visible this far south. It appears automatically as the clocks change and the dark evenings arrive — a natural prompt for some autumn and winter sky-watching.</p>
     </div>
 
     <div class="t-block">
@@ -1268,8 +1269,39 @@
     else if(moonAge<22.15){phase='Waning Gibbous';icon='🌖';}
     else if(moonAge<23.99){phase='Last Quarter';icon='🌗';}
     else{phase='Waning Crescent';icon='🌘';}
-    const brightness = (moonAge>7 && moonAge<22) ? Math.round(Math.sin((moonAge/29.53)*Math.PI)*100) : 0;
-    return {phase,icon,brightness};
+    // Illuminated fraction (0–1): 0 at new, 1 at full. Waxing = lit on the right.
+    const illum = (1 - Math.cos((moonAge/29.53)*2*Math.PI))/2;
+    const waxing = moonAge < 14.77;
+    const brightness = Math.round(illum*100);
+    return {phase,icon,brightness,illum,waxing,moonAge};
+  }
+
+  // Draw the moon's real illuminated shape as a small SVG disc.
+  // illum 0..1 = fraction lit; waxing => lit on the right side.
+  function moonSVG(illum, waxing, size){
+    size = size || 30;
+    const r = 14, cx = 16, cy = 16;
+    const lit = '#f4ecc8', dark = '#2a3550', edge = 'rgba(255,255,255,0.25)';
+    // The terminator is an ellipse; its horizontal radius scales with how far
+    // from half-phase we are. k>0 gibbous, k<0 crescent.
+    const k = (illum - 0.5) * 2;            // -1..1
+    const rx = Math.abs(k) * r;
+    // Base: a full dark disc, then overlay the lit region.
+    // We build the lit area as two arcs: the outer limb semicircle (lit side)
+    // plus the terminator ellipse half.
+    const sweepLimb = waxing ? 1 : 0;       // lit limb on right (wax) or left (wane)
+    const top = `${cx},${cy-r}`, bot = `${cx},${cy+r}`;
+    // outer limb half-circle on the lit side
+    const limb = `A ${r} ${r} 0 0 ${sweepLimb} ${cx},${cy+r}`;
+    // terminator: bulges toward lit side if gibbous, away if crescent
+    const termSweep = (k>=0) ? sweepLimb : (1 - sweepLimb);
+    const term = `A ${rx} ${r} 0 0 ${termSweep} ${cx},${cy-r}`;
+    const litPath = `M ${top} ${limb} ${term} Z`;
+    return `<svg viewBox="0 0 32 32" width="${size}" height="${size}" class="moon-svg" aria-hidden="true" focusable="false" style="vertical-align:middle;margin-right:7px;flex:0 0 auto">
+      <circle cx="${cx}" cy="${cy}" r="${r}" fill="${dark}"/>
+      <path d="${litPath}" fill="${lit}"/>
+      <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${edge}" stroke-width="1"/>
+    </svg>`;
   }
 
   async function renderNightSky(){
@@ -1282,9 +1314,10 @@
 
     // --- Moon (always available, no network) ---
     const moon=moonInfo();
-    setHTML('ks1-ns-moon', `${moon.icon} Tonight's moon is a <b>${moon.phase}</b>. Can you find it in the sky?`);
-    setHTML('lks2-ns-moon', `${moon.icon} Tonight's moon: <b>${moon.phase}</b> (about ${moon.brightness}% bright).`);
-    setHTML('uks2-ns-moon', `${moon.icon} Moon tonight: <b>${moon.phase}</b>, roughly ${moon.brightness}% illuminated — a bright moon washes out fainter stars.`);
+    const mg = moonSVG(moon.illum, moon.waxing, 30);
+    setHTML('ks1-ns-moon', `<span style="display:flex;align-items:center">${mg}<span>Tonight's moon is a <b>${moon.phase}</b>. Can you find it in the sky?</span></span>`);
+    setHTML('lks2-ns-moon', `<span style="display:flex;align-items:center">${mg}<span>Tonight's moon: <b>${moon.phase}</b> (about ${moon.brightness}% bright).</span></span>`);
+    setHTML('uks2-ns-moon', `<span style="display:flex;align-items:center">${mg}<span>Moon tonight: <b>${moon.phase}</b>, roughly ${moon.brightness}% illuminated — a bright moon washes out fainter stars.</span></span>`);
 
     const lat=54.616, lon=-3.056;
 
@@ -2062,7 +2095,22 @@
     rows.push(['Rainfall (mm)', rainMm!=null?(Math.round(rainMm*10)/10):dash]);
     rows.push(['River level (m)', riverLvl!=null?(Math.round(riverLvl*100)/100):dash]);
     if(full){
-      rows.push(['Moon phase', moon||dash]);
+      // Draw the moon to match the named phase from the record (not tonight's).
+      let moonCell = moon || dash;
+      if(moon){
+        const s = moon.toLowerCase();
+        let illum=0.5, wax=true;
+        if(s.includes('new')){ illum=0.02; wax=true; }
+        else if(s.includes('full')){ illum=1; wax=true; }
+        else if(s.includes('first quarter')){ illum=0.5; wax=true; }
+        else if(s.includes('last quarter')||s.includes('third quarter')){ illum=0.5; wax=false; }
+        else if(s.includes('waxing')&&s.includes('crescent')){ illum=0.25; wax=true; }
+        else if(s.includes('waxing')&&s.includes('gibbous')){ illum=0.75; wax=true; }
+        else if(s.includes('waning')&&s.includes('gibbous')){ illum=0.75; wax=false; }
+        else if(s.includes('waning')&&s.includes('crescent')){ illum=0.25; wax=false; }
+        moonCell = `<span style="display:inline-flex;align-items:center">${moonSVG(illum, wax, 22)}<span>${moon}</span></span>`;
+      }
+      rows.push(['Moon phase', moonCell]);
     }
     return rows;
   }
@@ -2077,7 +2125,8 @@
   function copyData(band){
     const full=(band==='uks2');
     const rows=gatherMetrics(full);
-    const text=rows.map(r=>r[0]+': '+r[1]).join('\n');
+    const strip=(v)=>{ const tmp=document.createElement('div'); tmp.innerHTML=String(v); return (tmp.textContent||tmp.innerText||'').trim(); };
+    const text=rows.map(r=>r[0]+': '+strip(r[1])).join('\n');
     const btn=document.querySelector('#'+band+'-datatable')?.parentElement.querySelector('.copy-btn');
     const done=()=>{ if(btn){ const o=btn.textContent; btn.textContent='✓ Copied!'; setTimeout(()=>btn.textContent=o,1600); } };
     try{
