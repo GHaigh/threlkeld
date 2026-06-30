@@ -8,243 +8,182 @@
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,500&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
   <style>
     :root {
-      /* Field-notebook palette — warm paper, ink, and the valley's own colours */
-      --paper:      #f4ecd8;
-      --paper-edge: #e7dcc0;
-      --ink:        #2f3a2c;   /* dark green-black, like fountain-pen ink */
-      --ink-soft:   #5c6b54;
-      --moss:       #6b8f4e;
-      --moss-deep:  #4a6b38;
-      --sky:        #6fa8c7;
-      --berry:      #c25b54;
-      --sun:        #e3a64c;
-      --dusk:       #5a4a82;   /* for bats / evening */
-      --rule:       rgba(74, 107, 56, 0.22);
+      --paper:#f4ecd8; --paper-edge:#e7dcc0; --ink:#2f3a2c; --ink-soft:#5c6b54;
+      --moss:#6b8f4e; --moss-deep:#4a6b38; --sky:#6fa8c7; --berry:#c25b54;
+      --sun:#e3a64c; --dusk:#5a4a82; --rule:rgba(74,107,56,0.22);
     }
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      background: var(--paper);
-      color: var(--ink);
-      font-family: 'Nunito', sans-serif;
-      font-weight: 400;
-      line-height: 1.6;
-      min-height: 100vh;
-      /* faint paper texture: dotted grid like a field notebook */
-      background-image:
-        radial-gradient(circle, rgba(74,107,56,0.06) 1px, transparent 1px);
-      background-size: 22px 22px;
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { background:var(--paper); color:var(--ink); font-family:'Nunito',sans-serif; font-weight:400; line-height:1.6; min-height:100vh; background-image:radial-gradient(circle,rgba(74,107,56,0.06) 1px,transparent 1px); background-size:22px 22px; }
+    .wrap { max-width:860px; margin:0 auto; padding:0 20px; }
+    .topbar { display:flex; align-items:center; gap:12px; padding:16px 0; }
+    .topbar a { color:var(--moss-deep); text-decoration:none; font-weight:700; font-size:14px; }
+    .topbar a:hover { color:var(--berry); }
+    header { text-align:center; padding:24px 0 12px; }
+    .eyebrow { font-weight:800; font-size:13px; letter-spacing:0.18em; text-transform:uppercase; color:var(--moss); margin-bottom:10px; }
+    h1 { font-family:'Fraunces',serif; font-weight:700; font-size:clamp(34px,7vw,58px); line-height:1.05; margin-bottom:14px; }
+    h1 .squiggle { color:var(--berry); font-style:italic; }
+    .lede { font-size:clamp(16px,2.4vw,19px); color:var(--ink-soft); max-width:540px; margin:0 auto 8px; }
+    .picker { margin:28px 0 16px; }
+    .picker-q { text-align:center; font-family:'Fraunces',serif; font-weight:600; font-size:20px; margin-bottom:16px; }
+    .levels { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+    .level { background:#fffaf0; border:2px solid var(--paper-edge); border-radius:16px; padding:18px 14px; cursor:pointer; text-align:center; transition:transform .12s,border-color .12s,box-shadow .12s; font-family:inherit; }
+    .level:hover { transform:translateY(-3px); border-color:var(--moss); box-shadow:0 6px 18px rgba(74,107,56,0.14); }
+    .level.active { border-color:var(--moss); background:#fff; box-shadow:0 6px 20px rgba(74,107,56,0.18); }
+    .level-badge { font-size:38px; line-height:1; margin-bottom:8px; display:block; }
+    .level-name { font-family:'Fraunces',serif; font-weight:600; font-size:17px; }
+    .level-age { font-size:12px; font-weight:700; color:var(--moss); letter-spacing:0.04em; margin-top:2px; }
+    .explore { margin:14px 0 40px; }
+    .prompt-empty { text-align:center; color:var(--ink-soft); font-size:17px; padding:30px 16px; font-style:italic; }
+    .greeting { text-align:center; font-family:'Fraunces',serif; font-style:italic; font-size:clamp(20px,3.4vw,26px); color:var(--moss-deep); margin:26px 0 8px; }
+    .sec-head { font-family:'Fraunces',serif; font-weight:600; font-size:22px; margin:30px 0 14px; display:flex; align-items:center; gap:10px; }
+    .sec-head::after { content:''; flex:1; height:2px; background:var(--rule); border-radius:2px; }
+    .today-banner { background:#fffaf0; border:2px solid var(--paper-edge); border-radius:18px; padding:18px 20px; display:flex; gap:16px; align-items:center; flex-wrap:wrap; }
+    .today-banner .big { font-size:40px; line-height:1; }
+    .today-banner .lines { flex:1; min-width:200px; }
+    .today-line { font-size:16px; color:var(--ink); margin-bottom:2px; }
+    .today-line b { color:var(--moss-deep); }
+    .cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); gap:16px; }
+    .card { background:#fffaf0; border:2px solid var(--paper-edge); border-radius:18px; padding:18px 18px 20px; }
+    .card.bird { border-color:rgba(107,143,78,0.4); }
+    .card.bat { border-color:rgba(90,74,130,0.35); }
+    .card.squirrel { border-color:rgba(194,91,84,0.4); }
+    .card-tag { display:inline-block; font-size:11px; font-weight:800; letter-spacing:0.08em; text-transform:uppercase; padding:3px 10px; border-radius:20px; margin-bottom:10px; }
+    .card.bird .card-tag { background:rgba(107,143,78,0.16); color:var(--moss-deep); }
+    .card.bat .card-tag { background:rgba(90,74,130,0.16); color:var(--dusk); }
+    .card.squirrel .card-tag { background:rgba(194,91,84,0.16); color:var(--berry); }
+    .card-emoji { font-size:44px; line-height:1; margin-bottom:8px; }
+    .card-name { font-family:'Fraunces',serif; font-weight:600; font-size:21px; margin-bottom:6px; }
+    .card-fact { font-size:15px; color:var(--ink-soft); margin-bottom:4px; }
+    .card-meta { font-size:14px; color:var(--ink-soft); margin-top:8px; }
+    .card-meta b { color:var(--ink); font-weight:700; }
+    .card-buttons { display:flex; gap:8px; margin-top:14px; flex-wrap:wrap; }
+    .mini-btn { font-family:inherit; font-weight:700; font-size:13px; border:2px solid var(--paper-edge); background:#fff; color:var(--moss-deep); border-radius:22px; padding:7px 14px; cursor:pointer; display:inline-flex; align-items:center; gap:6px; transition:border-color .12s,transform .1s; }
+    .mini-btn:hover { border-color:var(--moss); transform:translateY(-1px); }
+    .placeholder-note { font-size:11px; color:var(--berry); font-weight:700; margin-top:8px; font-style:italic; }
+    .sky-box { background:linear-gradient(160deg,#2c2a44,#3d3a5e); color:#f0eefb; border:2px solid var(--dusk); border-radius:18px; padding:20px 22px; display:flex; gap:18px; align-items:center; flex-wrap:wrap; }
+    .sky-box .moon { font-size:46px; line-height:1; }
+    .sky-box .sky-text { flex:1; min-width:200px; }
+    .sky-box .sky-title { font-family:'Fraunces',serif; font-weight:600; font-size:19px; margin-bottom:4px; color:#fff; }
+    .sky-box .sky-detail { font-size:15px; color:#d6d2ee; }
+    .mission { background:rgba(227,166,76,0.14); border:2px dashed var(--sun); border-radius:16px; padding:18px 22px; }
+    .mission .m-title { font-family:'Fraunces',serif; font-weight:600; font-size:18px; margin-bottom:4px; }
+    .mission .m-text { font-size:15px; color:var(--ink-soft); }
+    .word { background:rgba(111,168,199,0.14); border:2px solid rgba(111,168,199,0.5); border-radius:16px; padding:18px 22px; margin-top:16px; }
+    .word .w-label { font-size:11px; font-weight:800; letter-spacing:0.1em; text-transform:uppercase; color:var(--sky); margin-bottom:4px; }
+    .word .w-word { font-family:'Fraunces',serif; font-weight:600; font-size:22px; margin-bottom:4px; }
+    .word .w-mean { font-size:15px; color:var(--ink-soft); }
+    footer { text-align:center; padding:24px 0 40px; margin-top:28px; border-top:2px solid var(--rule); color:var(--ink-soft); font-size:13px; }
+    footer .grown-up { margin-top:6px; font-size:12px; }
+    footer a { color:var(--moss-deep); }
+    @media (max-width:560px) {
+      .levels { grid-template-columns:1fr; }
+      .level { display:flex; align-items:center; gap:14px; text-align:left; padding:14px 16px; }
+      .level-badge { margin-bottom:0; font-size:32px; }
     }
-    .wrap { max-width: 820px; margin: 0 auto; padding: 0 20px; }
-
-    /* ---- top bar ---- */
-    .topbar { display: flex; align-items: center; gap: 12px; padding: 16px 0; }
-    .topbar a { color: var(--moss-deep); text-decoration: none; font-weight: 700; font-size: 14px; }
-    .topbar a:hover { color: var(--berry); }
-
-    /* ---- hero ---- */
-    header { text-align: center; padding: 24px 0 12px; }
-    .eyebrow {
-      font-family: 'Nunito', sans-serif; font-weight: 800;
-      font-size: 13px; letter-spacing: 0.18em; text-transform: uppercase;
-      color: var(--moss); margin-bottom: 10px;
-    }
-    h1 {
-      font-family: 'Fraunces', serif; font-weight: 700;
-      font-size: clamp(34px, 7vw, 58px); line-height: 1.05; color: var(--ink);
-      margin-bottom: 14px;
-    }
-    h1 .squiggle { color: var(--berry); font-style: italic; }
-    .lede { font-size: clamp(16px, 2.4vw, 19px); color: var(--ink-soft); max-width: 540px; margin: 0 auto 8px; }
-
-    /* ---- explorer level picker ---- */
-    .picker { margin: 28px 0 16px; }
-    .picker-q {
-      text-align: center; font-family: 'Fraunces', serif; font-weight: 600;
-      font-size: 20px; margin-bottom: 16px; color: var(--ink);
-    }
-    .levels { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
-    .level {
-      background: #fffaf0; border: 2px solid var(--paper-edge);
-      border-radius: 16px; padding: 18px 14px; cursor: pointer; text-align: center;
-      transition: transform 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
-      font-family: inherit;
-    }
-    .level:hover { transform: translateY(-3px); border-color: var(--moss); box-shadow: 0 6px 18px rgba(74,107,56,0.14); }
-    .level.active { border-color: var(--moss); background: #fff; box-shadow: 0 6px 20px rgba(74,107,56,0.18); }
-    .level-badge { font-size: 38px; line-height: 1; margin-bottom: 8px; display: block; }
-    .level-name { font-family: 'Fraunces', serif; font-weight: 600; font-size: 17px; color: var(--ink); }
-    .level-age { font-size: 12px; font-weight: 700; color: var(--moss); letter-spacing: 0.04em; margin-top: 2px; }
-
-    /* ---- content area ---- */
-    .explore { margin: 14px 0 40px; min-height: 100px; }
-    .greeting {
-      text-align: center; font-family: 'Fraunces', serif; font-style: italic;
-      font-size: clamp(20px, 3.4vw, 26px); color: var(--moss-deep);
-      margin: 26px 0 22px;
-    }
-    .prompt-empty {
-      text-align: center; color: var(--ink-soft); font-size: 17px;
-      padding: 30px 16px; font-style: italic;
-    }
-
-    /* discovery cards */
-    .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
-    .card {
-      background: #fffaf0; border: 2px solid var(--paper-edge); border-radius: 18px;
-      padding: 18px 18px 20px; position: relative;
-    }
-    .card.bird { border-color: rgba(107,143,78,0.4); }
-    .card.bat  { border-color: rgba(90,74,130,0.35); }
-    .card.squirrel { border-color: rgba(194,91,84,0.4); }
-    .card-tag {
-      display: inline-block; font-size: 11px; font-weight: 800; letter-spacing: 0.08em;
-      text-transform: uppercase; padding: 3px 10px; border-radius: 20px; margin-bottom: 10px;
-    }
-    .card.bird .card-tag { background: rgba(107,143,78,0.16); color: var(--moss-deep); }
-    .card.bat  .card-tag { background: rgba(90,74,130,0.16); color: var(--dusk); }
-    .card.squirrel .card-tag { background: rgba(194,91,84,0.16); color: var(--berry); }
-    .card-emoji { font-size: 44px; line-height: 1; margin-bottom: 8px; }
-    .card-name { font-family: 'Fraunces', serif; font-weight: 600; font-size: 21px; color: var(--ink); margin-bottom: 6px; }
-    .card-fact { font-size: 15px; color: var(--ink-soft); }
-    .card-listen {
-      margin-top: 12px; font-size: 13px; font-weight: 700; color: var(--moss-deep);
-      display: flex; align-items: center; gap: 6px;
-    }
-
-    /* explorer tip box */
-    .tipbox {
-      background: rgba(227,166,76,0.12); border: 2px dashed var(--sun);
-      border-radius: 16px; padding: 16px 20px; margin: 22px 0; text-align: center;
-    }
-    .tipbox-title { font-family: 'Fraunces', serif; font-weight: 600; font-size: 17px; color: var(--ink); margin-bottom: 4px; }
-    .tipbox-text { font-size: 15px; color: var(--ink-soft); }
-
-    footer {
-      text-align: center; padding: 24px 0 40px; margin-top: 20px;
-      border-top: 2px solid var(--rule); color: var(--ink-soft); font-size: 13px;
-    }
-    footer .grown-up { margin-top: 6px; font-size: 12px; }
-    footer a { color: var(--moss-deep); }
-
-    @media (max-width: 560px) {
-      .levels { grid-template-columns: 1fr; }
-      .level { display: flex; align-items: center; gap: 14px; text-align: left; padding: 14px 16px; }
-      .level-badge { margin-bottom: 0; font-size: 32px; }
-    }
-    @media (prefers-reduced-motion: reduce) {
-      .level { transition: none; }
-    }
+    @media (prefers-reduced-motion:reduce) { .level,.mini-btn { transition:none; } }
   </style>
 </head>
 <body>
   <div class="wrap">
-    <div class="topbar">
-      <a href="index.html">← Threlkeld Nature Watch</a>
-    </div>
-
+    <div class="topbar"><a href="index.html">← Threlkeld Nature Watch</a></div>
     <header>
       <div class="eyebrow">🧭 Young Explorers</div>
       <h1>What's living in <span class="squiggle">our valley</span> today?</h1>
       <p class="lede">Threlkeld sits under a big fell called Blencathra. All sorts of creatures live here — and clever little listening machines hear them every day. Come and find out who's about!</p>
     </header>
-
     <div class="picker">
       <div class="picker-q">First — how old are you, explorer?</div>
       <div class="levels" id="levels">
-        <button class="level" data-level="little">
-          <span class="level-badge">🐛</span>
-          <div class="level-name">Little Explorer</div>
-          <div class="level-age">Age 5–7</div>
-        </button>
-        <button class="level" data-level="detective">
-          <span class="level-badge">🔎</span>
-          <div class="level-name">Nature Detective</div>
-          <div class="level-age">Age 8–10</div>
-        </button>
-        <button class="level" data-level="ranger">
-          <span class="level-badge">🌿</span>
-          <div class="level-name">Junior Ranger</div>
-          <div class="level-age">Age 11+</div>
-        </button>
+        <button class="level" data-level="little"><span class="level-badge">🐛</span><div class="level-name">Little Explorer</div><div class="level-age">Age 5–7</div></button>
+        <button class="level" data-level="detective"><span class="level-badge">🔎</span><div class="level-name">Nature Detective</div><div class="level-age">Age 8–10</div></button>
+        <button class="level" data-level="ranger"><span class="level-badge">🌿</span><div class="level-name">Junior Ranger</div><div class="level-age">Age 11+</div></button>
       </div>
     </div>
-
-    <div class="explore" id="explore">
-      <div class="prompt-empty">Tap your explorer badge above to begin! 🌳</div>
-    </div>
-
+    <div class="explore" id="explore"><div class="prompt-empty">Tap your explorer badge above to begin! 🌳</div></div>
     <footer>
       <div>Threlkeld Nature Watch · made for young naturalists 🦉</div>
       <div class="grown-up">For grown-ups and teachers: see the <a href="about.html">About</a> page (a school version is on the way).</div>
     </footer>
   </div>
-
   <script>
-    // ZERO DATA COLLECTION: the chosen level only changes what is shown on screen.
-    // Nothing is stored, sent, or recorded. No inputs, no tracking, no links out.
-
-    // Placeholder discoveries — in the real page these come from today's live
-    // bird / bat / wildlife data. Voice changes per explorer level.
+    // ZERO DATA COLLECTION: choosing a level only changes what is shown on screen.
+    // Nothing is stored, sent, or recorded. No text fields, no tracking, no links out.
+    // All content is PLACEHOLDER — the real page will draw today's birds, bats,
+    // wildlife, weather, sunset and moon from the live valley data.
     const CONTENT = {
       little: {
-        greeting: "Hello, Little Explorer! Here's who we heard today.",
-        cards: [
-          { type:'bird', tag:'Bird', emoji:'🐦', name:'Robin', fact:"A little brown bird with a bright red tummy. It sings a sweet, tinkly song.", listen:"Listen for: a happy, bubbly tune" },
-          { type:'bird', tag:'Bird', emoji:'🦉', name:'Tawny Owl', fact:"Owls come out at night. This one says 'twit-twoo' in the dark woods.", listen:"Listen for: a hooty hoot at night" },
-          { type:'squirrel', tag:'Animal', emoji:'🐿️', name:'Red Squirrel', fact:"A fluffy red squirrel with pointy ears. It loves nuts and bouncing in the trees!", listen:"Look for: a flash of red up high" }
+        greeting: "Hello, Little Explorer! Here's the valley today.",
+        today: { emoji:'\u2600\uFE0F', lines:["It is <b>sunny</b> and warm today.","A lovely day to go outside and look for minibeasts!"] },
+        creatures: [
+          { type:'bird', tag:'Bird', emoji:'\uD83D\uDC26', name:'Robin', fact:"A little brown bird with a bright red tummy. It sings a sweet, tinkly song.", meta:"<b>Eats:</b> worms and crumbs", listen:true, see:false },
+          { type:'bird', tag:'Bird', emoji:'\uD83E\uDD89', name:'Tawny Owl', fact:"Owls fly at night. This one says 'twit-twoo' in the dark woods.", meta:"<b>Awake:</b> at night-time", listen:true, see:false },
+          { type:'squirrel', tag:'Animal', emoji:'\uD83D\uDC3F\uFE0F', name:'Red Squirrel', fact:"A fluffy red squirrel with pointy ears. It loves nuts and bouncing in the trees!", meta:"<b>Loves:</b> nuts and seeds", listen:false, see:true }
         ],
-        tip: { title:"Explorer Tip!", text:"Next time you're outside, close your eyes and count how many different bird songs you can hear. 👂" }
+        sky: { moon:'\uD83C\uDF19', title:"Look up tonight!", detail:"There is a thin curvy moon in the sky tonight. Can you find it?" },
+        mission: { title:"Your Mission \uD83D\uDC3E", text:"Go outside and close your eyes. How many different bird songs can you hear? Count them on your fingers!" },
+        word: { word:"Dawn chorus", mean:"When LOTS of birds all sing together early in the morning. It's loudest at sunrise!" }
       },
       detective: {
         greeting: "Welcome back, Nature Detective. Here are today's clues.",
-        cards: [
-          { type:'bird', tag:'Bird', emoji:'🐦', name:'Robin', fact:"Robins are one of the few birds that sing all year round — even in winter. They're very bold and might come close if you sit still.", listen:"Listen for: a warbling, fluty song from a fence or branch" },
-          { type:'bat', tag:'Bat', emoji:'🦇', name:'Common Pipistrelle', fact:"Britain's smallest bat — tiny enough to fit in a matchbox! It eats up to 3,000 midges in one night.", listen:"Out at: dusk, swooping over the garden" },
-          { type:'squirrel', tag:'Animal', emoji:'🐿️', name:'Red Squirrel', fact:"Red squirrels are rare in England now. The valley is lucky to have them. They bury nuts to eat in winter — and forget where some are, which grows new trees!", listen:"Look for: tufted ears and a bushy red tail" }
+        today: { emoji:'\u2600\uFE0F', lines:["It's <b>sunny, 18\u00B0C</b> with a light breeze.","The sun set at <b>9:47pm</b> \u2014 that's when the bats wake up."] },
+        creatures: [
+          { type:'bird', tag:'Bird', emoji:'\uD83D\uDC26', name:'Robin', fact:"Robins sing all year round, even in winter. They're very bold and might come close if you sit still.", meta:"<b>Heard:</b> 14 times today \u00B7 <b>Listen for:</b> a fluty warble", listen:true, see:false },
+          { type:'bat', tag:'Bat', emoji:'\uD83E\uDD87', name:'Common Pipistrelle', fact:"Britain's smallest bat \u2014 tiny enough to fit in a matchbox! It eats up to 3,000 midges in one night.", meta:"<b>Out at:</b> dusk, over the garden", listen:true, see:false },
+          { type:'squirrel', tag:'Animal', emoji:'\uD83D\uDC3F\uFE0F', name:'Red Squirrel', fact:"Red squirrels are rare in England now. They bury nuts to eat later \u2014 and forget some, which grows new trees!", meta:"<b>Look for:</b> tufted ears, red bushy tail", listen:false, see:true }
         ],
-        tip: { title:"Detective Challenge", text:"Bats use sound to 'see' in the dark — it's called echolocation. Can you find out which other animal does this?" }
+        sky: { moon:'\uD83C\uDF12', title:"Look up tonight", detail:"Tonight's moon is a waxing crescent \u2014 a thin sliver growing fatter each night towards full." },
+        mission: { title:"Detective Challenge \uD83D\uDD0D", text:"Bats 'see' in the dark using sound \u2014 it's called echolocation. Can you find out which sea animal does this too?" },
+        word: { word:"Echolocation", mean:"Making a sound and listening to the echo to find things in the dark. Bats and dolphins both do it." }
       },
       ranger: {
         greeting: "Good to see you, Junior Ranger. Here's the valley's report.",
-        cards: [
-          { type:'bird', tag:'Bird', emoji:'🐦', name:'Robin (Erithacus rubecula)', fact:"Robins hold winter territories and will sing through the cold to defend them. Males and females look alike — unusual among British birds.", listen:"Song: a clear, melancholy warble, often at dawn and dusk" },
-          { type:'bat', tag:'Bat', emoji:'🦇', name:'Common Pipistrelle (Pipistrellus pipistrellus)', fact:"Echolocates at around 45 kHz — far above human hearing. Our detector slows the calls down so we can hear them. A single roost can hold hundreds.", listen:"Emerges: 20 minutes after sunset, hunting along hedgerows" },
-          { type:'squirrel', tag:'Animal', emoji:'🐿️', name:'Red Squirrel (Sciurus vulgaris)', fact:"A protected native species, outcompeted across most of England by the grey. Cumbria is one of its last strongholds — which is why we watch the feeder so carefully.", listen:"Field sign: stripped pine cones and ear tufts in winter coat" }
+        today: { emoji:'\uD83C\uDF24\uFE0F', lines:["<b>18\u00B0C, sunny, SW breeze 8mph.</b> Sunset <b>21:47</b>, first bat usually ~20 min after.","<b>23 bird species</b> logged today; dawn chorus opened at <b>04:38</b>."] },
+        creatures: [
+          { type:'bird', tag:'Bird', emoji:'\uD83D\uDC26', name:'Robin \u00B7 Erithacus rubecula', fact:"Holds winter territories and sings through the cold to defend them. Males and females look alike \u2014 unusual among British birds.", meta:"<b>Detections today:</b> 14 \u00B7 <b>Peak:</b> dawn & dusk", listen:true, see:false },
+          { type:'bat', tag:'Bat', emoji:'\uD83E\uDD87', name:'Common Pipistrelle \u00B7 Pipistrellus pipistrellus', fact:"Echolocates around 45 kHz \u2014 far above human hearing. Our detector slows the calls down so we can hear them.", meta:"<b>Emerges:</b> ~20 min after sunset, along hedgerows", listen:true, see:false },
+          { type:'squirrel', tag:'Animal', emoji:'\uD83D\uDC3F\uFE0F', name:'Red Squirrel \u00B7 Sciurus vulgaris', fact:"A protected native species, outcompeted across most of England by the grey. Cumbria is one of its last strongholds.", meta:"<b>Field sign:</b> stripped cones, winter ear tufts", listen:false, see:true }
         ],
-        tip: { title:"Ranger's Notebook", text:"Phenology is the study of nature's timing — when birds arrive, when leaves unfurl. The valley's records are building a picture of how the seasons are shifting. What might you record where you live?" }
+        sky: { moon:'\uD83C\uDF12', title:"Tonight's sky", detail:"Waxing crescent, 18% illuminated, setting at 23:10. Dark-sky rating Bortle 3\u20134 \u2014 good for stargazing if it's clear." },
+        mission: { title:"Ranger's Notebook \uD83D\uDCD3", text:"Phenology is the study of nature's timing \u2014 when birds arrive, when leaves unfurl. Start your own record: note the first swallow you see this year." },
+        word: { word:"Phenology", mean:"The study of when natural events happen each year \u2014 first frogspawn, first swallow, first bluebell \u2014 and how the timing shifts." }
       }
     };
-
     const levels = document.getElementById('levels');
     const explore = document.getElementById('explore');
-
-    function render(level) {
-      const data = CONTENT[level];
-      if (!data) return;
-      let html = '<div class="greeting">' + data.greeting + '</div>';
-      html += '<div class="cards">';
-      data.cards.forEach(function(c){
-        html += '<div class="card ' + c.type + '">'
-          + '<span class="card-tag">' + c.tag + '</span>'
-          + '<div class="card-emoji">' + c.emoji + '</div>'
-          + '<div class="card-name">' + c.name + '</div>'
-          + '<div class="card-fact">' + c.fact + '</div>'
-          + '<div class="card-listen">✨ ' + c.listen + '</div>'
-          + '</div>';
-      });
-      html += '</div>';
-      html += '<div class="tipbox"><div class="tipbox-title">' + data.tip.title + '</div>'
-        + '<div class="tipbox-text">' + data.tip.text + '</div></div>';
-      explore.innerHTML = html;
+    function creatureCard(c){
+      let btns = '';
+      if (c.listen) btns += '<button class="mini-btn" type="button" onclick="return false">\uD83D\uDD0A Listen to me</button>';
+      if (c.see)    btns += '<button class="mini-btn" type="button" onclick="return false">\uD83D\uDCF7 See me today</button>';
+      return '<div class="card ' + c.type + '"><span class="card-tag">' + c.tag + '</span>'
+        + '<div class="card-emoji">' + c.emoji + '</div>'
+        + '<div class="card-name">' + c.name + '</div>'
+        + '<div class="card-fact">' + c.fact + '</div>'
+        + '<div class="card-meta">' + c.meta + '</div>'
+        + (btns ? '<div class="card-buttons">' + btns + '</div>' : '') + '</div>';
     }
-
+    function render(level){
+      const d = CONTENT[level];
+      if (!d) return;
+      let h = '<div class="greeting">' + d.greeting + '</div>';
+      h += '<div class="today-banner"><div class="big">' + d.today.emoji + '</div><div class="lines">'
+        + d.today.lines.map(function(l){ return '<div class="today-line">' + l + '</div>'; }).join('') + '</div></div>';
+      h += '<div class="sec-head">\uD83D\uDC3E Who\u2019s about today</div>';
+      h += '<div class="cards">' + d.creatures.map(creatureCard).join('') + '</div>';
+      h += '<div class="placeholder-note">\u2605 The listen &amp; see buttons will play real sounds and show today\u2019s photos once connected.</div>';
+      h += '<div class="sec-head">\uD83C\uDF19 Look up tonight</div>';
+      h += '<div class="sky-box"><div class="moon">' + d.sky.moon + '</div><div class="sky-text"><div class="sky-title">'
+        + d.sky.title + '</div><div class="sky-detail">' + d.sky.detail + '</div></div></div>';
+      h += '<div class="sec-head">\u2728 Try this</div>';
+      h += '<div class="mission"><div class="m-title">' + d.mission.title + '</div><div class="m-text">' + d.mission.text + '</div></div>';
+      h += '<div class="word"><div class="w-label">Word of the day</div><div class="w-word">' + d.word.word + '</div><div class="w-mean">' + d.word.mean + '</div></div>';
+      explore.innerHTML = h;
+    }
     levels.querySelectorAll('.level').forEach(function(btn){
       btn.addEventListener('click', function(){
         levels.querySelectorAll('.level').forEach(function(b){ b.classList.remove('active'); });
         btn.classList.add('active');
         render(btn.getAttribute('data-level'));
-        // gently scroll the discoveries into view
-        explore.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        explore.scrollIntoView({ behavior:'smooth', block:'start' });
       });
     });
   </script>
