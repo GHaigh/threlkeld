@@ -187,7 +187,7 @@
       <div class="stack-card">
         <div class="stack-layer">Bird Detection</div>
         <div class="stack-name">BirdNET-Pi</div>
-        <div class="stack-desc">Open source acoustic bird monitoring. Raspberry Pi 3B+ with USB microphone, runs BirdNET neural network in real time. Detects species from audio and publishes via MQTT apprise to the local Mosquitto broker.</div>
+        <div class="stack-desc">Open source acoustic bird monitoring. Raspberry Pi 4 4GB with USB microphone, runs BirdNET neural network in real time. Detects species from audio and publishes via MQTT apprise to the local Mosquitto broker.</div>
       </div>
       <div class="stack-card">
         <div class="stack-layer">Bat Detection</div>
@@ -202,7 +202,7 @@
       <div class="stack-card">
         <div class="stack-layer">Data Processing</div>
         <div class="stack-name">Node-RED</div>
-        <div class="stack-desc">Visual flow-based programming tool running as a Home Assistant add-on. Processes all data streams, handles notifications, stores detection history to JSON files.</div>
+        <div class="stack-desc">Visual flow-based programming tool running as a Home Assistant add-on. Processes all data streams, handles notifications, and relays each detector's database to the public site — the databases themselves are the source of truth.</div>
       </div>
       <div class="stack-card">
         <div class="stack-layer">Messaging</div>
@@ -273,7 +273,7 @@
       <div class="hardware-item"><span class="hardware-name">⚙️ Data &amp; How-To page</span><span class="hardware-spec">Jun 2026 · Every feed downloadable in JSON or CSV, plus a full build-your-own guide — the sensors, the pipeline and the code, so anyone could put one on their own patch. Open data, openly built</span></div>
       <div class="hardware-item"><span class="hardware-name">🐿️ Red squirrel camera <em style="color:var(--sage);font-style:normal">(beta)</em></span><span class="hardware-spec">Jun 2026 · A feeder camera that wakes on motion, then uses AI vision to tell red from grey · Reds are celebrated and logged; grey incursions are recorded for local conservation · <a href="wildlife_cameras.html" style="color:var(--sage)">Take a look →</a></span></div>
       <div class="hardware-item"><span class="hardware-name">✉️ Weekly nature email</span><span class="hardware-spec">Jun 2026 · "This Week in Threlkeld" — a free Sunday-evening summary of the valley's week, opening with a written naturalist's account and the week's figures across birds, bats, weather, river and sky</span></div>
-      <div class="hardware-item"><span class="hardware-name">🛡️ Backed up three ways, watched over</span><span class="hardware-spec">Jun 2026 · Databases, scripts and the automation flows themselves now back up off-site nightly, and a watchdog keeps an eye on every feed — quietly raising the alarm if anything falls silent</span></div>
+      <div class="hardware-item"><span class="hardware-name">🛡️ Backed up every which way, watched over</span><span class="hardware-spec">Jun 2026 · Databases, scripts and the automation flows back up off-site nightly, and each detector's whole SD card is imaged to a spare drive weekly · A status dashboard now watches every backup and feed, quietly raising the alarm if any one falls silent</span></div>
       <div class="hardware-item"><span class="hardware-name">📖 Valley Firsts, woven into the record</span><span class="hardware-spec">Jun 2026 · The Naturalist's daily diary now interleaves each species' first appearance of the year as markers in the timeline — one continuous record of the valley announcing itself, day by day</span></div>
       <div class="hardware-item"><span class="hardware-name">🌅 Dawn chorus vs sunrise</span><span class="hardware-spec">Jun 2026 · Tracks the first confident birdsong each day relative to Threlkeld's sunrise · Robins and Reed Buntings reliably open the valley before first light</span></div>
       <div class="hardware-item"><span class="hardware-name">🌧️ River level vs catchment rainfall</span><span class="hardware-spec">Jun 2026 · The Glenderamackin's level overlaid with rainfall in its upper catchment near Mungrisdale · Watch the river answer rain on the fells, hours later</span></div>
@@ -307,6 +307,16 @@
         <div class="stack-desc">A Tuya wildlife camera mounted at the garden red squirrel feeder, integrated via RTSP into Home Assistant. Live motion-triggered snapshots published to the Wildlife page.</div>
       </div>
       <div class="stack-card">
+        <div class="stack-layer">Coming soon · 2026</div>
+        <div class="stack-name">📷 Village Wildlife Camera</div>
+        <div class="stack-desc">A solar-powered camera watching a quiet spot on the edge of the village, sending pictures back over the mobile network. AI vision identifies what wandered past — deer, fox, badger, birds — and adds each sighting to a public gallery.</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-layer">Coming soon · 2026</div>
+        <div class="stack-name">🧭 Young Explorers' Page</div>
+        <div class="stack-desc">The valley's wildlife told for children, in their own words. Pick your explorer level and the day's birds, bats and visitors are shown just for you — what they are, where they live, and what to listen for. Made to be read by young naturalists themselves.</div>
+      </div>
+      <div class="stack-card">
         <div class="stack-layer">Planned · 2026</div>
         <div class="stack-name">💧 Garden Stream Sensor</div>
         <div class="stack-desc">A Pi Zero 2W with a waterproof JSN-SR04T ultrasonic sensor mounted above the garden stream — a direct tributary of the Glenderamackin. Will give hyperlocal flood early warning before the EA gauges downstream even register the event.</div>
@@ -337,7 +347,7 @@
 
     <footer>
       <div class="footer-text">Threlkeld, Cumbria &middot; Northern Lake District</div>
-      <div class="footer-brand">Threlkeld Nature Watch &middot; Updated 15 Jun 2026 (a)</div>
+      <div class="footer-brand">Threlkeld Nature Watch &middot; Updated 29 Jun 2026 (b)</div>
     </footer>
   </div>
 
