@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Young Explorers · Threlkeld Nature Watch</title>
+  <meta name="description" content="The valley's wildlife, told for young explorers. Discover the birds, bats and animals living around Threlkeld today.">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,500&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      /* Field-notebook palette — warm paper, ink, and the valley's own colours */
+      --paper:      #f4ecd8;
+      --paper-edge: #e7dcc0;
+      --ink:        #2f3a2c;   /* dark green-black, like fountain-pen ink */
+      --ink-soft:   #5c6b54;
+      --moss:       #6b8f4e;
+      --moss-deep:  #4a6b38;
+      --sky:        #6fa8c7;
+      --berry:      #c25b54;
+      --sun:        #e3a64c;
+      --dusk:       #5a4a82;   /* for bats / evening */
+      --rule:       rgba(74, 107, 56, 0.22);
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--paper);
+      color: var(--ink);
+      font-family: 'Nunito', sans-serif;
+      font-weight: 400;
+      line-height: 1.6;
+      min-height: 100vh;
+      /* faint paper texture: dotted grid like a field notebook */
+      background-image:
+        radial-gradient(circle, rgba(74,107,56,0.06) 1px, transparent 1px);
+      background-size: 22px 22px;
+    }
+    .wrap { max-width: 820px; margin: 0 auto; padding: 0 20px; }
+
+    /* ---- top bar ---- */
+    .topbar { display: flex; align-items: center; gap: 12px; padding: 16px 0; }
+    .topbar a { color: var(--moss-deep); text-decoration: none; font-weight: 700; font-size: 14px; }
+    .topbar a:hover { color: var(--berry); }
+
+    /* ---- hero ---- */
+    header { text-align: center; padding: 24px 0 12px; }
+    .eyebrow {
+      font-family: 'Nunito', sans-serif; font-weight: 800;
+      font-size: 13px; letter-spacing: 0.18em; text-transform: uppercase;
+      color: var(--moss); margin-bottom: 10px;
+    }
+    h1 {
+      font-family: 'Fraunces', serif; font-weight: 700;
+      font-size: clamp(34px, 7vw, 58px); line-height: 1.05; color: var(--ink);
+      margin-bottom: 14px;
+    }
+    h1 .squiggle { color: var(--berry); font-style: italic; }
+    .lede { font-size: clamp(16px, 2.4vw, 19px); color: var(--ink-soft); max-width: 540px; margin: 0 auto 8px; }
+
+    /* ---- explorer level picker ---- */
+    .picker { margin: 28px 0 16px; }
+    .picker-q {
+      text-align: center; font-family: 'Fraunces', serif; font-weight: 600;
+      font-size: 20px; margin-bottom: 16px; color: var(--ink);
+    }
+    .levels { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    .level {
+      background: #fffaf0; border: 2px solid var(--paper-edge);
+      border-radius: 16px; padding: 18px 14px; cursor: pointer; text-align: center;
+      transition: transform 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
+      font-family: inherit;
+    }
+    .level:hover { transform: translateY(-3px); border-color: var(--moss); box-shadow: 0 6px 18px rgba(74,107,56,0.14); }
+    .level.active { border-color: var(--moss); background: #fff; box-shadow: 0 6px 20px rgba(74,107,56,0.18); }
+    .level-badge { font-size: 38px; line-height: 1; margin-bottom: 8px; display: block; }
+    .level-name { font-family: 'Fraunces', serif; font-weight: 600; font-size: 17px; color: var(--ink); }
+    .level-age { font-size: 12px; font-weight: 700; color: var(--moss); letter-spacing: 0.04em; margin-top: 2px; }
+
+    /* ---- content area ---- */
+    .explore { margin: 14px 0 40px; min-height: 100px; }
+    .greeting {
+      text-align: center; font-family: 'Fraunces', serif; font-style: italic;
+      font-size: clamp(20px, 3.4vw, 26px); color: var(--moss-deep);
+      margin: 26px 0 22px;
+    }
+    .prompt-empty {
+      text-align: center; color: var(--ink-soft); font-size: 17px;
+      padding: 30px 16px; font-style: italic;
+    }
+
+    /* discovery cards */
+    .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
+    .card {
+      background: #fffaf0; border: 2px solid var(--paper-edge); border-radius: 18px;
+      padding: 18px 18px 20px; position: relative;
+    }
+    .card.bird { border-color: rgba(107,143,78,0.4); }
+    .card.bat  { border-color: rgba(90,74,130,0.35); }
+    .card.squirrel { border-color: rgba(194,91,84,0.4); }
+    .card-tag {
+      display: inline-block; font-size: 11px; font-weight: 800; letter-spacing: 0.08em;
+      text-transform: uppercase; padding: 3px 10px; border-radius: 20px; margin-bottom: 10px;
+    }
+    .card.bird .card-tag { background: rgba(107,143,78,0.16); color: var(--moss-deep); }
+    .card.bat  .card-tag { background: rgba(90,74,130,0.16); color: var(--dusk); }
+    .card.squirrel .card-tag { background: rgba(194,91,84,0.16); color: var(--berry); }
+    .card-emoji { font-size: 44px; line-height: 1; margin-bottom: 8px; }
+    .card-name { font-family: 'Fraunces', serif; font-weight: 600; font-size: 21px; color: var(--ink); margin-bottom: 6px; }
+    .card-fact { font-size: 15px; color: var(--ink-soft); }
+    .card-listen {
+      margin-top: 12px; font-size: 13px; font-weight: 700; color: var(--moss-deep);
+      display: flex; align-items: center; gap: 6px;
+    }
+
+    /* explorer tip box */
+    .tipbox {
+      background: rgba(227,166,76,0.12); border: 2px dashed var(--sun);
+      border-radius: 16px; padding: 16px 20px; margin: 22px 0; text-align: center;
+    }
+    .tipbox-title { font-family: 'Fraunces', serif; font-weight: 600; font-size: 17px; color: var(--ink); margin-bottom: 4px; }
+    .tipbox-text { font-size: 15px; color: var(--ink-soft); }
+
+    footer {
+      text-align: center; padding: 24px 0 40px; margin-top: 20px;
+      border-top: 2px solid var(--rule); color: var(--ink-soft); font-size: 13px;
+    }
+    footer .grown-up { margin-top: 6px; font-size: 12px; }
+    footer a { color: var(--moss-deep); }
+
+    @media (max-width: 560px) {
+      .levels { grid-template-columns: 1fr; }
+      .level { display: flex; align-items: center; gap: 14px; text-align: left; padding: 14px 16px; }
+      .level-badge { margin-bottom: 0; font-size: 32px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .level { transition: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <a href="index.html">← Threlkeld Nature Watch</a>
+    </div>
+
+    <header>
+      <div class="eyebrow">🧭 Young Explorers</div>
+      <h1>What's living in <span class="squiggle">our valley</span> today?</h1>
+      <p class="lede">Threlkeld sits under a big fell called Blencathra. All sorts of creatures live here — and clever little listening machines hear them every day. Come and find out who's about!</p>
+    </header>
+
+    <div class="picker">
+      <div class="picker-q">First — how old are you, explorer?</div>
+      <div class="levels" id="levels">
+        <button class="level" data-level="little">
+          <span class="level-badge">🐛</span>
+          <div class="level-name">Little Explorer</div>
+          <div class="level-age">Age 5–7</div>
+        </button>
+        <button class="level" data-level="detective">
+          <span class="level-badge">🔎</span>
+          <div class="level-name">Nature Detective</div>
+          <div class="level-age">Age 8–10</div>
+        </button>
+        <button class="level" data-level="ranger">
+          <span class="level-badge">🌿</span>
+          <div class="level-name">Junior Ranger</div>
+          <div class="level-age">Age 11+</div>
+        </button>
+      </div>
+    </div>
+
+    <div class="explore" id="explore">
+      <div class="prompt-empty">Tap your explorer badge above to begin! 🌳</div>
+    </div>
+
+    <footer>
+      <div>Threlkeld Nature Watch · made for young naturalists 🦉</div>
+      <div class="grown-up">For grown-ups and teachers: see the <a href="about.html">About</a> page (a school version is on the way).</div>
+    </footer>
+  </div>
+
+  <script>
+    // ZERO DATA COLLECTION: the chosen level only changes what is shown on screen.
+    // Nothing is stored, sent, or recorded. No inputs, no tracking, no links out.
+
+    // Placeholder discoveries — in the real page these come from today's live
+    // bird / bat / wildlife data. Voice changes per explorer level.
+    const CONTENT = {
+      little: {
+        greeting: "Hello, Little Explorer! Here's who we heard today.",
+        cards: [
+          { type:'bird', tag:'Bird', emoji:'🐦', name:'Robin', fact:"A little brown bird with a bright red tummy. It sings a sweet, tinkly song.", listen:"Listen for: a happy, bubbly tune" },
+          { type:'bird', tag:'Bird', emoji:'🦉', name:'Tawny Owl', fact:"Owls come out at night. This one says 'twit-twoo' in the dark woods.", listen:"Listen for: a hooty hoot at night" },
+          { type:'squirrel', tag:'Animal', emoji:'🐿️', name:'Red Squirrel', fact:"A fluffy red squirrel with pointy ears. It loves nuts and bouncing in the trees!", listen:"Look for: a flash of red up high" }
+        ],
+        tip: { title:"Explorer Tip!", text:"Next time you're outside, close your eyes and count how many different bird songs you can hear. 👂" }
+      },
+      detective: {
+        greeting: "Welcome back, Nature Detective. Here are today's clues.",
+        cards: [
+          { type:'bird', tag:'Bird', emoji:'🐦', name:'Robin', fact:"Robins are one of the few birds that sing all year round — even in winter. They're very bold and might come close if you sit still.", listen:"Listen for: a warbling, fluty song from a fence or branch" },
+          { type:'bat', tag:'Bat', emoji:'🦇', name:'Common Pipistrelle', fact:"Britain's smallest bat — tiny enough to fit in a matchbox! It eats up to 3,000 midges in one night.", listen:"Out at: dusk, swooping over the garden" },
+          { type:'squirrel', tag:'Animal', emoji:'🐿️', name:'Red Squirrel', fact:"Red squirrels are rare in England now. The valley is lucky to have them. They bury nuts to eat in winter — and forget where some are, which grows new trees!", listen:"Look for: tufted ears and a bushy red tail" }
+        ],
+        tip: { title:"Detective Challenge", text:"Bats use sound to 'see' in the dark — it's called echolocation. Can you find out which other animal does this?" }
+      },
+      ranger: {
+        greeting: "Good to see you, Junior Ranger. Here's the valley's report.",
+        cards: [
+          { type:'bird', tag:'Bird', emoji:'🐦', name:'Robin (Erithacus rubecula)', fact:"Robins hold winter territories and will sing through the cold to defend them. Males and females look alike — unusual among British birds.", listen:"Song: a clear, melancholy warble, often at dawn and dusk" },
+          { type:'bat', tag:'Bat', emoji:'🦇', name:'Common Pipistrelle (Pipistrellus pipistrellus)', fact:"Echolocates at around 45 kHz — far above human hearing. Our detector slows the calls down so we can hear them. A single roost can hold hundreds.", listen:"Emerges: 20 minutes after sunset, hunting along hedgerows" },
+          { type:'squirrel', tag:'Animal', emoji:'🐿️', name:'Red Squirrel (Sciurus vulgaris)', fact:"A protected native species, outcompeted across most of England by the grey. Cumbria is one of its last strongholds — which is why we watch the feeder so carefully.", listen:"Field sign: stripped pine cones and ear tufts in winter coat" }
+        ],
+        tip: { title:"Ranger's Notebook", text:"Phenology is the study of nature's timing — when birds arrive, when leaves unfurl. The valley's records are building a picture of how the seasons are shifting. What might you record where you live?" }
+      }
+    };
+
+    const levels = document.getElementById('levels');
+    const explore = document.getElementById('explore');
+
+    function render(level) {
+      const data = CONTENT[level];
+      if (!data) return;
+      let html = '<div class="greeting">' + data.greeting + '</div>';
+      html += '<div class="cards">';
+      data.cards.forEach(function(c){
+        html += '<div class="card ' + c.type + '">'
+          + '<span class="card-tag">' + c.tag + '</span>'
+          + '<div class="card-emoji">' + c.emoji + '</div>'
+          + '<div class="card-name">' + c.name + '</div>'
+          + '<div class="card-fact">' + c.fact + '</div>'
+          + '<div class="card-listen">✨ ' + c.listen + '</div>'
+          + '</div>';
+      });
+      html += '</div>';
+      html += '<div class="tipbox"><div class="tipbox-title">' + data.tip.title + '</div>'
+        + '<div class="tipbox-text">' + data.tip.text + '</div></div>';
+      explore.innerHTML = html;
+    }
+
+    levels.querySelectorAll('.level').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        levels.querySelectorAll('.level').forEach(function(b){ b.classList.remove('active'); });
+        btn.classList.add('active');
+        render(btn.getAttribute('data-level'));
+        // gently scroll the discoveries into view
+        explore.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    });
+  </script>
+</body>
+</html>
