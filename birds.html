@@ -1432,13 +1432,13 @@
       document.body.style.overflow = '';
     }
 
-    const calModalCloseBtn = document.getElementById('calModalClose');
-    const calModalOverlayEl = document.getElementById('calModalOverlay');
-    if (calModalCloseBtn) calModalCloseBtn.addEventListener('click', closeCalModal);
-    if (calModalOverlayEl) calModalOverlayEl.addEventListener('click', e => {
-      if (e.target === calModalOverlayEl) closeCalModal();
-    });
-    document.addEventListener('keydown', e => { if (e.key==='Escape') closeCalModal(); });
+    // Wire modal close via delegation — robust to the modal markup living later in the DOM
+document.addEventListener('click', e => {
+  if (e.target.closest('#calModalClose')) { closeCalModal(); return; }
+  const overlay = document.getElementById('calModalOverlay');
+  if (overlay && e.target === overlay) closeCalModal();
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeCalModal(); });
 
     // Bird search
     document.getElementById('birdSearch').addEventListener('input', function() {
