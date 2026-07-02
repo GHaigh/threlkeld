@@ -213,7 +213,16 @@
     function birdFact(label){ return BIRD_FACTS[label]||"Heard singing in the valley today."; }
 
     const explore=document.getElementById('explore');
+    // Delegated audio handling — survives re-renders (buttons are rebuilt on live updates).
+    explore.addEventListener('click',e=>{
+      const bird=e.target.closest('.sound-btn[data-file]');
+      if(bird){ getCtx(); playBirdClip(bird.dataset.file, bird.dataset.label, bird); return; }
+      const bat=e.target.closest('#batBtn');
+      if(bat && state.latestBatFile){ getCtx(); playRealBat(state.latestBatFile, bat); }
+    });
 
+    let renderTimer=null;
+    function scheduleRender(){ if(!level) return; clearTimeout(renderTimer); renderTimer=setTimeout(render, 150); }
     function render(){
       if(!level) return;
       const c=copyFor(level);
@@ -228,8 +237,6 @@
       h+='<div class="word"><div class="w-label">Word of the day</div><div class="w-word">'+c.word.word+'</div><div class="w-mean">'+c.word.mean+'</div></div>';
       h+='<div class="status-note">Everything here is live from the valley. Bird &amp; bat sounds play for creatures we hold a recording of — the collection grows over time.</div>';
       explore.innerHTML=h;
-      const batBtn=document.getElementById('batBtn');
-      if(batBtn&&state.latestBatFile){ batBtn.addEventListener('click',()=>playRealBat(state.latestBatFile,batBtn)); }
       buildBirds(level);
     }
 
@@ -261,7 +268,6 @@
         }
       }
       area.innerHTML=html;
-      area.querySelectorAll('.sound-btn[data-file]').forEach(btn=>{ btn.addEventListener('click',()=>playBirdClip(btn.dataset.file,btn.dataset.label,btn)); });
     }
 
     try{
@@ -270,15 +276,15 @@
       client.on('message',(topic,msg)=>{
         try{
           const data=JSON.parse(msg.toString());
-          if(topic===STATS_TOPIC){ state.birds=Array.isArray(data.today)?data.today:null; if(level) render(); }
-          else if(topic===BAT_STATS_TOPIC){ const s=data&&data.session?data.session:null; state.batTotal=s&&s.total!=null?s.total:null; state.batSpecies=s&&s.species!=null?s.species:null; if(level) render(); }
-          else if(topic===WEATHER_TOPIC){ if(data.temperature!=null) state.temp=Number(data.temperature); if(level) render(); }
+          if(topic===STATS_TOPIC){ state.birds=Array.isArray(data.today)?data.today:null; scheduleRender(); }
+          else if(topic===BAT_STATS_TOPIC){ const s=data&&data.session?data.session:null; state.batTotal=s&&s.total!=null?s.total:null; state.batSpecies=s&&s.species!=null?s.species:null; scheduleRender(); }
+          else if(topic===WEATHER_TOPIC){ if(data.temperature!=null) state.temp=Number(data.temperature); scheduleRender(); }
           else if(topic===BAT_TOPIC){
             let recent=null;
             if(Array.isArray(data)) recent=data[0];
             else if(data&&data.count){ for(let i=0;i<data.count;i++){ if(data[i]&&data[i].timestamp){ recent=data[i]; break; } } }
             else if(data&&data.timestamp) recent=data;
-            if(recent&&recent.timestamp){ const d=new Date(recent.timestamp),p=n=>String(n).padStart(2,'0'); state.latestBatFile=`${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}.wav`; if(level) render(); }
+            if(recent&&recent.timestamp){ const d=new Date(recent.timestamp),p=n=>String(n).padStart(2,'0'); state.latestBatFile=`${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}.wav`; scheduleRender(); }
           }
         }catch(e){}
       });
