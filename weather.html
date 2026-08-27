@@ -996,6 +996,49 @@
       } catch (e) { /* leave rain chart empty if the file isn't there yet */ }
     }
 
+    // Derive Weekly / Monthly / Yearly rainfall totals from the Open-Meteo history.
+    // The live tipping-bucket gauge was newly installed, so its own long-period
+    // accumulators read ~0; these modelled totals are meaningful from day one.
+    let _rainStandaloneTried = false;
+    async function loadRainfallStandalone() {
+      if (_rainStandaloneTried) return; _rainStandaloneTried = true;
+      try {
+        const res = await fetch(RAINFALL_HISTORY_URL, { cache: 'no-store' });
+        if (!res.ok) return;
+        const rf = await res.json();
+        if (rf && Array.isArray(rf.daily_rain_rate_piezo)) {
+          if (!historyData) historyData = {};
+          historyData.daily_rain_rate_piezo = rf.daily_rain_rate_piezo;
+          rainfallHistoryLoaded = true;
+          if (currentData) renderCurrent(currentData);   // refresh card with totals
+          if (currentData) renderMiniCharts();
+        }
+      } catch (e) {}
+    }
+
+    function rainfallPeriodTotals() {
+      const series = (historyData && Array.isArray(historyData.daily_rain_rate_piezo))
+        ? historyData.daily_rain_rate_piezo : null;
+      if (!series || !series.length) {
+        // History rain not loaded yet — trigger a standalone load so a later
+        // render can show the totals (covers current-before-history ordering).
+        if (!rainfallHistoryLoaded) { loadRainfallStandalone(); }
+        return null;
+      }
+      const now = Date.now();
+      const sumSince = (ms) => {
+        const cutoff = now - ms;
+        return series.reduce((s, d) => (d.t >= cutoff ? s + (d._daily || 0) : s), 0);
+      };
+      const yearStart = new Date(new Date().getFullYear(), 0, 1).getTime();
+      const yearly = series.reduce((s, d) => (d.t >= yearStart ? s + (d._daily || 0) : s), 0);
+      return {
+        weekly: Math.round(sumSince(7 * 86400000) * 10) / 10,
+        monthly: Math.round(sumSince(30 * 86400000) * 10) / 10,
+        yearly: Math.round(yearly * 10) / 10
+      };
+    }
+
     document.getElementById('currentDate').textContent = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
 
     let currentData = null;
@@ -1336,6 +1379,7 @@
     }
 
     function renderCurrent(d) {
+      const _rainPeriods = rainfallPeriodTotals();
       const html = `
         <!-- 7-Day Forecast -->
         <div class="forecast-section">
@@ -1392,13 +1436,14 @@
 
           <div class="condition-panel">
             <div class="panel-header">🌧️ Rainfall</div>
+              <div style="font-size:10px;color:var(--cream-dim);padding:0 0 4px 2px">Weekly/Monthly/Yearly: modelled (Open-Meteo)</div>
             <div class="panel-body">
               <div class="condition-row"><span class="condition-label">Rate</span><span class="condition-value ${parseFloat(d.rain_rate) > 0 ? 'highlight' : ''}">${fmt(d.rain_rate, 1)} mm/h</span></div>
               <div class="condition-row"><span class="condition-label">Hourly</span><span class="condition-value">${fmt(d.rain_hourly, 1)} mm</span></div>
               <div class="condition-row"><span class="condition-label">Daily</span><span class="condition-value">${fmt(d.rain_daily, 1)} mm</span></div>
-              <div class="condition-row"><span class="condition-label">Weekly</span><span class="condition-value">${fmt(d.rain_weekly, 1)} mm</span></div>
-              <div class="condition-row"><span class="condition-label">Monthly</span><span class="condition-value">${fmt(d.rain_monthly, 1)} mm</span></div>
-              <div class="condition-row"><span class="condition-label">Yearly</span><span class="condition-value highlight">${fmt(d.rain_yearly, 1)} mm</span></div>
+              <div class="condition-row"><span class="condition-label">Weekly</span><span class="condition-value">${fmt(_rainPeriods ? _rainPeriods.weekly : d.rain_weekly, 1)} mm</span></div>
+              <div class="condition-row"><span class="condition-label">Monthly</span><span class="condition-value">${fmt(_rainPeriods ? _rainPeriods.monthly : d.rain_monthly, 1)} mm</span></div>
+              <div class="condition-row"><span class="condition-label">Yearly</span><span class="condition-value highlight">${fmt(_rainPeriods ? _rainPeriods.yearly : d.rain_yearly, 1)} mm</span></div>
               <div class="condition-row"><span class="condition-label">Event</span><span class="condition-value">${fmt(d.rain_event, 1)} mm</span></div>
             </div>
           </div>
@@ -2097,6 +2142,7 @@
           // gauge was faulty and its data unusable). Merge it in before rendering.
           applyRainfallHistory().finally(() => {
             if (currentData) {
+              renderCurrent(currentData);   // refresh card so Weekly/Monthly/Yearly pick up Open-Meteo totals
               renderMiniCharts();
               renderRecords(historyData);
               renderGDD(historyData);
