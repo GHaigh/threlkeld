@@ -20,24 +20,25 @@
   <meta name="description" content="Live weather data from a personal weather station in Threlkeld, Cumbria. Temperature, wind, rainfall and historical charts.">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Weather Station · Threlkeld Nature Watch</title>
+  <title>[PRINT] Weather Station · Threlkeld Nature Watch</title>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Source+Sans+3:wght@300;400;500&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/5.3.4/mqtt.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
   <style>
     :root {
-      --forest-deep: #0d1a0d;
-      --forest-dark: #1a2e1a;
-      --forest-mid: #243022;
-      --forest-light: #3b6d11;
-      --sage: #7ab87a;
-      --sage-light: #a8d4a8;
-      --cream: #e8f0e4;
-      --cream-dim: #b8c8b4;
-      --divider: rgba(122, 184, 122, 0.15);
-      --blue: #4a90a4;
-      --gold: #c8a84b;
-      --red: #c85a4a;
+      /* Black & white print theme (weather-adam.html) */
+      --forest-deep: #ffffff;
+      --forest-dark: #ffffff;
+      --forest-mid: #f4f4f4;
+      --forest-light: #000000;
+      --sage: #000000;
+      --sage-light: #000000;
+      --cream: #000000;
+      --cream-dim: #333333;
+      --divider: rgba(0, 0, 0, 0.25);
+      --blue: #000000;
+      --gold: #000000;
+      --red: #000000;
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -55,9 +56,7 @@
       content: '';
       position: fixed;
       inset: 0;
-      background-image: 
-        radial-gradient(ellipse at 20% 50%, rgba(59, 109, 17, 0.08) 0%, transparent 60%),
-        radial-gradient(ellipse at 80% 20%, rgba(122, 184, 122, 0.05) 0%, transparent 50%);
+      background-image: none;
       pointer-events: none;
       z-index: 0;
     }
@@ -814,6 +813,30 @@
       pointer-events: none;
       box-shadow: 0 4px 12px rgba(0,0,0,0.4);
     }
+  
+    /* ===== Black & white print styling (weather-adam.html) ===== */
+    body { background: #fff !important; color: #000 !important; }
+    .condition-panel, .panel-body, .card, .forecast-day, .hour-cell,
+    .chart-card, .mini-chart-wrap {
+      background: #fff !important;
+      border: 1px solid #000 !important;
+    }
+    .condition-value, .condition-label, h1, h2, h3, .panel-header,
+    .section-title, .stat-value, .stat-label { color: #000 !important; }
+    .highlight, .warning { color: #000 !important; font-weight: 700 !important; }
+    /* hide screen-only chrome when printing */
+    @media print {
+      .no-print { display: none !important; }
+      nav, .nav-home, .nav-links, .status-bar, #statusDot, #statusText,
+      .range-btn, .range-buttons, button, .modal-overlay, .fellcam-controls,
+      .refresh-btn, .install-btn { display: none !important; }
+      body { background: #fff !important; color: #000 !important; }
+      .page { max-width: 100% !important; padding: 0 !important; }
+      .condition-panel, .chart-card, .card { break-inside: avoid; page-break-inside: avoid; }
+      a { color: #000 !important; text-decoration: none !important; }
+      @page { margin: 1.5cm; }
+    }
+
   </style>
   <script src="https://cdn.counter.dev/script.js" data-id="0f7db49f-3699-43bc-b09e-d45b58c39067" data-utcoffset="1"></script>
 
@@ -864,6 +887,9 @@
   </style>
 </head>
 <body>
+  <div class="no-print" style="text-align:center;padding:12px;background:#000;color:#fff;font-family:sans-serif;font-size:13px">
+    Print edition (black &amp; white) &middot; <button onclick="window.print()" style="background:#fff;color:#000;border:none;padding:4px 12px;border-radius:3px;cursor:pointer;font-weight:600">Print this page</button>
+  </div>
   <div class="page">
     <nav>
       <a href="index.html" class="nav-home">← Threlkeld Nature Watch</a>
@@ -914,7 +940,7 @@
 
     <footer>
       <div class="footer-text">Threlkeld, Cumbria &middot; Ecowitt GW2000A Weather Station</div>
-      <div class="footer-brand">Threlkeld Nature Watch &middot; Updated 27 Aug 2026 (b)</div>
+      <div class="footer-brand">Threlkeld Nature Watch &middot; Print edition for village magazine &middot; Updated 27 Aug 2026 (b)</div>
     </footer>
   </div>
 
@@ -1099,8 +1125,8 @@
       return data.map(d => new Date(d.t).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: '2-digit' }));
     }
 
-    Chart.defaults.color = '#b8c8b4';
-    Chart.defaults.borderColor = 'rgba(122, 184, 122, 0.08)';
+    Chart.defaults.color = '#000000';
+    Chart.defaults.borderColor = 'rgba(0, 0, 0, 0.15)';
     Chart.defaults.font.family = "'Source Sans 3', sans-serif";
     Chart.defaults.font.size = 10;
 
@@ -1114,9 +1140,9 @@
         type: 'line',
         tall: true,
         datasets: (data) => [
-          { label: 'Max', data: data.map(d => d.max), borderColor: '#c85a4a', backgroundColor: 'transparent', borderWidth: 1.5 },
-          { label: 'Mean', data: data.map(d => d.mean), borderColor: '#7ab87a', backgroundColor: 'rgba(122,184,122,0.1)', borderWidth: 2, fill: true },
-          { label: 'Min', data: data.map(d => d.min), borderColor: '#4a90a4', backgroundColor: 'transparent', borderWidth: 1.5 },
+          { label: 'Max', data: data.map(d => d.max), borderColor: '#000', backgroundColor: 'transparent', borderWidth: 1.5, borderDash: [] },
+          { label: 'Mean', data: data.map(d => d.mean), borderColor: '#000', backgroundColor: 'rgba(0,0,0,0.06)', borderWidth: 1.5, fill: true, borderDash: [6,3] },
+          { label: 'Min', data: data.map(d => d.min), borderColor: '#000', backgroundColor: 'transparent', borderWidth: 1.5, borderDash: [2,2] },
         ]
       },
       {
@@ -1128,7 +1154,7 @@
         type: 'bar',
         calcDiff: true,
         datasets: (data) => [
-          { label: 'Rain', data: data.map(d => d._daily || 0), backgroundColor: 'rgba(74,144,164,0.6)', borderColor: '#4a90a4', borderWidth: 1 }
+          { label: 'Rain', data: data.map(d => d._daily || 0), backgroundColor: 'rgba(0,0,0,0.35)', borderColor: '#000', borderWidth: 1 }
         ]
       },
       {
@@ -1139,7 +1165,7 @@
         key: 'wind_speed',
         type: 'line',
         datasets: (data) => [
-          { label: 'Mean', data: data.map(d => d.mean), borderColor: '#7ab87a', backgroundColor: 'rgba(122,184,122,0.1)', borderWidth: 1.5, fill: true }
+          { label: 'Mean', data: data.map(d => d.mean), borderColor: '#000', backgroundColor: 'rgba(0,0,0,0.06)', borderWidth: 1.5, fill: true }
         ]
       },
       {
@@ -1150,7 +1176,7 @@
         key: 'solar_radiation',
         type: 'line',
         datasets: (data) => [
-          { label: 'W/m²', data: data.map(d => d.mean), borderColor: '#c8a84b', backgroundColor: 'rgba(200,168,75,0.1)', borderWidth: 1.5, fill: true }
+          { label: 'W/m²', data: data.map(d => d.mean), borderColor: '#000', backgroundColor: 'rgba(0,0,0,0.06)', borderWidth: 1.5, fill: true }
         ]
       },
       {
@@ -1162,7 +1188,7 @@
         type: 'line',
         yScale: { min: 0, max: 100 },
         datasets: (data) => [
-          { label: '%', data: data.map(d => d.mean), borderColor: '#4a90a4', backgroundColor: 'rgba(74,144,164,0.1)', borderWidth: 1.5, fill: true }
+          { label: '%', data: data.map(d => d.mean), borderColor: '#000', backgroundColor: 'rgba(0,0,0,0.06)', borderWidth: 1.5, fill: true }
         ]
       },
       {
@@ -1173,7 +1199,7 @@
         key: 'relative_pressure',
         type: 'line',
         datasets: (data) => [
-          { label: 'hPa', data: data.map(d => d.mean), borderColor: '#a87ab8', backgroundColor: 'rgba(168,122,184,0.1)', borderWidth: 1.5, fill: true }
+          { label: 'hPa', data: data.map(d => d.mean), borderColor: '#000', backgroundColor: 'rgba(0,0,0,0.06)', borderWidth: 1.5, fill: true }
         ]
       },
 
