@@ -914,7 +914,7 @@
 
     <footer>
       <div class="footer-text">Threlkeld, Cumbria &middot; Ecowitt GW2000A Weather Station</div>
-      <div class="footer-brand">Threlkeld Nature Watch &middot; Updated 15 Jun 2026 (a)</div>
+      <div class="footer-brand">Threlkeld Nature Watch &middot; Updated 27 Aug 2026 (b)</div>
     </footer>
   </div>
 
@@ -977,6 +977,24 @@
     const MQTT_PORT = 8884;
     const CURRENT_TOPIC = 'birdnetpi/greg2026/weather/current';
     const HISTORY_TOPIC = 'birdnetpi/greg2026/weather/history';
+
+    // Static rainfall history (Open-Meteo modelled data from 2026-01-01).
+    // The piezo rain gauge was faulty; its historical data is unusable, so the
+    // rainfall chart is sourced from this file instead of the live history topic.
+    const RAINFALL_HISTORY_URL = 'rainfall_history.json';
+    let rainfallHistoryLoaded = false;
+    async function applyRainfallHistory() {
+      try {
+        const res = await fetch(RAINFALL_HISTORY_URL, { cache: 'no-store' });
+        if (!res.ok) return;
+        const rf = await res.json();
+        if (rf && Array.isArray(rf.daily_rain_rate_piezo) && historyData) {
+          // Overwrite the (now-empty) rain key with the good static series.
+          historyData.daily_rain_rate_piezo = rf.daily_rain_rate_piezo;
+          rainfallHistoryLoaded = true;
+        }
+      } catch (e) { /* leave rain chart empty if the file isn't there yet */ }
+    }
 
     document.getElementById('currentDate').textContent = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
 
@@ -1061,8 +1079,8 @@
       {
         id: 'chartRain',
         title: '🌧️ Rainfall',
-        subtitle: 'Daily Total · mm',
-        modalTitle: '🌧️ Rainfall — Daily Total (mm)',
+        subtitle: 'Daily Total · mm · modelled (Open-Meteo)',
+        modalTitle: '🌧️ Rainfall — Daily Total (mm) · modelled data',
         key: 'daily_rain_rate_piezo',
         type: 'bar',
         calcDiff: true,
@@ -2075,12 +2093,16 @@
         }
         if (topic === HISTORY_TOPIC) {
           historyData = data;
-          if (currentData) {
-            renderMiniCharts();
-            renderRecords(data);
-            renderGDD(data);
-            renderCorrelation(data);
-          }
+          // Rainfall history now comes from a static Open-Meteo file (the piezo
+          // gauge was faulty and its data unusable). Merge it in before rendering.
+          applyRainfallHistory().finally(() => {
+            if (currentData) {
+              renderMiniCharts();
+              renderRecords(historyData);
+              renderGDD(historyData);
+              renderCorrelation(historyData);
+            }
+          });
         }
       } catch(e) { console.error('Parse error:', e); }
     });
