@@ -816,6 +816,22 @@
   
     /* ===== Black & white print styling (weather-adam.html) ===== */
     body { background: #fff !important; color: #000 !important; }
+    /* Readable B&W buttons (inactive = white/black outline, active = black/white) */
+    .range-btn {
+      background: #fff !important; color: #000 !important;
+      border: 1px solid #000 !important;
+    }
+    .range-btn.active {
+      background: #000 !important; color: #fff !important;
+      border: 1px solid #000 !important;
+    }
+    .apply-btn {
+      background: #fff !important; color: #000 !important;
+      border: 1px solid #000 !important;
+    }
+    .apply-btn:hover { background: #000 !important; color: #fff !important; }
+    .date-input { background: #fff !important; color: #000 !important; border: 1px solid #000 !important; }
+    .date-sep { color: #000 !important; }
     .condition-panel, .panel-body, .card, .forecast-day, .hour-cell,
     .chart-card, .mini-chart-wrap {
       background: #fff !important;
