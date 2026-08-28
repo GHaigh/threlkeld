@@ -961,9 +961,9 @@
     (function () {
       // POSTs to the Node-RED webhook via the Nabu Casa base (same host as fellcam).
       const NR_BASE = 'https://rlpzmepeautd1v5pgoumz9aa2qhd92xd.ui.nabu.casa';
-      // Home Assistant native webhook (proxies correctly through Nabu Casa,
-      // unlike a bare Node-RED http-in route). Replace with your webhook's ID.
-      const GEN_URL = NR_BASE + '/api/webhook/KZy5RXaL1oDoIilcpwbcDGL4ouzcSTyA';
+      // HA native Automation webhook trigger (webhook_id: monthly-review-trigger).
+      // Data travels as URL query params - trigger.query in the automation.
+      const GEN_URL = NR_BASE + '/api/webhook/monthly-review-trigger';
       const INDEX_URL = NR_BASE + '/local/monthly/monthly_index.json';
       const REVIEW_URL = (id) => NR_BASE + '/local/monthly/' + id + '.json';
       const REVIEW_PAGE = 'weather-monthly.html';
@@ -1052,13 +1052,11 @@
 
         status.textContent = 'Generating ' + label + '… (this can take a few seconds)';
         try {
-          // text/plain avoids a CORS preflight (nothing here answers OPTIONS) -
-          // it's still JSON text; the flow parses it on arrival. Fire-and-forget:
-          // the HA webhook doesn't return the generated result in its response.
-          fetch(GEN_URL, {
-            method:'POST', headers:{ 'Content-Type':'text/plain' },
-            body: JSON.stringify({ start, end, id, label })
-          }).catch(()=>{});
+          // Data travels as URL query params (no body, no custom headers) -
+          // a plain request, no CORS preflight possible. Fire-and-forget: the
+          // HA webhook doesn't return the generated result in its response.
+          const qs = new URLSearchParams({ start, end, id, label }).toString();
+          fetch(GEN_URL + '?' + qs, { method:'POST' }).catch(()=>{});
         } catch(e) {}
 
         const ok = await waitForReview(id, label, status);
