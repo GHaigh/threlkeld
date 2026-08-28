@@ -78,8 +78,8 @@
     padding: 3px 6px 0 0;
   }
 
-  .rule { border: 0; border-top: 1px solid var(--hair); margin: 9px 0; }
-  .rule-faint { border: 0; border-top: 0.5px solid #999; margin: 8px 0; }
+  .rule { border: 0; border-top: 1px solid var(--hair); margin: 6px 0; }
+  .rule-faint { border: 0; border-top: 0.5px solid #999; margin: 5px 0; }
 
   /* ---- Ledger stats ---- */
   .section-label {
@@ -96,13 +96,43 @@
   .ledger .v .u { font-size: 8.5px; font-weight: 400; color: var(--ink-soft); margin-left: 1px; }
 
   /* ---- Charts ---- */
-  .charts { display: grid; grid-template-columns: 1fr; gap: 8px; margin-top: 4px; }
+  .charts { display: grid; grid-template-columns: 1fr; gap: 5px; margin-top: 2px; }
   .chart-box { }
   .chart-cap {
-    font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase;
-    font-weight: 700; margin-bottom: 3px;
+    font-size: 8.5px; letter-spacing: 0.14em; text-transform: uppercase;
+    font-weight: 700; margin-bottom: 2px;
   }
-  .chart-holder { height: 30mm; position: relative; }
+  .chart-holder { height: 15mm; position: relative; }
+
+  /* ---- Totals band ---- */
+  .totals-band {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 0;
+    margin-top: 6px; border-top: 1px solid var(--ink); padding-top: 5px;
+  }
+  .totals-item { text-align: center; }
+  .totals-item + .totals-item { border-left: 0.5px solid #999; }
+  .totals-value {
+    font-family: 'Playfair Display', serif; font-weight: 700; font-size: 19px;
+    line-height: 1; font-variant-numeric: tabular-nums;
+  }
+  .totals-label {
+    font-size: 8px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--ink-soft); margin-top: 2px;
+  }
+
+  /* ---- Species band (much smaller than totals) ---- */
+  .species-band {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 0;
+    margin-top: 3px; padding-top: 3px;
+  }
+  .species-item {
+    text-align: center; font-size: 7px; color: var(--ink-soft);
+    font-family: 'Source Sans 3', sans-serif;
+  }
+  .species-item .species-tag {
+    text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700; color: var(--ink);
+  }
+  .species-item .species-name { font-style: italic; }
 
   /* ---- Footer ---- */
   .foot {
@@ -184,6 +214,22 @@
       </div>
     </div>
 
+    <div class="totals-band">
+      <div class="totals-item">
+        <div class="totals-value" id="birdTotalBig">1,842</div>
+        <div class="totals-label">Bird detections</div>
+      </div>
+      <div class="totals-item">
+        <div class="totals-value" id="batTotalBig">356</div>
+        <div class="totals-label">Bat passes</div>
+      </div>
+    </div>
+
+    <div class="species-band">
+      <div class="species-item"><span class="species-tag">Top bird</span> <span class="species-name" id="topBirdSpeciesName">Eurasian Jackdaw</span></div>
+      <div class="species-item"><span class="species-tag">Top bat</span> <span class="species-name" id="topBatSpeciesName">Common Pipistrelle</span></div>
+    </div>
+
     <div class="foot">
       <span>Detections logged by BirdNET-Pi &amp; bat detector · weather via Ecowitt/Open-Meteo</span>
       <span class="brand">threlkeld.info</span>
@@ -210,6 +256,9 @@
         { name:'Swallow', count:312 }, { name:'House Sparrow', count:268 },
         { name:'Wren', count:201 }, { name:'Robin', count:184 },
         { name:'Blackbird', count:156 }, { name:'Chaffinch', count:129 },
+      ],
+      topBatSpecies: [
+        { name:'Common Pipistrelle', count:142 }, { name:'Soprano Pipistrelle', count:98 },
       ],
       summary: document.getElementById('lead').textContent.trim(),
       stats: { birdTotal:'1,842', birdSpecies:'27', newSpecies:'1', busiestBirdDay:'14th',
@@ -242,6 +291,14 @@
     setStat('batSpecies', S.batSpecies, 'recorded');
     setStat('busiestBatNight', S.busiestBatNight, S.busiestBatNightCount || '');
     setStat('tempMean', S.tempMean, '°C');
+    const bigBirds = document.getElementById('birdTotalBig');
+    const bigBats = document.getElementById('batTotalBig');
+    if (bigBirds && S.birdTotal != null) bigBirds.textContent = S.birdTotal;
+    if (bigBats && S.batTotal != null) bigBats.textContent = S.batTotal;
+    const topBirdEl = document.getElementById('topBirdSpeciesName');
+    const topBatEl = document.getElementById('topBatSpeciesName');
+    if (topBirdEl) topBirdEl.textContent = (M.topSpecies && M.topSpecies[0]) ? M.topSpecies[0].name : '—';
+    if (topBatEl) topBatEl.textContent = (M.topBatSpecies && M.topBatSpecies[0]) ? M.topBatSpecies[0].name : 'None recorded';
     buildCharts();
   }
 
