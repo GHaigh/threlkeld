@@ -954,6 +954,105 @@
       </div>
     </div>
 
+    <!-- ===== Monthly Weather Review generator (for the parish magazine) ===== -->
+    <section class="monthly-review no-print" style="border:1px solid #000;border-radius:8px;padding:20px;margin:32px 0;background:#fff">
+      <h2 style="font-family:'Playfair Display',serif;font-size:22px;margin:0 0 4px;color:#000">Beneath Blencathra — Monthly Weather Review</h2>
+      <p style="font-size:13px;color:#333;margin:0 0 16px;font-family:'Source Sans 3',sans-serif">
+        Generate a printable A5 weather review for the parish magazine. Pick a month and generate it once —
+        it's then saved and can be viewed or downloaded (PDF / JPG) any time.
+      </p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:16px">
+        <select id="mrMonth" style="font-family:'Source Sans 3',sans-serif;font-size:14px;padding:7px 10px;border:1px solid #000;border-radius:4px;background:#fff;color:#000"></select>
+        <button id="mrGenerate" style="font-family:'Source Sans 3',sans-serif;font-size:14px;font-weight:600;padding:7px 18px;border:1px solid #000;border-radius:4px;background:#000;color:#fff;cursor:pointer">Generate review</button>
+        <span id="mrStatus" style="font-size:13px;color:#333;font-family:'Source Sans 3',sans-serif"></span>
+      </div>
+      <div id="mrArchive" style="font-family:'Source Sans 3',sans-serif;font-size:14px"></div>
+    </section>
+
+    <script>
+    (function () {
+      // POSTs to the Node-RED webhook via the Nabu Casa base (same host as fellcam).
+      const NR_BASE = 'https://rlpzmepeautd1v5pgoumz9aa2qhd92xd.ui.nabu.casa';
+      const GEN_URL = NR_BASE + '/generate-monthly';
+      const INDEX_URL = NR_BASE + '/local/monthly/monthly_index.json';
+      const REVIEW_PAGE = 'weather-monthly.html';
+
+      const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+      // Populate the month dropdown: Jan 2026 -> last complete month.
+      function populateMonths() {
+        const sel = document.getElementById('mrMonth');
+        const now = new Date();
+        // last complete month = the month before the current one
+        let y = now.getFullYear(), m = now.getMonth(); // 0-based; m is current month, so previous is m-1
+        const opts = [];
+        let yy = 2026, mm = 0; // Jan 2026
+        while (yy < y || (yy === y && mm <= m - 1) || (yy === y && m === 0 && false)) {
+          const id = yy + '-' + String(mm+1).padStart(2,'0');
+          const label = monthNames[mm] + ' ' + yy;
+          opts.push({ id, label, y:yy, m:mm });
+          mm++; if (mm > 11) { mm = 0; yy++; }
+          if (yy > y + 1) break; // safety
+        }
+        // newest first
+        opts.reverse();
+        sel.innerHTML = opts.map(o => '<option value="'+o.id+'" data-label="'+o.label+'" data-y="'+o.y+'" data-m="'+o.m+'">'+o.label+'</option>').join('');
+      }
+
+      function monthRange(y, m) {
+        const start = y + '-' + String(m+1).padStart(2,'0') + '-01';
+        const endDate = new Date(y, m+1, 0); // last day of month
+        const end = y + '-' + String(m+1).padStart(2,'0') + '-' + String(endDate.getDate()).padStart(2,'0');
+        return { start, end };
+      }
+
+      async function loadArchive() {
+        const box = document.getElementById('mrArchive');
+        try {
+          const res = await fetch(INDEX_URL, { cache:'no-store' });
+          if (!res.ok) { box.innerHTML = '<span style="color:#555">No reviews generated yet.</span>'; return; }
+          const idx = await res.json();
+          if (!Array.isArray(idx) || !idx.length) { box.innerHTML = '<span style="color:#555">No reviews generated yet.</span>'; return; }
+          box.innerHTML = '<div style="font-weight:700;margin-bottom:6px">Generated reviews</div>' +
+            idx.map(x => '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:0.5px solid #ccc">'
+              + '<span>'+x.label+'</span>'
+              + '<a href="'+REVIEW_PAGE+'?m='+x.id+'" target="_blank" style="color:#000;font-weight:600;text-decoration:underline">View &amp; download &rarr;</a>'
+              + '</div>').join('');
+        } catch(e) { box.innerHTML = '<span style="color:#555">Could not load the archive.</span>'; }
+      }
+
+      document.getElementById('mrGenerate').addEventListener('click', async () => {
+        const sel = document.getElementById('mrMonth');
+        const opt = sel.options[sel.selectedIndex];
+        if (!opt) return;
+        const id = opt.value, label = opt.getAttribute('data-label');
+        const y = +opt.getAttribute('data-y'), m = +opt.getAttribute('data-m');
+        const { start, end } = monthRange(y, m);
+        const status = document.getElementById('mrStatus');
+        status.textContent = 'Generating ' + label + '… (this can take a few seconds)';
+        try {
+          const res = await fetch(GEN_URL, {
+            method:'POST', headers:{ 'Content-Type':'application/json' },
+            body: JSON.stringify({ start, end, id, label })
+          });
+          const out = await res.json();
+          if (out && out.ok) {
+            status.textContent = out.already ? (label + ' already exists — opening.') : (label + ' generated.');
+            await loadArchive();
+            window.open(REVIEW_PAGE + '?m=' + id, '_blank');
+          } else {
+            status.textContent = 'Could not generate: ' + ((out && out.error) || 'unknown error');
+          }
+        } catch(e) {
+          status.textContent = 'Generation failed (is the connection available?).';
+        }
+      });
+
+      populateMonths();
+      loadArchive();
+    })();
+    </script>
+
     <footer>
       <div class="footer-text">Threlkeld, Cumbria &middot; Ecowitt GW2000A Weather Station</div>
       <div class="footer-brand">Threlkeld Nature Watch &middot; Print edition for village magazine &middot; Updated 27 Aug 2026 (b)</div>

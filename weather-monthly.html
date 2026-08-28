@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Beneath Blencathra — Monthly Weather Review</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Source+Sans+3:wght@300;400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  :root {
+    --ink: #111111;
+    --ink-soft: #444444;
+    --hair: #111111;
+    --paper: #ffffff;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: #d9d9d9;            /* screen backdrop only, so the A5 sheet stands out */
+    font-family: 'Source Sans 3', sans-serif;
+    color: var(--ink);
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+
+  /* Screen-only control bar */
+  .controls {
+    max-width: 148mm; margin: 16px auto 8px; display: flex; gap: 8px;
+    justify-content: center; flex-wrap: wrap;
+  }
+  .controls button {
+    font-family: 'Source Sans 3', sans-serif; font-size: 13px; font-weight: 600;
+    background: #111; color: #fff; border: none; border-radius: 4px;
+    padding: 7px 16px; cursor: pointer;
+  }
+  .controls button:hover { background: #333; }
+  .controls .hint { width: 100%; text-align: center; font-size: 11px; color: #555; margin-top: 2px; }
+
+  /* The A5 sheet */
+  .sheet {
+    width: 148mm; min-height: 210mm; background: var(--paper);
+    margin: 0 auto 24px; padding: 12mm 12mm 10mm;
+    position: relative;
+    box-shadow: 0 2px 14px rgba(0,0,0,0.25);   /* screen only */
+  }
+
+  /* ---- Masthead ---- */
+  .masthead { text-align: center; border-bottom: 2px solid var(--ink); padding-bottom: 6px; }
+  .eyebrow {
+    font-size: 9.5px; letter-spacing: 0.32em; text-transform: uppercase;
+    font-weight: 600; color: var(--ink-soft);
+  }
+  .title {
+    font-family: 'Playfair Display', serif; font-weight: 700;
+    font-size: 30px; line-height: 1.02; margin: 4px 0 2px; letter-spacing: 0.01em;
+  }
+  .title em { font-style: italic; font-weight: 600; }
+  .subtitle {
+    font-family: 'Playfair Display', serif; font-style: italic; font-size: 14px;
+    color: var(--ink-soft); margin-top: 2px;
+  }
+  .month-band {
+    display: flex; justify-content: space-between; align-items: baseline;
+    font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
+    margin-top: 6px; color: var(--ink);
+  }
+
+  /* ---- Naturalist lead ---- */
+  .lead {
+    font-family: 'Playfair Display', serif; font-size: 12.5px; line-height: 1.62;
+    text-align: justify; margin: 10px 0 4px;
+  }
+  .lead::first-letter {
+    font-size: 34px; font-weight: 700; float: left; line-height: 0.82;
+    padding: 3px 6px 0 0;
+  }
+
+  .rule { border: 0; border-top: 1px solid var(--hair); margin: 9px 0; }
+  .rule-faint { border: 0; border-top: 0.5px solid #999; margin: 8px 0; }
+
+  /* ---- Ledger stats ---- */
+  .section-label {
+    font-size: 9px; letter-spacing: 0.28em; text-transform: uppercase;
+    font-weight: 700; color: var(--ink); margin: 2px 0 6px;
+  }
+  .ledger { display: grid; grid-template-columns: 1fr 1fr; gap: 3px 18px; }
+  .ledger .row {
+    display: flex; justify-content: space-between; align-items: baseline;
+    border-bottom: 0.5px dotted #999; padding: 2.5px 0;
+  }
+  .ledger .k { font-size: 10.5px; color: var(--ink-soft); }
+  .ledger .v { font-size: 11.5px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .ledger .v .u { font-size: 8.5px; font-weight: 400; color: var(--ink-soft); margin-left: 1px; }
+
+  /* ---- Charts ---- */
+  .charts { display: grid; grid-template-columns: 1fr; gap: 8px; margin-top: 4px; }
+  .chart-box { }
+  .chart-cap {
+    font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase;
+    font-weight: 700; margin-bottom: 3px;
+  }
+  .chart-holder { height: 30mm; position: relative; }
+
+  /* ---- Footer ---- */
+  .foot {
+    position: absolute; left: 12mm; right: 12mm; bottom: 8mm;
+    border-top: 1px solid var(--ink); padding-top: 5px;
+    display: flex; justify-content: space-between; align-items: baseline;
+    font-size: 8.5px; color: var(--ink-soft); letter-spacing: 0.04em;
+  }
+  .foot .brand { font-family: 'Playfair Display', serif; font-style: italic; font-size: 10px; color: var(--ink); }
+
+  /* ---- Print ---- */
+  @media print {
+    @page { size: A5 portrait; margin: 0; }
+    html, body { background: #fff; }
+    .controls { display: none !important; }
+    .sheet { box-shadow: none; margin: 0; width: 148mm; min-height: 210mm; }
+  }
+</style>
+</head>
+<body>
+
+  <div class="controls">
+    <button onclick="downloadPDF()">Download PDF</button>
+    <button onclick="downloadJPG()">Download JPG</button>
+    <button onclick="window.print()">Print</button>
+    <div class="hint">A5 portrait · black &amp; white · for the parish magazine</div>
+  </div>
+
+  <div class="sheet" id="sheet">
+    <div class="masthead">
+      <div class="eyebrow">Threlkeld Nature Watch · Cumbria</div>
+      <div class="title">Beneath <em>Blencathra</em></div>
+      <div class="subtitle">Monthly Weather Review</div>
+      <div class="month-band">
+        <span id="monthName">March 2026</span>
+        <span id="stationLine">Recorded in the village · 54.63°N</span>
+      </div>
+    </div>
+
+    <p class="lead" id="lead">
+      March was a month of steady Lakeland weather rather than extremes. Most of
+      its rain held off until the final week, when 18 millimetres fell in a single
+      day and the Glenderamackin rose accordingly, bringing the month's total to
+      just over 92 millimetres across seventeen wet days. Temperatures stayed
+      modest — a warmest afternoon of 14 degrees set against a hard frost of minus
+      three early on, with the fell tops keeping their snow into the second week.
+      The winds were rarely still, gusting to 48 kilometres an hour at their
+      strongest, though the valley was spared the worst of the equinoctial gales.
+    </p>
+
+    <hr class="rule">
+
+    <div class="section-label" data-period="The {P} in Figures">The Month in Figures</div>
+    <div class="ledger">
+      <div class="row"><span class="k">Total rainfall</span><span class="v" id="rainTotal">92.4<span class="u">mm</span></span></div>
+      <div class="row"><span class="k">Wettest day</span><span class="v" id="rainWettest">18.2<span class="u">mm</span></span></div>
+      <div class="row"><span class="k">Warmest</span><span class="v" id="tMax">14.1<span class="u">°C</span></span></div>
+      <div class="row"><span class="k">Coldest</span><span class="v" id="tMin">−3.2<span class="u">°C</span></span></div>
+      <div class="row"><span class="k">Mean high</span><span class="v" id="tMeanMax">9.6<span class="u">°C</span></span></div>
+      <div class="row"><span class="k">Mean low</span><span class="v" id="tMeanMin">2.8<span class="u">°C</span></span></div>
+      <div class="row"><span class="k">Windiest day</span><span class="v" id="windMax">48<span class="u">km/h</span></span></div>
+      <div class="row"><span class="k">Rain days</span><span class="v" id="rainDays">17<span class="u">of 31</span></span></div>
+    </div>
+
+    <hr class="rule">
+
+    <div class="charts">
+      <div class="chart-box">
+        <div class="chart-cap">Daily Temperature — high / low (°C)</div>
+        <div class="chart-holder"><canvas id="tempChart"></canvas></div>
+      </div>
+      <div class="chart-box">
+        <div class="chart-cap">Daily Rainfall (mm)</div>
+        <div class="chart-holder"><canvas id="rainChart"></canvas></div>
+      </div>
+      <div class="chart-box">
+        <div class="chart-cap">Daily Maximum Wind Speed (km/h)</div>
+        <div class="chart-holder"><canvas id="windChart"></canvas></div>
+      </div>
+    </div>
+
+    <div class="foot">
+      <span>Rainfall &amp; conditions quantified by Open-Meteo · Summary by the Nature Watch naturalist</span>
+      <span class="brand">threlkeld.info</span>
+    </div>
+  </div>
+
+<script>
+  // ===== DATA — loaded from monthly/<id>.json written by the generator flow =====
+  // The A5 page is data-driven: ?m=YYYY-MM (or ?m=<id>) selects which review to show.
+  // A built-in sample renders if no data file is found, so the layout always previews.
+  function sampleData() {
+    const days = 31; const labels = [], tmax = [], tmin = [], rain = [], wind = [];
+    for (let i = 1; i <= days; i++) {
+      labels.push(String(i));
+      tmax.push(+(7 + 5*Math.sin(i/4) + (i>24?2:0)).toFixed(1));
+      tmin.push(+(1 + 3*Math.sin(i/4) - (i<8?3:0)).toFixed(1));
+      rain.push(+(i>23 ? (Math.random()*16+2) : (Math.random()<0.4?Math.random()*4:0)).toFixed(1));
+      wind.push(Math.round(18 + 20*Math.abs(Math.sin(i/3))));
+    }
+    return {
+      monthName:'March 2026 (sample)', periodLabel:'Month', labels, tmax, tmin, rain, wind,
+      summary: document.getElementById('lead').textContent.trim(),
+      stats: { rainTotal:'92.4', rainWettest:'18.2', tMax:'14.1', tMin:'−3.2',
+               tMeanMax:'9.6', tMeanMin:'2.8', windMax:'48', rainDays:'17', daysInPeriod:'31' }
+    };
+  }
+
+  let MONTHLY = window.MONTHLY || sampleData();
+
+  function render() {
+    const M = MONTHLY;
+    document.getElementById('monthName').textContent = M.monthName || '';
+    // Period label adapts (Month / Period)
+    const pl = M.periodLabel || 'Month';
+    document.querySelectorAll('[data-period]').forEach(el => {
+      el.textContent = el.getAttribute('data-period').replace('{P}', pl);
+    });
+    // Summary prose
+    if (M.summary) document.getElementById('lead').textContent = M.summary;
+    // Ledger stats
+    const S = M.stats || {};
+    const setStat = (id, val, unit) => {
+      const el = document.getElementById(id);
+      if (el && val != null) el.innerHTML = val + (unit ? '<span class="u">'+unit+'</span>' : '');
+    };
+    setStat('rainTotal', S.rainTotal, 'mm');
+    setStat('rainWettest', S.rainWettest, 'mm');
+    setStat('tMax', S.tMax, '°C');
+    setStat('tMin', S.tMin, '°C');
+    setStat('tMeanMax', S.tMeanMax, '°C');
+    setStat('tMeanMin', S.tMeanMin, '°C');
+    setStat('windMax', S.windMax, 'km/h');
+    setStat('rainDays', S.rainDays, 'of ' + (S.daysInPeriod || M.labels.length));
+    buildCharts();
+  }
+
+  async function loadData() {
+    const params = new URLSearchParams(location.search);
+    const id = params.get('m');
+    if (id) {
+      const NR_BASE = 'https://rlpzmepeautd1v5pgoumz9aa2qhd92xd.ui.nabu.casa';
+      try {
+        const res = await fetch(NR_BASE + '/local/monthly/' + id + '.json', { cache:'no-store' });
+        if (res.ok) { MONTHLY = await res.json(); }
+      } catch (e) { /* fall back to sample */ }
+    }
+    render();
+  }
+
+  // ===== Charts (black & white, patterned) =====
+  Chart.defaults.color = '#111';
+  Chart.defaults.borderColor = 'rgba(0,0,0,0.12)';
+  Chart.defaults.font.family = "'Source Sans 3', sans-serif";
+  Chart.defaults.font.size = 7;
+  const noLegend = { plugins: { legend: { display: false } }, maintainAspectRatio: false,
+    scales: { x: { grid: { display:false }, ticks:{ maxRotation:0, autoSkip:true, maxTicksLimit:8 } },
+              y: { grid: { color:'rgba(0,0,0,0.08)' }, ticks:{ maxTicksLimit:4 } } } };
+
+  let _charts = [];
+  function buildCharts() {
+    _charts.forEach(c => { try { c.destroy(); } catch(e){} });
+    _charts = [];
+    const M = MONTHLY;
+    _charts.push(new Chart(document.getElementById('tempChart'), {
+      type: 'line',
+      data: { labels: M.labels, datasets: [
+        { label:'High', data: M.tmax, borderColor:'#000', borderWidth:1.3, pointRadius:0, borderDash:[] },
+        { label:'Low',  data: M.tmin, borderColor:'#000', borderWidth:1.3, pointRadius:0, borderDash:[3,2] },
+      ] },
+      options: { ...noLegend, plugins: { legend: { display:true, labels:{ boxWidth:18, font:{size:7} } } } }
+    }));
+    _charts.push(new Chart(document.getElementById('rainChart'), {
+      type: 'bar',
+      data: { labels: M.labels, datasets: [
+        { data: M.rain, backgroundColor:'rgba(0,0,0,0.38)', borderColor:'#000', borderWidth:0.7 } ] },
+      options: noLegend
+    }));
+    _charts.push(new Chart(document.getElementById('windChart'), {
+      type: 'line',
+      data: { labels: M.labels, datasets: [
+        { data: M.wind, borderColor:'#000', borderWidth:1.1, pointRadius:0,
+          backgroundColor:'rgba(0,0,0,0.05)', fill:true } ] },
+      options: noLegend
+    }));
+  }
+
+  // Kick off: load data (from ?m=…) then render everything.
+  loadData();
+
+  // ===== Download helpers =====
+  function stamp(){ return (MONTHLY.monthName||'review').replace(/\s+/g,'-').toLowerCase(); }
+
+  async function capture() {
+    const sheet = document.getElementById('sheet');
+    return await html2canvas(sheet, { scale: 3, backgroundColor:'#ffffff', useCORS:true });
+  }
+  async function downloadJPG() {
+    const canvas = await capture();
+    const a = document.createElement('a');
+    a.href = canvas.toDataURL('image/jpeg', 0.95);
+    a.download = 'blencathra-weather-' + stamp() + '.jpg';
+    a.click();
+  }
+  async function downloadPDF() {
+    const canvas = await capture();
+    const img = canvas.toDataURL('image/jpeg', 0.95);
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ orientation:'portrait', unit:'mm', format:'a5' });
+    pdf.addImage(img, 'JPEG', 0, 0, 148, 210);
+    pdf.save('blencathra-weather-' + stamp() + '.pdf');
+  }
+</script>
+</body>
+</html>
