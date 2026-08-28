@@ -930,6 +930,21 @@
       <div id="mrArchive" style="font-family:'Source Sans 3',sans-serif;font-size:14px"></div>
     </section>
 
+    <!-- ===== Monthly Wildlife Review generator (birds & bats, weather-correlated) ===== -->
+    <section class="monthly-review no-print" style="border:1px solid #000;border-radius:8px;padding:20px;margin:32px 0;background:#fff">
+      <h2 style="font-family:'Playfair Display',serif;font-size:22px;margin:0 0 4px;color:#000">Beneath Blencathra — Monthly Wildlife Review</h2>
+      <p style="font-size:13px;color:#333;margin:0 0 16px;font-family:'Source Sans 3',sans-serif">
+        Generate a printable A5 birds &amp; bats review for the parish magazine, correlated with the month's weather.
+        Pick a month and generate it once — it's then saved and can be viewed or downloaded (PDF / JPG) any time.
+      </p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:16px">
+        <select id="wrMonth" style="font-family:'Source Sans 3',sans-serif;font-size:14px;padding:7px 10px;border:1px solid #000;border-radius:4px;background:#fff;color:#000"></select>
+        <button id="wrGenerate" style="font-family:'Source Sans 3',sans-serif;font-size:14px;font-weight:600;padding:7px 18px;border:1px solid #000;border-radius:4px;background:#000;color:#fff;cursor:pointer">Generate review</button>
+        <span id="wrStatus" style="font-size:13px;color:#333;font-family:'Source Sans 3',sans-serif"></span>
+      </div>
+      <div id="wrArchive" style="font-family:'Source Sans 3',sans-serif;font-size:14px"></div>
+    </section>
+
     <script>
     (function () {
       // POSTs to the Node-RED webhook via the Nabu Casa base (same host as fellcam).
@@ -943,14 +958,16 @@
 
       const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
-      // Populate the month dropdown: Jan 2026 -> last complete month.
+      // Populate the month dropdown: Jul 2026 -> last complete month.
+      // Earlier months are excluded on purpose — generating them would just
+      // burn Node-RED/webhook resources for reviews nobody needs.
       function populateMonths() {
         const sel = document.getElementById('mrMonth');
         const now = new Date();
         // last complete month = the month before the current one
         let y = now.getFullYear(), m = now.getMonth(); // 0-based; m is current month, so previous is m-1
         const opts = [];
-        let yy = 2026, mm = 0; // Jan 2026
+        let yy = 2026, mm = 6; // Jul 2026
         while (yy < y || (yy === y && mm <= m - 1) || (yy === y && m === 0 && false)) {
           const id = yy + '-' + String(mm+1).padStart(2,'0');
           const label = monthNames[mm] + ' ' + yy;
@@ -1028,6 +1045,117 @@
           // Data travels as URL query params (no body, no custom headers) -
           // a plain request, no CORS preflight possible. Fire-and-forget: the
           // HA webhook doesn't return the generated result in its response.
+          const qs = new URLSearchParams({ start, end, id, label }).toString();
+          fetch(GEN_URL + '?' + qs, { method:'POST' }).catch(()=>{});
+        } catch(e) {}
+
+        const ok = await waitForReview(id, label, status);
+        if (ok) {
+          status.textContent = label + ' generated.';
+          await loadArchive();
+          window.open(REVIEW_PAGE + '?m=' + id, '_blank');
+        } else {
+          status.textContent = 'Still generating — check back in a moment, or try again.';
+        }
+      });
+
+      populateMonths();
+      loadArchive();
+    })();
+    </script>
+
+    <script>
+    (function () {
+      // Same pattern as the Weather review generator above, POSTing to its own
+      // Node-RED webhook and polling for the generated file. Content here is
+      // bird + bat detections for the month, correlated against the weather.
+      const NR_BASE = 'https://rlpzmepeautd1v5pgoumz9aa2qhd92xd.ui.nabu.casa';
+      // HA native Automation webhook trigger (webhook_id: wildlife-review-trigger).
+      const GEN_URL = NR_BASE + '/api/webhook/wildlife-review-trigger';
+      const INDEX_URL = NR_BASE + '/local/wildlife/wildlife_index.json';
+      const REVIEW_URL = (id) => NR_BASE + '/local/wildlife/' + id + '.json';
+      const REVIEW_PAGE = 'wildlife-monthly.html';
+
+      const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+      // Populate the month dropdown: Jul 2026 -> last complete month.
+      // Earlier months are excluded on purpose — generating them would just
+      // burn Node-RED/webhook resources for reviews nobody needs.
+      function populateMonths() {
+        const sel = document.getElementById('wrMonth');
+        const now = new Date();
+        let y = now.getFullYear(), m = now.getMonth();
+        const opts = [];
+        let yy = 2026, mm = 6; // Jul 2026
+        while (yy < y || (yy === y && mm <= m - 1) || (yy === y && m === 0 && false)) {
+          const id = yy + '-' + String(mm+1).padStart(2,'0');
+          const label = monthNames[mm] + ' ' + yy;
+          opts.push({ id, label, y:yy, m:mm });
+          mm++; if (mm > 11) { mm = 0; yy++; }
+          if (yy > y + 1) break; // safety
+        }
+        opts.reverse();
+        sel.innerHTML = opts.map(o => '<option value="'+o.id+'" data-label="'+o.label+'" data-y="'+o.y+'" data-m="'+o.m+'">'+o.label+'</option>').join('');
+      }
+
+      function monthRange(y, m) {
+        const start = y + '-' + String(m+1).padStart(2,'0') + '-01';
+        const endDate = new Date(y, m+1, 0);
+        const end = y + '-' + String(m+1).padStart(2,'0') + '-' + String(endDate.getDate()).padStart(2,'0');
+        return { start, end };
+      }
+
+      async function loadArchive() {
+        const box = document.getElementById('wrArchive');
+        try {
+          const res = await fetch(INDEX_URL, { cache:'no-store' });
+          if (!res.ok) { box.innerHTML = '<span style="color:#555">No reviews generated yet.</span>'; return; }
+          const idx = await res.json();
+          if (!Array.isArray(idx) || !idx.length) { box.innerHTML = '<span style="color:#555">No reviews generated yet.</span>'; return; }
+          box.innerHTML = '<div style="font-weight:700;margin-bottom:6px">Generated reviews</div>' +
+            idx.map(x => '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:0.5px solid #ccc">'
+              + '<span>'+x.label+'</span>'
+              + '<a href="'+REVIEW_PAGE+'?m='+x.id+'" target="_blank" style="color:#000;font-weight:600;text-decoration:underline">View &amp; download &rarr;</a>'
+              + '</div>').join('');
+        } catch(e) { box.innerHTML = '<span style="color:#555">Could not load the archive.</span>'; }
+      }
+
+      function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
+
+      async function waitForReview(id, label, status) {
+        const started = Date.now();
+        const timeoutMs = 60000, intervalMs = 2000;
+        while (Date.now() - started < timeoutMs) {
+          await sleep(intervalMs);
+          try {
+            const res = await fetch(REVIEW_URL(id), { cache:'no-store' });
+            if (res.ok) return true;
+          } catch(e) {}
+          const waited = Math.round((Date.now()-started)/1000);
+          status.textContent = 'Generating ' + label + '… (' + waited + 's)';
+        }
+        return false;
+      }
+
+      document.getElementById('wrGenerate').addEventListener('click', async () => {
+        const sel = document.getElementById('wrMonth');
+        const opt = sel.options[sel.selectedIndex];
+        if (!opt) return;
+        const id = opt.value, label = opt.getAttribute('data-label');
+        const y = +opt.getAttribute('data-y'), m = +opt.getAttribute('data-m');
+        const { start, end } = monthRange(y, m);
+        const status = document.getElementById('wrStatus');
+
+        try {
+          const check = await fetch(REVIEW_URL(id), { cache:'no-store' });
+          if (check.ok) {
+            window.open(REVIEW_PAGE + '?m=' + id, '_blank');
+            return;
+          }
+        } catch(e) {}
+
+        status.textContent = 'Generating ' + label + '… (this can take a few seconds)';
+        try {
           const qs = new URLSearchParams({ start, end, id, label }).toString();
           fetch(GEN_URL + '?' + qs, { method:'POST' }).catch(()=>{});
         } catch(e) {}
