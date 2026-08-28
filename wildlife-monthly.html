@@ -97,12 +97,27 @@
 
   /* ---- Charts ---- */
   .charts { display: grid; grid-template-columns: 1fr; gap: 5px; margin-top: 2px; }
-  .chart-box { }
+  .chart-box { min-width: 0; }
   .chart-cap {
     font-size: 8.5px; letter-spacing: 0.14em; text-transform: uppercase;
     font-weight: 700; margin-bottom: 2px;
   }
-  .chart-holder { height: 15mm; position: relative; }
+  /* min-width:0 + overflow:hidden keep Chart.js's auto-sizing canvas from
+     ballooning past its grid track (a canvas's intrinsic size otherwise
+     wins the grid's default min-width:auto and pushes the chart off
+     the edge of the sheet). */
+  .chart-holder { height: 17mm; position: relative; min-width: 0; overflow: hidden; }
+  .species-charts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; min-width: 0; }
+  .species-chart-col { min-width: 0; }
+  .species-chart-cap {
+    font-size: 7.5px; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--ink-soft); font-weight: 700; margin-bottom: 1px; text-align: center;
+  }
+  .species-chart-holder { height: 18mm; }
+  .species-empty {
+    display: flex; align-items: center; justify-content: center; height: 100%;
+    font-size: 7.5px; font-style: italic; color: var(--ink-soft); text-align: center; padding: 0 6px;
+  }
 
   /* ---- Totals band ---- */
   .totals-band {
@@ -138,7 +153,7 @@
   .foot {
     position: absolute; left: 12mm; right: 12mm; bottom: 8mm;
     border-top: 1px solid var(--ink); padding-top: 5px;
-    display: flex; justify-content: space-between; align-items: baseline;
+    display: flex; justify-content: flex-end; align-items: baseline;
     font-size: 8.5px; color: var(--ink-soft); letter-spacing: 0.04em;
   }
   .foot .brand { font-family: 'Playfair Display', serif; font-style: italic; font-size: 10px; color: var(--ink); }
@@ -210,7 +225,16 @@
       </div>
       <div class="chart-box">
         <div class="chart-cap">Top Species Recorded This Month</div>
-        <div class="chart-holder"><canvas id="speciesChart"></canvas></div>
+        <div class="species-charts">
+          <div class="species-chart-col">
+            <div class="species-chart-cap">Birds</div>
+            <div class="chart-holder species-chart-holder"><canvas id="birdSpeciesChart"></canvas></div>
+          </div>
+          <div class="species-chart-col">
+            <div class="species-chart-cap">Bats</div>
+            <div class="chart-holder species-chart-holder"><canvas id="batSpeciesChart"></canvas></div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -231,7 +255,6 @@
     </div>
 
     <div class="foot">
-      <span>Detections logged by BirdNET-Pi &amp; bat detector · weather via Ecowitt/Open-Meteo</span>
       <span class="brand">threlkeld.info</span>
     </div>
   </div>
@@ -270,6 +293,20 @@
 
   let MONTHLY = window.MONTHLY || sampleData();
 
+  // "14th" + "July 2026" -> "14 Jul" — clearer once printed, no ambiguity about
+  // which month the ordinal belongs to. Falls back to the raw ordinal if the
+  // month name isn't in the expected "<Month> <Year>" shape (e.g. a year view).
+  function shortMonthName(monthName) {
+    const m = (monthName || '').match(/[A-Za-z]+/);
+    return m ? m[0].slice(0, 3) : '';
+  }
+  function formatOrdinalDay(ordinal, monthAbbr) {
+    if (!ordinal) return ordinal;
+    const n = parseInt(ordinal, 10);
+    if (isNaN(n) || !monthAbbr) return ordinal;
+    return n + ' ' + monthAbbr;
+  }
+
   function render() {
     const M = MONTHLY;
     document.getElementById('monthName').textContent = M.monthName || '';
@@ -279,6 +316,7 @@
     });
     if (M.summary) document.getElementById('lead').textContent = M.summary;
     const S = M.stats || {};
+    const monAbbr = shortMonthName(M.monthName);
     const setStat = (id, val, unit) => {
       const el = document.getElementById(id);
       if (el && val != null) el.innerHTML = val + (unit ? '<span class="u">'+unit+'</span>' : '');
@@ -286,10 +324,10 @@
     setStat('birdTotal', S.birdTotal, 'total');
     setStat('birdSpecies', S.birdSpecies, 'recorded');
     setStat('newSpecies', S.newSpecies, 'this month');
-    setStat('busiestBirdDay', S.busiestBirdDay, S.busiestBirdDayCount || '');
+    setStat('busiestBirdDay', formatOrdinalDay(S.busiestBirdDay, monAbbr), S.busiestBirdDayCount || '');
     setStat('batTotal', S.batTotal, 'total');
     setStat('batSpecies', S.batSpecies, 'recorded');
-    setStat('busiestBatNight', S.busiestBatNight, S.busiestBatNightCount || '');
+    setStat('busiestBatNight', formatOrdinalDay(S.busiestBatNight, monAbbr), S.busiestBatNightCount || '');
     setStat('tempMean', S.tempMean, '°C');
     const bigBirds = document.getElementById('birdTotalBig');
     const bigBats = document.getElementById('batTotalBig');
@@ -320,47 +358,93 @@
   Chart.defaults.borderColor = 'rgba(0,0,0,0.12)';
   Chart.defaults.font.family = "'Source Sans 3', sans-serif";
   Chart.defaults.font.size = 7;
+
+  // "07-08" -> "8 Jul" — used to thin out and clarify the daily x-axis ticks
+  // on the correlation charts, so they read at a glance instead of a dense
+  // strip of raw MM-DD labels.
+  const MONTH_ABBR = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  function formatDayTick(raw) {
+    const parts = String(raw).split('-');
+    if (parts.length !== 2) return raw;
+    const mon = MONTH_ABBR[parseInt(parts[0], 10) - 1] || '';
+    return parseInt(parts[1], 10) + (mon ? ' ' + mon : '');
+  }
+
   const noLegend = { plugins: { legend: { display: false } }, maintainAspectRatio: false,
     scales: { x: { grid: { display:false }, ticks:{ maxRotation:0, autoSkip:true, maxTicksLimit:8 } },
               y: { grid: { color:'rgba(0,0,0,0.08)' }, ticks:{ maxTicksLimit:4 } } } };
+
+  // Correlation charts: solid (not dashed) line, gently smoothed, on its own
+  // axis with no gridlines/clutter of its own — the bars carry the gridlines,
+  // the line just needs to read as a clean shape against them.
   const dualAxis = {
-    plugins: { legend: { display:true, labels:{ boxWidth:18, font:{size:7} } } },
+    // No legend: the chart-cap heading above each chart already names both
+    // series ("Detections vs. Mean Temperature"), and a legend here kept
+    // getting clipped against the chart's edge in the narrow A5 column.
+    plugins: { legend: { display:false } },
     maintainAspectRatio: false,
+    interaction: { mode: 'index', intersect: false },
     scales: {
-      x: { grid: { display:false }, ticks:{ maxRotation:0, autoSkip:true, maxTicksLimit:8 } },
-      y:  { position:'left',  grid: { color:'rgba(0,0,0,0.08)' }, ticks:{ maxTicksLimit:4 } },
-      y1: { position:'right', grid: { display:false }, ticks:{ maxTicksLimit:4 } },
+      x: { grid: { display:false },
+           ticks:{ maxRotation:0, autoSkip:true, maxTicksLimit:6,
+                   callback: function(value) { return formatDayTick(this.getLabelForValue(value)); } } },
+      y:  { position:'left',  beginAtZero:true, grid: { color:'rgba(0,0,0,0.07)' }, ticks:{ maxTicksLimit:4 } },
+      y1: { position:'right', beginAtZero:true, grid: { display:false }, ticks:{ maxTicksLimit:3, font:{size:6.5} } },
     }
   };
 
   let _charts = [];
   function buildCharts() {
-    _charts.forEach(c => { try { c.destroy(); } catch(e){} });
+    _charts.forEach(c => { if (c) { try { c.destroy(); } catch(e){} } });
     _charts = [];
     const M = MONTHLY;
+
     _charts.push(new Chart(document.getElementById('birdChart'), {
       data: { labels: M.labels, datasets: [
-        { type:'bar', label:'Detections', data: M.birds, backgroundColor:'rgba(0,0,0,0.38)', borderColor:'#000', borderWidth:0.7, yAxisID:'y' },
-        { type:'line', label:'Mean temp', data: M.temp, borderColor:'#000', borderWidth:1.1, pointRadius:0, borderDash:[3,2], yAxisID:'y1' },
+        { type:'bar', label:'Detections', data: M.birds, backgroundColor:'rgba(0,0,0,0.28)', borderWidth:0, yAxisID:'y', order:2 },
+        { type:'line', label:'Mean temp', data: M.temp, borderColor:'#000', backgroundColor:'#000', borderWidth:1.5, pointRadius:0, tension:0.3, yAxisID:'y1', order:1 },
       ] },
       options: dualAxis
     }));
     _charts.push(new Chart(document.getElementById('batChart'), {
       data: { labels: M.labels, datasets: [
-        { type:'bar', label:'Passes', data: M.bats, backgroundColor:'rgba(0,0,0,0.38)', borderColor:'#000', borderWidth:0.7, yAxisID:'y' },
-        { type:'line', label:'Overnight low', data: M.tempLow, borderColor:'#000', borderWidth:1.1, pointRadius:0, borderDash:[3,2], yAxisID:'y1' },
+        { type:'bar', label:'Passes', data: M.bats, backgroundColor:'rgba(0,0,0,0.28)', borderWidth:0, yAxisID:'y', order:2 },
+        { type:'line', label:'Overnight low', data: M.tempLow, borderColor:'#000', backgroundColor:'#000', borderWidth:1.5, pointRadius:0, tension:0.3, yAxisID:'y1', order:1 },
       ] },
       options: dualAxis
     }));
-    const top = (M.topSpecies || []).slice(0, 6);
-    _charts.push(new Chart(document.getElementById('speciesChart'), {
-      type: 'bar',
-      data: { labels: top.map(s => s.name), datasets: [
-        { data: top.map(s => s.count), backgroundColor:'rgba(0,0,0,0.38)', borderColor:'#000', borderWidth:0.7 } ] },
-      options: { ...noLegend, indexAxis: 'y',
-        scales: { x: { grid: { color:'rgba(0,0,0,0.08)' }, ticks:{ maxTicksLimit:4 } },
-                  y: { grid: { display:false }, ticks:{ font:{size:7} } } } }
-    }));
+
+    // Top species: birds and bats side by side, each its own small
+    // horizontal-bar chart so both are always shown (not just whichever
+    // fit), with a plain-language message when a category is empty.
+    function buildSpeciesChart(canvasId, list, emptyText) {
+      const canvas = document.getElementById(canvasId);
+      const holder = canvas.parentElement;
+      const existingMsg = holder.querySelector('.species-empty');
+      const top = (list || []).slice(0, 4);
+      if (!top.length) {
+        canvas.style.display = 'none';
+        if (!existingMsg) {
+          const msg = document.createElement('div');
+          msg.className = 'species-empty';
+          msg.textContent = emptyText;
+          holder.appendChild(msg);
+        }
+        return null;
+      }
+      canvas.style.display = '';
+      if (existingMsg) existingMsg.remove();
+      return new Chart(canvas, {
+        type: 'bar',
+        data: { labels: top.map(s => s.name), datasets: [
+          { data: top.map(s => s.count), backgroundColor:'rgba(0,0,0,0.38)', borderColor:'#000', borderWidth:0.7 } ] },
+        options: { ...noLegend, indexAxis: 'y',
+          scales: { x: { grid: { color:'rgba(0,0,0,0.08)' }, ticks:{ maxTicksLimit:3 } },
+                    y: { grid: { display:false }, ticks:{ font:{size:7}, autoSkip:false } } } }
+      });
+    }
+    _charts.push(buildSpeciesChart('birdSpeciesChart', M.topSpecies, 'No bird species recorded'));
+    _charts.push(buildSpeciesChart('batSpeciesChart', M.topBatSpecies, 'No bat activity recorded'));
   }
 
   // Kick off: load data (from ?m=…) then render everything.
