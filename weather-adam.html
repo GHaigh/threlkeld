@@ -942,18 +942,6 @@
       </div>
     </header>
 
-    <!-- Offline banner -->
-    <div id="offlineBanner" style="display:none;background:rgba(200,168,74,0.1);border:1px solid rgba(200,168,74,0.3);border-radius:8px;padding:10px 16px;margin-bottom:16px;font-size:12px;color:var(--cream-dim);align-items:center;gap:10px">
-      <span>⚠️</span>
-      <span>Live data unavailable — showing cached data from <strong id="offlineAge">a moment ago</strong>. Reconnecting...</span>
-    </div>
-    <div id="mainContent">
-      <div class="loading-overlay">
-        <div class="loading-spinner"></div>
-        Loading weather data...
-      </div>
-    </div>
-
     <!-- ===== Monthly Weather Review generator (for the parish magazine) ===== -->
     <section class="monthly-review no-print" style="border:1px solid #000;border-radius:8px;padding:20px;margin:32px 0;background:#fff">
       <h2 style="font-family:'Playfair Display',serif;font-size:22px;margin:0 0 4px;color:#000">Beneath Blencathra — Monthly Weather Review</h2>
@@ -1052,6 +1040,19 @@
       loadArchive();
     })();
     </script>
+
+
+    <!-- Offline banner -->
+    <div id="offlineBanner" style="display:none;background:rgba(200,168,74,0.1);border:1px solid rgba(200,168,74,0.3);border-radius:8px;padding:10px 16px;margin-bottom:16px;font-size:12px;color:var(--cream-dim);align-items:center;gap:10px">
+      <span>⚠️</span>
+      <span>Live data unavailable — showing cached data from <strong id="offlineAge">a moment ago</strong>. Reconnecting...</span>
+    </div>
+    <div id="mainContent">
+      <div class="loading-overlay">
+        <div class="loading-spinner"></div>
+        Loading weather data...
+      </div>
+    </div>
 
     <footer>
       <div class="footer-text">Threlkeld, Cumbria &middot; Ecowitt GW2000A Weather Station</div>
