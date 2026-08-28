@@ -1555,6 +1555,13 @@
 
     function renderCurrent(d) {
       const _rainPeriods = rainfallPeriodTotals();
+      // This template rebuilds the whole #mainContent block on every MQTT
+      // update, including the 7-Day Forecast section — which otherwise wipes
+      // out whatever loadForecast() already rendered there and resets it to
+      // a permanent-looking loading spinner. Capture it here and restore it
+      // below once the new markup is in place.
+      const prevForecastDays = document.getElementById('forecastDays')?.innerHTML;
+      const prevForecastHourly = document.getElementById('forecastHourly')?.innerHTML;
       const html = `
         <!-- 7-Day Forecast -->
         <div class="forecast-section">
@@ -1767,6 +1774,12 @@
         </div>`;
 
       document.getElementById('mainContent').innerHTML = html;
+      if (prevForecastDays && !prevForecastDays.includes('loading-spinner')) {
+        document.getElementById('forecastDays').innerHTML = prevForecastDays;
+      }
+      if (prevForecastHourly && !prevForecastHourly.includes('loading-spinner')) {
+        document.getElementById('forecastHourly').innerHTML = prevForecastHourly;
+      }
       refreshFellCam();
       renderMoonCalendar();
       renderISS();
@@ -2267,6 +2280,16 @@
     const cached = loadCache();
     if (cached) { showOfflineBanner(cached.age); }
 
+    // Forecast + stargazing come from Open-Meteo/NOAA, not the station's MQTT
+    // feed — load them immediately so they don't sit spinning while waiting
+    // on a live MQTT message (which may be slow, or never arrive if the
+    // station/broker is briefly down). Refresh periodically rather than on
+    // every MQTT message, since that was re-fetching these external APIs
+    // far more often than their data actually changes.
+    loadForecast();
+    renderStargazing();
+    setInterval(() => { loadForecast(); renderStargazing(); }, 15 * 60 * 1000);
+
     const client = mqtt.connect(`wss://${MQTT_HOST}:${MQTT_PORT}/mqtt`);
 
     client.on('connect', () => {
@@ -2300,9 +2323,7 @@
         if (topic === CURRENT_TOPIC) {
           currentData = data;
           hideOfflineBanner(); saveCache({ current: data, history: historyData });
-          loadForecast();
           renderCurrent(data);
-          renderStargazing(data);
           if (historyData) {
             renderMiniCharts();
             renderRecords(historyData);
