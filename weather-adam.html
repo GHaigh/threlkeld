@@ -1019,8 +1019,10 @@
         const status = document.getElementById('mrStatus');
         status.textContent = 'Generating ' + label + '… (this can take a few seconds)';
         try {
+          // text/plain avoids a CORS preflight (which nothing here answers) -
+          // it's still JSON text; the flow parses it on arrival.
           const res = await fetch(GEN_URL, {
-            method:'POST', headers:{ 'Content-Type':'application/json' },
+            method:'POST', headers:{ 'Content-Type':'text/plain' },
             body: JSON.stringify({ start, end, id, label })
           });
           const out = await res.json();
