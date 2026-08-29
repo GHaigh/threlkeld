@@ -182,82 +182,9 @@
     .info-tooltip:hover .info-box { display: block; }
     .info-box strong { color: #000; font-weight: 700; }
 
-    /* Fell cam */
     @media (max-width: 800px) {
-      div[style*="grid-template-columns:1fr 1fr 1fr"] { grid-template-columns: 1fr !important; }
       .sky-events-grid { grid-template-columns: 1fr !important; }
     }
-    .fellcam-card {
-      background: #fff;
-      border: 1px solid #000;
-      border-radius: 4px;
-      overflow: hidden;
-    }
-    .fellcam-img {
-      width: 100%;
-      height: 160px;
-      display: block;
-      object-fit: cover;
-      background: #f4f4f4;
-      border-bottom: 1px solid #000;
-    }
-    .fellcam-footer {
-      padding: 6px 12px;
-      font-size: 10px;
-      color: #000;
-    }
-
-    /* Time-lapse buttons */
-    .timelapse-btn, .tl-btn {
-      display: inline-flex; align-items: center; gap: 6px;
-      background: #000; color: #fff;
-      font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
-      border: 1px solid #000; padding: 8px 16px; border-radius: 4px;
-      cursor: pointer; white-space: nowrap; transition: all 0.2s;
-      font-family: 'Source Sans 3', sans-serif; margin-top: 10px;
-    }
-    .timelapse-btn:hover, .tl-btn:hover { background: #fff; color: #000; }
-    .tl-day-btn {
-      background: #fff; border: 1px solid #000;
-      color: #000; font-size: 11px; font-weight: 600; letter-spacing: 0.06em;
-      padding: 5px 12px; border-radius: 20px; cursor: pointer;
-      font-family: 'Source Sans 3', sans-serif;
-    }
-    .tl-day-btn.active { background: #000; color: #fff; }
-    .tl-speed {
-      background: #fff; border: 1px solid #000; color: #000;
-      font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
-      padding: 5px 12px; border-radius: 20px; cursor: pointer;
-      font-family: 'Source Sans 3', sans-serif;
-    }
-    .tl-modal-overlay {
-      display: none; position: fixed; inset: 0;
-      background: rgba(255,255,255,0.95); z-index: 1000;
-      align-items: center; justify-content: center;
-      padding: 24px;
-    }
-    .tl-modal-overlay.open { display: flex; }
-    .tl-modal {
-      background: #fff; border: 2px solid #000;
-      border-radius: 8px; width: 100%; max-width: 900px;
-      max-height: 90vh; overflow-y: auto; padding: 24px;
-      box-shadow: 6px 6px 0px #000;
-    }
-    .tl-modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-    .tl-modal-title { font-family: "Playfair Display", serif; font-size: 20px; font-weight: 600; color: #000; }
-    .tl-modal-close {
-      background: #fff; border: 1px solid #000;
-      border-radius: 4px; color: #000; font-size: 18px; font-weight: bold;
-      cursor: pointer; width: 36px; height: 36px;
-      display: flex; align-items: center; justify-content: center;
-    }
-    .tl-modal-close:hover { background: #000; color: #fff; }
-    .tl-controls { display: flex; align-items: center; gap: 12px; padding: 12px 0 8px; flex-wrap: wrap; }
-    .tl-progress-wrap { flex: 1; min-width: 80px; display: flex; align-items: center; gap: 10px; }
-    .tl-progress-bar { flex: 1; height: 6px; background: #fff; border: 1px solid #000; border-radius: 3px; overflow: hidden; }
-    .tl-progress-fill { height: 100%; width: 0%; background: #000; }
-    .tl-counter { font-size: 11px; color: #000; font-weight: 600; white-space: nowrap; font-variant-numeric: tabular-nums; }
-    .tl-days { display: flex; flex-wrap: wrap; gap: 8px; padding: 4px 0 12px; }
 
     .condition-panel {
       background: #fff;
@@ -384,18 +311,15 @@
     .gdd-progress { text-align: right; }
     .gdd-progress-label { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: #000; font-weight: 700; margin-bottom: 8px; }
 
-    /* Stargazing + Aurora */
+    /* Stargazing/ISS Card general styling */
     .sg-card { background: #fff; border: 1px solid #000; border-radius: 4px; padding: 20px 24px; display: flex; flex-direction: column; height: 100%; }
     .sg-score { font-family: 'Playfair Display', serif; font-size: 48px; font-weight: 600; color: #000; line-height: 1; }
     .sg-label { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; margin-top: 4px; color: #000; font-weight: 700; }
-    .sg-facts { display: flex; flex-direction: column; gap: 0; margin-top: 14px; max-width: 320px; }
+    .sg-facts { display: flex; flex-direction: column; gap: 0; margin-top: 14px; width: 100%; }
     .sg-fact { display: flex; justify-content: space-between; font-size: 12px; gap: 12px; border-bottom: 1px dashed #ccc; padding: 5px 0; }
     .sg-fact:last-child { border-bottom: none; }
     .sg-fact span:first-child { color: #333; white-space: nowrap; }
     .sg-fact span:last-child { color: #000; font-weight: 600; text-align: right; }
-    .aurora-rating { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; padding: 3px 10px; border-radius: 4px; border: 1px solid #000; font-weight: 700; display: inline-block; }
-    .aurora-rating.none { background: #fff; color: #000; }
-    .aurora-rating.slight, .aurora-rating.possible, .aurora-rating.likely, .aurora-rating.storm { background: #000; color: #fff; }
 
     /* Correlation */
     .correlation-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; margin-bottom: 28px; }
@@ -529,7 +453,7 @@
     @media print {
       .no-print { display: none !important; }
       nav, .nav-home, .nav-links, .status-bar, #statusDot, #statusText,
-      .range-btn, .range-buttons, button, .modal-overlay, .fellcam-controls,
+      .range-btn, .range-buttons, button, .modal-overlay,
       .refresh-btn, .install-btn { display: none !important; }
       body { background: #fff !important; color: #000 !important; }
       .page { max-width: 100% !important; padding: 0 !important; }
@@ -865,33 +789,6 @@
       <div class="footer-text">Threlkeld, Cumbria &middot; Ecowitt GW2000A Weather Station</div>
       <div class="footer-brand">Threlkeld Nature Watch &middot; Print edition for village magazine &middot; Updated 27 Aug 2026 (b)</div>
     </footer>
-  </div>
-
-  <!-- Timelapse Modal -->
-  <div class="tl-modal-overlay" id="tlModalOverlay">
-    <div class="tl-modal">
-      <div class="tl-modal-header">
-        <div class="tl-modal-title">📽️ Weather Cam Time-lapse</div>
-        <button class="tl-modal-close" onclick="toggleTimelapse()">✕</button>
-      </div>
-      <div style="position:relative;border-radius:4px;overflow:hidden;border:1px solid #000">
-        <img id="tlImg" src="" alt="Time-lapse" style="width:100%;height:auto;max-height:500px;display:block;object-fit:cover;background:#f4f4f4">
-        <div style="position:absolute;bottom:8px;left:10px;background:#000;padding:3px 8px;border-radius:4px;font-size:12px;color:#fff;font-variant-numeric:tabular-nums" id="tlOverlay"><span id="tlTime">—</span></div>
-      </div>
-      <div class="tl-controls">
-        <button class="tl-btn" id="tlPlayBtn" onclick="tlTogglePlay()">&#9654; Play</button>
-        <div class="tl-progress-wrap">
-          <div class="tl-progress-bar"><div class="tl-progress-fill" id="tlProgressFill"></div></div>
-          <span class="tl-counter" id="tlCounter">0 / 0</span>
-        </div>
-        <select class="tl-speed" id="tlSpeed" onchange="tlSetSpeed(this.value)">
-          <option value="200">Slow</option>
-          <option value="100" selected>Normal</option>
-          <option value="50">Fast</option>
-        </select>
-      </div>
-      <div class="tl-days" id="tlDays">Loading...</div>
-    </div>
   </div>
 
   <!-- Modal -->
@@ -1410,44 +1307,6 @@
           <div class="loading"><div class="loading-spinner"></div></div>
         </div>
 
-        <!-- Stargazing + Aurora + Weather Cam -->
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:28px;align-items:start">
-          <div>
-            <div class="section-header" style="margin-top:0">
-              <div class="section-title">Stargazing Conditions
-              <span class="info-tooltip"><i class="info-icon">i</i><span class="info-box"><strong>Stargazing score</strong> is calculated from tonight's cloud cover (Open-Meteo), moon phase and brightness, and visibility. Threlkeld sits in a Bortle 3–4 dark sky zone — one of the darkest in Northern England. Score of 8–10 is excellent, 6–7 good, 4–5 fair, below 4 poor. A full moon reduces the score significantly even on a clear night.</span></span></div>
-              <div class="section-sub">Tonight · Threlkeld Dark Skies</div>
-            </div>
-            <div class="sg-card" id="stargazingCard">
-              <div class="loading"><div class="loading-spinner"></div></div>
-            </div>
-          </div>
-          <div>
-            <div class="section-header" style="margin-top:0">
-              <div class="section-title">Northern Lights
-              <span class="info-tooltip"><i class="info-icon">i</i><span class="info-box"><strong>Kp index</strong> measures global geomagnetic activity on a scale of 0–9. From Threlkeld at 54.6°N, aurora becomes visible at Kp 4+, good displays at Kp 5+, overhead at Kp 7+. We're at Solar Cycle 25 peak (2025–26) so activity is elevated. Data is live from NOAA Space Weather. Cloud cover is shown as it affects visibility even when aurora is active.</span></span></div>
-              <div class="section-sub">NOAA Kp Index · Live forecast</div>
-            </div>
-            <div class="sg-card" id="auroraCard">
-              <div class="loading"><div class="loading-spinner"></div></div>
-            </div>
-          </div>
-          <!-- Fell Cam -->
-          <div>
-            <div class="section-header" style="margin-top:0">
-              <div class="section-title" style="font-size:18px">📷 Weather Cam</div>
-              <div class="section-sub" id="fellcamWeatherSub">Reolink · Live feed</div>
-            </div>
-            <div class="sg-card">
-              <div id="fellcamLive">
-                <img id="fellcamImg" src="" alt="Fell and Weather Camera" style="width:100%;height:200px;object-fit:cover;border-radius:4px;background:#f4f4f4;border:1px solid #000;display:block">
-                <div style="font-size:10px;color:#333;margin-top:8px" id="fellcamUpdated">—</div>
-                <button class="timelapse-btn" onclick="toggleTimelapse()">📽️ View time-lapse</button>
-              </div>
-            </div>
-          </div>
-        </div>
-
         <!-- Moon Phase Calendar -->
         <div class="section-header">
           <div class="section-title">Moon Calendar</div>
@@ -1507,7 +1366,6 @@
         </div>`;
 
       document.getElementById('mainContent').innerHTML = html;
-      refreshFellCam();
       renderMoonCalendar();
       renderISS();
       renderMeteorShowers();
@@ -1574,94 +1432,6 @@
         <div class="record-card"><div class="record-icon">🌧️</div><div class="record-value">${fmt(wettest?._daily)} mm</div><div class="record-label">Wettest Day</div><div class="record-date">${fd(wettestDate)}</div></div>
         <div class="record-card"><div class="record-icon">⬆️</div><div class="record-value">${fmt(highestP?.max)} hPa</div><div class="record-label">Highest Pressure</div><div class="record-date">${fd(highestPDate)}</div></div>
         <div class="record-card"><div class="record-icon">⬇️</div><div class="record-value">${fmt(lowestP?.min)} hPa</div><div class="record-label">Lowest Pressure</div><div class="record-date">${fd(lowestPDate)}</div></div>`;
-    }
-
-    async function renderStargazing(current) {
-      try {
-        const lat = 54.616, lon = -3.056;
-        const [weatherRes, auroraRes] = await Promise.all([
-          fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=cloudcover,visibility&daily=sunrise,sunset&timezone=Europe%2FLondon&forecast_days=1`),
-          fetch('https://services.swpc.noaa.gov/products/noaa-planetary-k-index-forecast.json')
-        ]);
-        const data = await weatherRes.json();
-        const kpData = await auroraRes.json();
-
-        const sunset = new Date(data.daily.sunset[0]);
-        const now = new Date();
-        const nightHour = Math.max(sunset.getHours(), now.getHours());
-        const hi = Math.min(nightHour, 23);
-        const cloud = data.hourly.cloudcover[hi] || 0;
-        const vis = (data.hourly.visibility[hi] || 0) / 1000;
-
-        const moonAge = ((now - new Date('2000-01-06')) / 86400000) % 29.53;
-        let moonPhase, moonIcon;
-        if (moonAge < 1.85) { moonPhase = 'New Moon'; moonIcon = '🌑'; }
-        else if (moonAge < 7.38) { moonPhase = 'Waxing Crescent'; moonIcon = '🌒'; }
-        else if (moonAge < 9.22) { moonPhase = 'First Quarter'; moonIcon = '🌓'; }
-        else if (moonAge < 14.77) { moonPhase = 'Waxing Gibbous'; moonIcon = '🌔'; }
-        else if (moonAge < 16.61) { moonPhase = 'Full Moon'; moonIcon = '🌕'; }
-        else if (moonAge < 22.15) { moonPhase = 'Waning Gibbous'; moonIcon = '🌖'; }
-        else if (moonAge < 23.99) { moonPhase = 'Last Quarter'; moonIcon = '🌗'; }
-        else { moonPhase = 'Waning Crescent'; moonIcon = '🌘'; }
-        const moonBrightness = moonAge > 7 && moonAge < 22 ? Math.round(Math.sin((moonAge / 29.53) * Math.PI) * 100) : 0;
-
-        let score = 10;
-        score -= Math.round(cloud / 15);
-        if (moonBrightness > 70) score -= 3;
-        else if (moonBrightness > 40) score -= 1;
-        if (vis < 10) score -= 1;
-        score = Math.max(0, Math.min(10, score));
-        let rating = score >= 8 ? 'Excellent' : score >= 6 ? 'Good' : score >= 4 ? 'Fair' : 'Poor';
-
-        const sunsetTime = sunset.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-        const sunrise = new Date(data.daily.sunrise[0]).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-
-        let kpForecast = 0, kpTime = '';
-        if (Array.isArray(kpData) && kpData.length > 1) {
-          const tonight = kpData.slice(1).find(row => new Date(row[0]) > now);
-          if (tonight) {
-            kpForecast = parseFloat(tonight[1]) || 0;
-            kpTime = new Date(tonight[0]).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-          }
-        }
-
-        let auroraRating, auroraClass, auroraDesc;
-        if (kpForecast >= 7) { auroraRating = '🌌 Geomagnetic Storm'; auroraClass = 'storm'; auroraDesc = 'Overhead display likely — go outside now!'; }
-        else if (kpForecast >= 6) { auroraRating = '✅ Likely visible'; auroraClass = 'likely'; auroraDesc = 'Good chance from dark location'; }
-        else if (kpForecast >= 5) { auroraRating = '👀 Possible'; auroraClass = 'possible'; auroraDesc = 'Worth watching from a dark spot'; }
-        else if (kpForecast >= 4) { auroraRating = '🔭 Slight chance'; auroraClass = 'slight'; auroraDesc = 'Low on northern horizon only'; }
-        else { auroraRating = '✗ Unlikely'; auroraClass = 'none'; auroraDesc = 'Quiet geomagnetic conditions'; }
-
-        const cloudPenalty = cloud > 70 ? ' · Clouds blocking' : cloud > 40 ? ' · Partly cloudy' : '';
-
-        document.getElementById('stargazingCard').innerHTML = `
-          <div class="sg-score">${score}/10</div>
-          <div class="sg-label">${rating} · Stargazing</div>
-          <div class="sg-facts">
-            <div class="sg-fact"><span>Cloud cover</span><span>${cloud}%</span></div>
-            <div class="sg-fact"><span>Moon phase</span><span>${moonIcon} ${moonPhase}</span></div>
-            <div class="sg-fact"><span>Moon brightness</span><span>${moonBrightness}%</span></div>
-            <div class="sg-fact"><span>Visibility</span><span>${vis.toFixed(0)}km</span></div>
-            <div class="sg-fact"><span>Dark sky</span><span>Bortle 3–4</span></div>
-            <div class="sg-fact"><span>Sunset / Sunrise</span><span>${sunsetTime} / ${sunrise}</span></div>
-          </div>`;
-
-        document.getElementById('auroraCard').innerHTML = `
-          <div class="sg-score">${kpForecast.toFixed(1)}</div>
-          <div class="sg-label">Kp Index · Northern Lights</div>
-          <div class="sg-facts">
-            <div class="sg-fact"><span>Likelihood</span><span><span class="aurora-rating ${auroraClass}">${auroraRating}</span></span></div>
-            <div class="sg-fact"><span>Threshold</span><span>Kp 4+ from Threlkeld</span></div>
-            <div class="sg-fact"><span>Solar cycle</span><span>Cycle 25 · Peak 2025–26</span></div>
-            <div class="sg-fact"><span>Cloud cover</span><span>${cloud}%${cloudPenalty}</span></div>
-            <div class="sg-fact"><span>Next forecast</span><span>${kpTime || '—'}</span></div>
-            <div class="sg-fact"><span>Conditions</span><span style="color:#333">${auroraDesc}</span></div>
-          </div>`;
-
-      } catch(e) {
-        document.getElementById('stargazingCard').innerHTML = '<div style="color:#333;font-style:italic">Could not load data</div>';
-        document.getElementById('auroraCard').innerHTML = '<div style="color:#333;font-style:italic">Could not load data</div>';
-      }
     }
 
     function renderGDD(history) {
@@ -1850,9 +1620,6 @@
     const cached = loadCache();
     if (cached) { showOfflineBanner(cached.age); }
 
-    renderStargazing();
-    setInterval(renderStargazing, 15 * 60 * 1000);
-
     const client = mqtt.connect(`wss://${MQTT_HOST}:${MQTT_PORT}/mqtt`);
 
     client.on('connect', () => {
@@ -1908,126 +1675,6 @@
         }
       } catch(e) { console.error('Parse error:', e); }
     });
-
-    const FELLCAM_BASE = 'https://rlpzmepeautd1v5pgoumz9aa2qhd92xd.ui.nabu.casa/local/fellcam/';
-    const FELLCAM_INDEX = FELLCAM_BASE + 'index.json';
-    let tlFiles = [], tlIndex = 0, tlPlaying = false, tlInterval = null, tlSpeed = 100, fellcamIndex = null;
-
-    function refreshFellCam() {
-      const img = document.getElementById('fellcamImg');
-      const sub = document.getElementById('fellcamUpdated');
-      const headerSub = document.getElementById('fellcamWeatherSub');
-      if (!img) return;
-      img.src = 'https://rlpzmepeautd1v5pgoumz9aa2qhd92xd.ui.nabu.casa/local/fellcam.jpg?t=' + Date.now();
-      const now = new Date();
-      if (sub) sub.textContent = 'Updated ' + now.toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'});
-      if (headerSub) {
-        const hour = now.getHours();
-        const sunriseH = 4.5, sunsetH = 21.5;
-        const isDaylight = hour >= Math.floor(sunriseH) && hour < Math.ceil(sunsetH);
-        headerSub.textContent = isDaylight ? 'Reolink · Updated ' + now.toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'}) : 'Reolink · Daylight hours only';
-      }
-    }
-    refreshFellCam();
-    setInterval(refreshFellCam, 5 * 60 * 1000);
-
-    async function loadFellcamIndex() {
-      try {
-        const r = await fetch(FELLCAM_INDEX + '?t=' + Date.now());
-        fellcamIndex = await r.json();
-        return fellcamIndex;
-      } catch(e) { return null; }
-    }
-
-    function toggleTimelapse() {
-      const overlay = document.getElementById('tlModalOverlay');
-      if (!overlay.classList.contains('open')) {
-        overlay.classList.add('open');
-        document.body.style.overflow = 'hidden';
-        initTimelapse();
-      } else {
-        overlay.classList.remove('open');
-        document.body.style.overflow = '';
-        tlStop();
-      }
-    }
-
-    document.addEventListener('keydown', e => { if (e.key === 'Escape') { const o = document.getElementById('tlModalOverlay'); if (o.classList.contains('open')) toggleTimelapse(); } });
-
-    async function initTimelapse() {
-      const idx = fellcamIndex || await loadFellcamIndex();
-      if (!idx || !idx.days || idx.days.length === 0) {
-        document.getElementById('tlDays').innerHTML = '<span style="color:#333;font-size:12px">No time-lapse available yet</span>';
-        return;
-      }
-      const daysEl = document.getElementById('tlDays');
-      daysEl.innerHTML = idx.days.map((d, i) => {
-        const label = i === 0 ? 'Today' : i === 1 ? 'Yesterday' : new Date(d.date).toLocaleDateString('en-GB', {day:'numeric',month:'short'});
-        return `<button class="tl-day-btn ${i===0?'active':''}" onclick="loadDay(${i})">${label} (${d.count})</button>`;
-      }).join('');
-      loadDay(0);
-    }
-
-    function loadDay(dayIdx) {
-      if (!fellcamIndex || !fellcamIndex.days[dayIdx]) return;
-      const day = fellcamIndex.days[dayIdx];
-      tlFiles = day.files.map(f => FELLCAM_BASE + f);
-      tlIndex = 0;
-      tlStop();
-      document.querySelectorAll('.tl-day-btn').forEach((b,i) => b.classList.toggle('active', i===dayIdx));
-      tlShowFrame(0);
-    }
-
-    function tlShowFrame(idx) {
-      if (!tlFiles.length) return;
-      idx = Math.max(0, Math.min(idx, tlFiles.length - 1));
-      tlIndex = idx;
-      document.getElementById('tlImg').src = tlFiles[idx];
-      tlUpdateUI(idx);
-    }
-
-    function tlTogglePlay() { tlPlaying ? tlStop() : tlPlay(); }
-
-    function tlUpdateUI(idx) {
-      const match = tlFiles[idx].match(/fellcam_(\d{4})(\d{2})(\d{2})_(\d{2})(\d{2})/);
-      if (match) document.getElementById('tlTime').textContent = `${match[4]}:${match[5]}`;
-      const pct = tlFiles.length > 1 ? (idx / (tlFiles.length - 1)) * 100 : 0;
-      document.getElementById('tlProgressFill').style.width = pct + '%';
-      document.getElementById('tlCounter').textContent = `${idx+1} / ${tlFiles.length}`;
-    }
-
-    function tlPlay() {
-      if (!tlFiles.length) return;
-      tlPlaying = true;
-      document.getElementById('tlPlayBtn').textContent = '⏸ Pause';
-      function tlAdvance() {
-        if (!tlPlaying) return;
-        tlIndex = tlIndex >= tlFiles.length - 1 ? 0 : tlIndex + 1;
-        const img = document.getElementById('tlImg');
-        const next = new Image();
-        next.onload = () => {
-          if (!tlPlaying) return;
-          img.src = next.src;
-          tlUpdateUI(tlIndex);
-          tlInterval = setTimeout(tlAdvance, tlSpeed);
-        };
-        next.onerror = () => { if (tlPlaying) tlInterval = setTimeout(tlAdvance, tlSpeed); };
-        next.src = tlFiles[tlIndex];
-      }
-      tlInterval = setTimeout(tlAdvance, tlSpeed);
-    }
-
-    function tlStop() {
-      tlPlaying = false;
-      clearTimeout(tlInterval);
-      const btn = document.getElementById('tlPlayBtn');
-      if (btn) btn.textContent = '▶ Play';
-    }
-
-    function tlSetSpeed(v) {
-      tlSpeed = parseInt(v);
-      if (tlPlaying) { tlStop(); tlPlay(); }
-    }
 
     document.getElementById('navHamburger').addEventListener('click', function() {
       this.classList.toggle('open');
