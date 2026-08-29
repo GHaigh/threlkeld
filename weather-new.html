@@ -2093,7 +2093,6 @@
           hideOfflineBanner(); 
           saveCache({ current: data, history: historyData });
 
-          // FIX: Render DOM structure first before executing dependent sub-renderers
           renderCurrent(data);
           loadForecast();
           renderStargazing(data);
@@ -2111,6 +2110,9 @@
           applyRainfallHistory().finally(() => {
             if (currentData) {
               renderCurrent(currentData);
+              loadForecast();
+              renderStargazing(currentData);
+
               renderMiniCharts();
               renderRecords(historyData);
               renderGDD(historyData);
