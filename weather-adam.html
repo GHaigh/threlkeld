@@ -1164,7 +1164,10 @@
 
         status.textContent = 'Generating ' + label + '… (this can take a few seconds)';
         try {
-          const qs = new URLSearchParams({ start, end, id, label }).toString();
+          // force:true bypasses the backend's "already generated, skip" guard -
+          // this button always means "regenerate", the archive list is for
+          // reopening past reviews without regenerating them.
+          const qs = new URLSearchParams({ start, end, id, label, force: 'true' }).toString();
           fetch(GEN_URL + '?' + qs, { method:'POST' }).catch(()=>{});
         } catch(e) {}
 
