@@ -1944,6 +1944,19 @@
 
     // ── Stargazing ────────────────────────────────────────────
     async function renderStargazing(current) {
+      // The stargazing/aurora cards live inside #mainContent, which only gets
+      // built once the first live weather message renders it - deliberately
+      // decoupled from that (see call site) so this doesn't wait on MQTT, but
+      // that means these elements may not exist yet on the very first call.
+      // Wait for them rather than crash, and give up gracefully if the page
+      // never finishes loading for some other reason.
+      if (!document.getElementById('stargazingCard') || !document.getElementById('auroraCard')) {
+        if (!renderStargazing._waited) renderStargazing._waited = 0;
+        if (renderStargazing._waited > 30000) return; // ~30s, then give up silently
+        renderStargazing._waited += 300;
+        setTimeout(() => renderStargazing(current), 300);
+        return;
+      }
       try {
         const lat = 54.616, lon = -3.056;
 
