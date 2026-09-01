@@ -57,6 +57,8 @@
     .month-chip { font-size: 12px; color: var(--cream-dim); background: var(--forest-dark); border: 1px solid var(--divider); border-radius: 6px; padding: 5px 12px; cursor: pointer; transition: all 0.15s; }
     .month-chip:hover { color: var(--cream); border-color: var(--sage); }
     .month-chip.active { color: var(--forest-deep); background: var(--sage); border-color: var(--sage); font-weight: 500; }
+    .period-filter-group { margin-bottom: 10px; }
+    .period-filter-label { font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--cream-dim); margin-bottom: 8px; }
 
     /* Two-column record: diary (right) + firsts worm (left) */
     .record-cols { display: grid; grid-template-columns: 300px 1fr; gap: 48px; align-items: start; }
@@ -269,17 +271,19 @@
       <div class="masthead-updated" id="mastheadUpdated"></div>
     </div>
 
-    <!-- Periodic reviews: the readable, reflective pieces -->
-    <div id="reviewsSection">
-      <div class="section-label">Reviews</div>
-      <div id="reviews"></div>
-    </div>
-
     <!-- The Record: daily diary with species firsts woven in as markers -->
     <div class="section-label">The Record</div>
-    <p class="firsts-intro">Each day's entry, newest first. Filter by month below.</p>
+    <p class="firsts-intro">Each day's entry, newest first. Filter by month or season below.</p>
     <div class="firsts-caveat" id="firstsCaveat"></div>
-    <div class="month-filter" id="monthFilter"></div>
+    <div class="period-filter-group" id="monthFilterGroup">
+      <div class="period-filter-label">By month</div>
+      <div class="month-filter" id="monthFilter"></div>
+    </div>
+    <div class="period-filter-group" id="seasonFilterGroup">
+      <div class="period-filter-label">By season</div>
+      <div class="month-filter" id="seasonFilter"></div>
+    </div>
+    <div id="periodReview"></div>
     <div class="record-cols">
       <div class="worm-col">
         <div class="worm-col-label">Bird firsts of the year</div>
@@ -308,39 +312,48 @@
       return d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
     }
 
-    function renderReviews(reviews) {
-      const el = document.getElementById('reviews');
-      const all = []
-        .concat((reviews.annual || []).map(r => ({ ...r, _kicker: 'Year in Review' })))
-        .concat((reviews.seasonal || []).map(r => ({ ...r, _kicker: 'Season in Review' })))
-        .concat((reviews.monthly || []).map(r => ({ ...r, _kicker: 'Month in Review' })));
-      // newest first by period string
-      all.sort((a, b) => (a.period < b.period ? 1 : -1));
+    // Maps a seasonal review's id (e.g. "2026-summer", "2025-winter") to its
+    // meteorological date range. Winter's id is named by the December it
+    // starts in, spanning into February of the following year.
+    function seasonDateRange(id) {
+      const m = id.match(/^(\d{4})-(spring|summer|autumn|winter)$/);
+      if (!m) return null;
+      const y = +m[1], season = m[2];
+      if (season === 'spring') return { start: y + '-03-01', end: y + '-05-31' };
+      if (season === 'summer') return { start: y + '-06-01', end: y + '-08-31' };
+      if (season === 'autumn') return { start: y + '-09-01', end: y + '-11-30' };
+      const febEnd = new Date(y + 1, 2, 0).getDate(); // day 0 of March = last day of Feb
+      return { start: y + '-12-01', end: (y + 1) + '-02-' + String(febEnd).padStart(2, '0') };
+    }
 
-      if (!all.length) {
-        document.getElementById('reviewsSection').style.display = 'none';
-        return;
+    function formatSeasonLabel(label) {
+      return label.replace(/\b(\d{4})\b/, y => "'" + y.slice(2));
+    }
+
+    // Renders the single review (if any) matching the currently active
+    // month or season, at the top of The Record - not a flat list of all
+    // reviews, just the one relevant to whatever period is selected.
+    function renderReviewBlock(review, kicker) {
+      const el = document.getElementById('periodReview');
+      if (!review) { el.innerHTML = ''; return; }
+      let stats = '';
+      if (review.stats) {
+        const s = review.stats;
+        const bits = [];
+        if (s.birdSpecies != null) bits.push(`<span class="rstat"><b>${s.birdSpecies}</b>bird species</span>`);
+        if (s.topBird) bits.push(`<span class="rstat"><b>${s.topBird}</b>most heard</span>`);
+        if (s.batBestNight != null) bits.push(`<span class="rstat"><b>${s.batBestNight}</b>best bat night</span>`);
+        if (s.warmestDay != null) bits.push(`<span class="rstat"><b>${s.warmestDay}°C</b>warmest day</span>`);
+        if (s.totalRain != null) bits.push(`<span class="rstat"><b>${s.totalRain}mm</b>total rain</span>`);
+        if (bits.length) stats = `<div class="review-stats">${bits.join('')}</div>`;
       }
-      el.innerHTML = all.map(r => {
-        let stats = '';
-        if (r.stats) {
-          const s = r.stats;
-          const bits = [];
-          if (s.birdSpecies != null) bits.push(`<span class="rstat"><b>${s.birdSpecies}</b>bird species</span>`);
-          if (s.topBird) bits.push(`<span class="rstat"><b>${s.topBird}</b>most heard</span>`);
-          if (s.batBestNight != null) bits.push(`<span class="rstat"><b>${s.batBestNight}</b>best bat night</span>`);
-          if (s.warmestDay != null) bits.push(`<span class="rstat"><b>${s.warmestDay}°C</b>warmest day</span>`);
-          if (s.totalRain != null) bits.push(`<span class="rstat"><b>${s.totalRain}mm</b>total rain</span>`);
-          if (bits.length) stats = `<div class="review-stats">${bits.join('')}</div>`;
-        }
-        return `
-          <div class="review">
-            <div class="review-kicker">${r._kicker}</div>
-            <div class="review-title">${r.label || r.period}</div>
-            <div class="review-body">${r.summary}</div>
-            ${stats}
-          </div>`;
-      }).join('');
+      el.innerHTML = `
+        <div class="review">
+          <div class="review-kicker">${kicker}</div>
+          <div class="review-title">${review.label || review.period}</div>
+          <div class="review-body">${review.summary}</div>
+          ${stats}
+        </div>`;
     }
 
     function renderDiary(history) {
@@ -373,6 +386,9 @@
 
     let _firstsData = null;
     let _historyData = null;
+    let _reviewsData = { monthly: [], seasonal: [], annual: [] };
+    let _activePeriodType = 'month'; // 'month' | 'season'
+    let _activeSeason = null;
 
     function buildFirstMarkers(phenology) {
       // phenology = { '2026': { 'Species': {date, timestamp}, ... } }
@@ -452,6 +468,9 @@
       const wormEl = document.getElementById('wormFirsts');
       const cav = document.getElementById('firstsCaveat');
       const mf = document.getElementById('monthFilter');
+      const mfGroup = document.getElementById('monthFilterGroup');
+      const sf = document.getElementById('seasonFilter');
+      const sfGroup = document.getElementById('seasonFilterGroup');
       const history = Array.isArray(_historyData) ? _historyData : [];
       const fb = buildFirstMarkers(_firstsData || {});
       const firstMarkers = fb.markers;
@@ -465,22 +484,67 @@
       const allDates = history.map(e=>e.date).concat(firstMarkers.map(f=>f.date));
       if (!allDates.length) {
         diaryEl.innerHTML = '<div class="empty">The record is just beginning. Entries will appear here as they are written each morning.</div>';
-        wormEl.innerHTML = ''; mf.style.display = 'none';
+        wormEl.innerHTML = ''; mfGroup.style.display = 'none'; sfGroup.style.display = 'none';
+        renderReviewBlock(null);
         return;
       }
       const monthsPresent = [...new Set(allDates.map(monthKey))].sort().reverse();
       const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
       const fmtMonth = mk => { const [y,m]=mk.split('-'); return monthNames[+m-1].slice(0,3)+" '"+y.slice(2); };
-      if (_activeMonth === null || !monthsPresent.includes(_activeMonth)) _activeMonth = monthsPresent[0];
 
-      if (monthsPresent.length > 1) {
-        mf.style.display = '';
-        mf.innerHTML = monthsPresent.map(mk => `<span class="month-chip${mk===_activeMonth?' active':''}" data-month="${mk}">${fmtMonth(mk)}</span>`).join('');
-        mf.querySelectorAll('.month-chip').forEach(c => c.addEventListener('click', () => { _activeMonth = c.getAttribute('data-month'); renderJournal(); }));
-      } else { mf.style.display = 'none'; }
+      // seasons present come from the reviews feed, not the diary - a season
+      // review can exist (and be worth browsing) independent of which months
+      // happen to have daily diary entries.
+      const seasonsPresent = (_reviewsData.seasonal || [])
+        .map(r => ({ ...r, _range: seasonDateRange(r.period) }))
+        .filter(r => r._range)
+        .sort((a, b) => (a._range.start < b._range.start ? 1 : -1));
 
-      // ---- RIGHT: diary entries for active month, newest first ----
-      const diaryShown = history.filter(e => monthKey(e.date) === _activeMonth).sort((a,b)=> a.date<b.date?1:-1);
+      if (_activePeriodType === 'season' && !seasonsPresent.some(s => s.period === _activeSeason)) {
+        _activePeriodType = 'month'; // the season we had selected is no longer available
+      }
+      if (_activePeriodType === 'month' && (_activeMonth === null || !monthsPresent.includes(_activeMonth))) {
+        _activeMonth = monthsPresent[0];
+      }
+      if (_activePeriodType === 'season' && _activeSeason === null && seasonsPresent.length) {
+        _activeSeason = seasonsPresent[0].period;
+      }
+
+      // ---- month chip row ----
+      if (monthsPresent.length) {
+        mfGroup.style.display = '';
+        mf.innerHTML = monthsPresent.map(mk => `<span class="month-chip${(_activePeriodType==='month' && mk===_activeMonth)?' active':''}" data-month="${mk}">${fmtMonth(mk)}</span>`).join('');
+        mf.querySelectorAll('.month-chip').forEach(c => c.addEventListener('click', () => {
+          _activePeriodType = 'month'; _activeMonth = c.getAttribute('data-month'); renderJournal();
+        }));
+      } else { mfGroup.style.display = 'none'; }
+
+      // ---- season chip row ----
+      if (seasonsPresent.length) {
+        sfGroup.style.display = '';
+        sf.innerHTML = seasonsPresent.map(s => `<span class="month-chip${(_activePeriodType==='season' && s.period===_activeSeason)?' active':''}" data-season="${s.period}">${formatSeasonLabel(s.label || s.period)}</span>`).join('');
+        sf.querySelectorAll('.month-chip').forEach(c => c.addEventListener('click', () => {
+          _activePeriodType = 'season'; _activeSeason = c.getAttribute('data-season'); renderJournal();
+        }));
+      } else { sfGroup.style.display = 'none'; }
+
+      // ---- work out the active date range + the one review that matches it ----
+      let range, review, kicker, emptyNoun;
+      if (_activePeriodType === 'season' && _activeSeason) {
+        range = seasonDateRange(_activeSeason);
+        review = (_reviewsData.seasonal || []).find(r => r.period === _activeSeason) || null;
+        kicker = 'Season in Review';
+        emptyNoun = 'this season';
+      } else {
+        range = { start: _activeMonth + '-01', end: _activeMonth + '-31' };
+        review = (_reviewsData.monthly || []).find(r => r.period === _activeMonth) || null;
+        kicker = 'Month in Review';
+        emptyNoun = 'this month';
+      }
+      renderReviewBlock(review, kicker);
+
+      // ---- RIGHT: diary entries for the active period, newest first ----
+      const diaryShown = history.filter(e => e.date >= range.start && e.date <= range.end).sort((a,b)=> a.date<b.date?1:-1);
       diaryEl.innerHTML = diaryShown.length ? diaryShown.map(e => {
         const d = e.data || {}; const bits = [];
         if (d.birds && d.birds.total24h != null) bits.push(`<span><b>${d.birds.total24h}</b> bird detections</span>`);
@@ -489,10 +553,10 @@
         if (d.sky && d.sky.moonPhase) bits.push(`<span>${moonSVG(d.sky.moonPhase)}${d.sky.moonPhase}</span>`);
         const data = bits.length ? `<div class="diary-data">${bits.join('')}</div>` : '';
         return `<div class="diary-entry"><div class="diary-date">${fmtDate(e.date)}</div><div class="diary-text">${e.summary}</div>${data}</div>`;
-      }).join('') : '<div class="worm-empty">No diary entries this month yet.</div>';
+      }).join('') : `<div class="worm-empty">No diary entries for ${emptyNoun} yet.</div>`;
 
-      // ---- LEFT: firsts worm for active month, newest first ----
-      const firstsShown = firstMarkers.filter(f => monthKey(f.date) === _activeMonth).sort((a,b)=> a.date<b.date?1:-1);
+      // ---- LEFT: firsts worm for the active period, newest first ----
+      const firstsShown = firstMarkers.filter(f => f.date >= range.start && f.date <= range.end).sort((a,b)=> a.date<b.date?1:-1);
       if (firstsShown.length) {
         const nodes = firstsShown.map(f => {
           const dt = new Date(f.date+'T12:00:00');
@@ -503,7 +567,7 @@
         wormEl.innerHTML = `<div class="worm-wrap"><svg class="worm-svg" id="wormSvg" preserveAspectRatio="none"><defs><linearGradient id="wormGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--sage)"/><stop offset="100%" stop-color="var(--divider)"/></linearGradient></defs><path class="worm-path-grad" id="wormPath"/></svg>${nodes}</div>`;
         requestAnimationFrame(drawWorm);
       } else {
-        wormEl.innerHTML = '<div class="worm-empty">No new species firsts this month.</div>';
+        wormEl.innerHTML = `<div class="worm-empty">No new species firsts for ${emptyNoun}.</div>`;
       }
     }
 
@@ -540,8 +604,8 @@
 
     fetch(REVIEWS_URL + '?t=' + Date.now())
       .then(r => r.ok ? r.json() : { monthly: [], seasonal: [], annual: [] })
-      .then(renderReviews)
-      .catch(() => { document.getElementById('reviewsSection').style.display = 'none'; });
+      .then(data => { _reviewsData = (data && typeof data === 'object') ? data : { monthly: [], seasonal: [], annual: [] }; renderJournal(); })
+      .catch(() => { _reviewsData = { monthly: [], seasonal: [], annual: [] }; renderJournal(); });
 
     fetch(HISTORY_URL + '?t=' + Date.now())
       .then(r => r.ok ? r.json() : [])
