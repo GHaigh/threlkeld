@@ -185,7 +185,7 @@
     </div>
 
     <div class="foot">
-      <span>Created for Beneath Blencathra</span>
+      <span>Rainfall &amp; conditions quantified by Open-Meteo · Summary by the Nature Watch naturalist</span>
       <span class="brand">threlkeld.info</span>
     </div>
   </div>
@@ -258,8 +258,25 @@
   Chart.defaults.borderColor = 'rgba(0,0,0,0.12)';
   Chart.defaults.font.family = "'Source Sans 3', sans-serif";
   Chart.defaults.font.size = 7;
+
+  // Month-only reports label each point with a plain day number ("1".."31"), which
+  // needs no help. Multi-month reports (seasons, custom periods) label each point
+  // "MM-DD" instead (e.g. "06-01") so points from different months don't collide -
+  // reformatted here to "01-June" for the axis so it reads at a glance rather than
+  // as a raw ISO fragment.
+  const MONTH_NAMES_FULL = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  function formatDayTick(raw) {
+    const parts = String(raw).split('-');
+    if (parts.length !== 2) return raw; // plain day number - nothing to reformat
+    const mm = parseInt(parts[0], 10), dd = parseInt(parts[1], 10);
+    if (!mm || !dd || mm < 1 || mm > 12) return raw;
+    return String(dd).padStart(2, '0') + '-' + MONTH_NAMES_FULL[mm - 1];
+  }
+
   const noLegend = { plugins: { legend: { display: false } }, maintainAspectRatio: false,
-    scales: { x: { grid: { display:false }, ticks:{ maxRotation:0, autoSkip:true, maxTicksLimit:8 } },
+    scales: { x: { grid: { display:false },
+                   ticks:{ maxRotation:0, autoSkip:true, maxTicksLimit:8,
+                           callback: function(value) { return formatDayTick(this.getLabelForValue(value)); } } },
               y: { grid: { color:'rgba(0,0,0,0.08)' }, ticks:{ maxTicksLimit:4 } } } };
 
   let _charts = [];
