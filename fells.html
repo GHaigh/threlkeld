@@ -402,6 +402,13 @@
       border: 1px solid var(--divider);
       margin-bottom: 28px;
     }
+    /* OpenStreetMap's standard tiles are light-themed - invert them to
+       approximate this site's dark map style (used since CARTO's dark
+       basemap started requiring an API key). Popups/markers are drawn on
+       top and unaffected since the filter only applies to the tile pane. */
+    #fellMap .leaflet-tile-pane {
+      filter: invert(1) hue-rotate(180deg) brightness(0.95) contrast(0.9) saturate(0.6);
+    }
     .leaflet-popup-content-wrapper {
       background: var(--forest-dark);
       color: var(--cream);
@@ -1044,9 +1051,14 @@
         zoomControl: true
       });
 
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        attribution: '© OpenStreetMap © CARTO',
-        maxZoom: 18
+      // CARTO's free anonymous basemap tiles (dark_all) started requiring an
+      // API key and stamping "API KEY REQUIRED" across the map for
+      // unregistered use. Standard OpenStreetMap tiles are free and keyless -
+      // they're just light-themed by default, so a CSS filter on the tile
+      // pane (see .leaflet-tile-pane rule below) approximates the dark look.
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors',
+        maxZoom: 19
       }).addTo(fellMap);
 
       // Threlkeld home marker
