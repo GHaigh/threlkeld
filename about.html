@@ -241,8 +241,8 @@
       </div>
       <div class="stack-card">
         <div class="stack-layer">Maps</div>
-        <div class="stack-name">Leaflet · CartoDB</div>
-        <div class="stack-desc">Open source mapping library with dark CartoDB tiles. Used on the wildlife observation map and fell summit map. No API key, no usage limits.</div>
+        <div class="stack-name">Leaflet · OpenStreetMap</div>
+        <div class="stack-desc">Open source mapping library with OpenStreetMap tiles, styled with a CSS dark-theme filter. Used on the wildlife observation map and fell summit map. No API key, no usage limits.</div>
       </div>
       <div class="stack-card">
         <div class="stack-layer">Hosting</div>
@@ -266,10 +266,15 @@
     </div>
 
     <h2>Running Costs</h2>
-    <p>Almost zero. GitHub Pages is free. HiveMQ's public broker is free. Open-Meteo, iNaturalist, the EA API and CartoDB tiles are all free with no key required. The only costs are home electricity for the Raspberry Pis (~£3/month combined) and the hardware purchased once.</p>
+    <p>Almost zero. GitHub Pages is free. HiveMQ's public broker is free. Open-Meteo, iNaturalist, the EA API and OpenStreetMap tiles are all free with no key required. The only costs are home electricity for the Raspberry Pis (~£3/month combined) and the hardware purchased once.</p>
 
     <h2>Recent Changes</h2>
     <div class="hardware-list" style="margin-bottom:28px">
+      <div class="hardware-item"><span class="hardware-name">📰 Beneath Blencathra — printable monthly reports</span><span class="hardware-spec">Sep 2026 · Monthly weather and wildlife reviews now lay out as a proper printable report, almanac-style, with inverted black-on-white charts and one-tap PDF export</span></div>
+      <div class="hardware-item"><span class="hardware-name">🌧️ Monthly Weather Review now uses real historical rainfall</span><span class="hardware-spec">Sep 2026 · Switched from a live feed with only a short rolling window to the Environment Agency's own historical archive for the local gauge, so every monthly total is verified and durable · The report now also judges "wet" or "dry" against this valley's own multi-year rainfall record rather than a generic English average</span></div>
+      <div class="hardware-item"><span class="hardware-name">🦇 Monthly Wildlife Review now reliably includes bats</span><span class="hardware-spec">Sep 2026 · Fixed a chain of bugs that left the report generating once and then serving that same stale, batless copy every month · Each report now regenerates properly and reflects that month's real bird and bat activity in full</span></div>
+      <div class="hardware-item"><span class="hardware-name">🛡️ Bat detection history hardened</span><span class="hardware-spec">Sep 2026 · The stored record now self-heals from its backup file if the detector restarts, and the storage cap raised tenfold so a full season of nightly passes is never truncated</span></div>
+      <div class="hardware-item"><span class="hardware-name">🗺️ Summit map moved to open tiles</span><span class="hardware-spec">Sep 2026 · Switched the fell summit map from CartoDB's dark tiles, now requiring a paid key, to free OpenStreetMap tiles with a CSS dark-theme filter · Also fixed a timing bug that occasionally left the stargazing and northern lights cards blank on first load</span></div>
       <div class="hardware-item"><span class="hardware-name">⚙️ Data &amp; How-To page</span><span class="hardware-spec">Jun 2026 · Every feed downloadable in JSON or CSV, plus a full build-your-own guide — the sensors, the pipeline and the code, so anyone could put one on their own patch. Open data, openly built</span></div>
       <div class="hardware-item"><span class="hardware-name">🐿️ Red squirrel camera <em style="color:var(--sage);font-style:normal">(beta)</em></span><span class="hardware-spec">Jun 2026 · A feeder camera that wakes on motion, then uses AI vision to tell red from grey · Reds are celebrated and logged; grey incursions are recorded for local conservation · <a href="wildlife_cameras.html" style="color:var(--sage)">Take a look →</a></span></div>
       <div class="hardware-item"><span class="hardware-name">✉️ Weekly nature email</span><span class="hardware-spec">Jun 2026 · "This Week in Threlkeld" — a free Sunday-evening summary of the valley's week, opening with a written naturalist's account and the week's figures across birds, bats, weather, river and sky</span></div>
@@ -347,7 +352,7 @@
 
     <footer>
       <div class="footer-text">Threlkeld, Cumbria &middot; Northern Lake District</div>
-      <div class="footer-brand">Threlkeld Nature Watch &middot; Updated 29 Jun 2026 (b)</div>
+      <div class="footer-brand">Threlkeld Nature Watch &middot; Updated 1 Sep 2026</div>
     </footer>
   </div>
 
