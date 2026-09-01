@@ -389,6 +389,7 @@
     let _reviewsData = { monthly: [], seasonal: [], annual: [] };
     let _activePeriodType = 'month'; // 'month' | 'season'
     let _activeSeason = null;
+    let _userSelectedPeriod = false; // becomes true the moment the visitor clicks a chip
 
     function buildFirstMarkers(phenology) {
       // phenology = { '2026': { 'Species': {date, timestamp}, ... } }
@@ -503,7 +504,20 @@
       if (_activePeriodType === 'season' && !seasonsPresent.some(s => s.period === _activeSeason)) {
         _activePeriodType = 'month'; // the season we had selected is no longer available
       }
-      if (_activePeriodType === 'month' && (_activeMonth === null || !monthsPresent.includes(_activeMonth))) {
+      // Default selection: until the visitor has clicked a chip themselves, always show
+      // whichever month has the NEWEST DIARY ENTRY - recomputed on every render, not just
+      // when the previous choice vanishes. The three data feeds (firsts, reviews, history)
+      // load independently and each triggers its own render; without this, an early render
+      // that fires before the diary history has arrived could lock in a stale default (e.g.
+      // from a species-first date) that a later, fuller render would never override, because
+      // that older month would still be a valid member of the eventually-larger month list.
+      if (!_userSelectedPeriod) {
+        const newestDiaryMonth = history.length
+          ? monthKey(history.reduce((max, e) => (e.date > max ? e.date : max), history[0].date))
+          : null;
+        _activePeriodType = 'month';
+        _activeMonth = newestDiaryMonth || monthsPresent[0] || null;
+      } else if (_activePeriodType === 'month' && (_activeMonth === null || !monthsPresent.includes(_activeMonth))) {
         _activeMonth = monthsPresent[0];
       }
       if (_activePeriodType === 'season' && _activeSeason === null && seasonsPresent.length) {
@@ -515,7 +529,7 @@
         mfGroup.style.display = '';
         mf.innerHTML = monthsPresent.map(mk => `<span class="month-chip${(_activePeriodType==='month' && mk===_activeMonth)?' active':''}" data-month="${mk}">${fmtMonth(mk)}</span>`).join('');
         mf.querySelectorAll('.month-chip').forEach(c => c.addEventListener('click', () => {
-          _activePeriodType = 'month'; _activeMonth = c.getAttribute('data-month'); renderJournal();
+          _userSelectedPeriod = true; _activePeriodType = 'month'; _activeMonth = c.getAttribute('data-month'); renderJournal();
         }));
       } else { mfGroup.style.display = 'none'; }
 
@@ -524,7 +538,7 @@
         sfGroup.style.display = '';
         sf.innerHTML = seasonsPresent.map(s => `<span class="month-chip${(_activePeriodType==='season' && s.period===_activeSeason)?' active':''}" data-season="${s.period}">${formatSeasonLabel(s.label || s.period)}</span>`).join('');
         sf.querySelectorAll('.month-chip').forEach(c => c.addEventListener('click', () => {
-          _activePeriodType = 'season'; _activeSeason = c.getAttribute('data-season'); renderJournal();
+          _userSelectedPeriod = true; _activePeriodType = 'season'; _activeSeason = c.getAttribute('data-season'); renderJournal();
         }));
       } else { sfGroup.style.display = 'none'; }
 
