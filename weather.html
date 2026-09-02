@@ -1620,6 +1620,10 @@
       // whatever was last successfully fetched immediately, at no network cost.
       if (renderStargazing._lastStargazingHTML) document.getElementById('stargazingCard').innerHTML = renderStargazing._lastStargazingHTML;
       if (renderStargazing._lastAuroraHTML) document.getElementById('auroraCard').innerHTML = renderStargazing._lastAuroraHTML;
+      // Same restoration for the forecast, which used to be wiped by this exact rebuild
+      // immediately after loadForecast() populated it - see loadForecast()'s call site.
+      if (loadForecast._lastDaysHTML) document.getElementById('forecastDays').innerHTML = loadForecast._lastDaysHTML;
+      if (loadForecast._lastHourlyHTML) document.getElementById('forecastHourly').innerHTML = loadForecast._lastHourlyHTML;
       refreshFellCam();
       renderMoonCalendar();
       renderISS();
@@ -1669,8 +1673,19 @@
     }
 
     async function loadForecast() {
+      // #forecastDays/#forecastHourly live inside #mainContent, rebuilt by renderCurrent()
+      // on every MQTT message. Now that this runs independently of MQTT (see call site),
+      // it can fire before that DOM exists yet on first load - wait for it instead of
+      // failing silently, same guard as renderStargazing().
+      if (!document.getElementById('forecastDays')) {
+        if (!loadForecast._waited) loadForecast._waited = 0;
+        if (loadForecast._waited > 30000) return; // ~30s, then give up silently
+        loadForecast._waited += 300;
+        setTimeout(loadForecast, 300);
+        return;
+      }
       try {
-        const res = await fetch(
+        const res = await fetchWithRetry(
           'https://api.open-meteo.com/v1/forecast?latitude=54.616&longitude=-3.056&elevation=180' +
           '&daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max,windspeed_10m_max,windgusts_10m_max' +
           '&hourly=temperature_2m,weathercode,precipitation_probability,precipitation,windspeed_10m,windgusts_10m' +
@@ -1683,7 +1698,7 @@
         if (!daysEl) return;
 
         const today = new Date().toDateString();
-        daysEl.innerHTML = data.daily.time.map((date, i) => {
+        const daysHTML = data.daily.time.map((date, i) => {
           const d = new Date(date);
           const isToday = d.toDateString() === today;
           const dayName = isToday ? 'Today' : d.toLocaleDateString('en-GB', { weekday: 'short' });
@@ -1708,6 +1723,7 @@
               <div class="forecast-day-wind">↑ ${gusts} mph gusts</div>
             </div>`;
         }).join('');
+        daysEl.innerHTML = loadForecast._lastDaysHTML = daysHTML;
 
         // ── Hourly for today ──
         const hourlyEl = document.getElementById('forecastHourly');
@@ -1723,7 +1739,7 @@
 
         const maxPrecip = Math.max(...todayHours.map(({ i }) => data.hourly.precipitation[i] || 0), 1);
 
-        hourlyEl.innerHTML = `
+        hourlyEl.innerHTML = loadForecast._lastHourlyHTML = `
           <div class="forecast-hourly-title">Today · Hourly</div>
           <div class="hourly-row">
             ${todayHours.map(({ t, i }) => {
@@ -1748,8 +1764,12 @@
           </div>`;
 
       } catch(e) {
-        const el = document.getElementById('forecastDays');
-        if (el) el.innerHTML = '<div style="color:var(--cream-dim);font-style:italic">Forecast unavailable</div>';
+        // Keep whatever forecast was last successfully fetched rather than replacing
+        // good data with an error on a single transient API hiccup.
+        const daysEl2 = document.getElementById('forecastDays');
+        const hourlyEl2 = document.getElementById('forecastHourly');
+        if (daysEl2) daysEl2.innerHTML = loadForecast._lastDaysHTML || '<div style="color:var(--cream-dim);font-style:italic">Forecast unavailable</div>';
+        if (hourlyEl2 && loadForecast._lastHourlyHTML) hourlyEl2.innerHTML = loadForecast._lastHourlyHTML;
       }
     }
 
@@ -2174,6 +2194,15 @@
     renderStargazing();
     setInterval(renderStargazing, 15 * 60 * 1000);
 
+    // The 7-day/hourly forecast had the exact same problem, and worse: loadForecast()
+    // was called immediately before renderCurrent() on every MQTT tick, so even when
+    // its fetch succeeded, the very next line's #mainContent rebuild usually wiped the
+    // result straight back to the loading placeholder before it was ever seen. Open-Meteo's
+    // own forecast only updates hourly anyway, so load once and refresh every 15 minutes,
+    // same as stargazing/aurora above.
+    loadForecast();
+    setInterval(loadForecast, 15 * 60 * 1000);
+
     const client = mqtt.connect(`wss://${MQTT_HOST}:${MQTT_PORT}/mqtt`);
 
     client.on('connect', () => {
@@ -2207,7 +2236,6 @@
         if (topic === CURRENT_TOPIC) {
           currentData = data;
           hideOfflineBanner(); saveCache({ current: data, history: historyData });
-          loadForecast();
           renderCurrent(data);
           if (historyData) {
             renderMiniCharts();
