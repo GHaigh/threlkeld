@@ -610,8 +610,34 @@
       box-shadow: 0 4px 12px rgba(0,0,0,0.4);
     }
 
+    /* Readable B&W buttons (inactive = white/black outline, active = black/white) —
+       .range-btn.active/.apply-btn use var(--forest-light) for their background, which
+       in this print theme is the same black as var(--cream) text, so without this
+       override the "active"/"apply" state is black text on a black background. */
+    .range-btn {
+      background: #fff !important; color: #000 !important;
+      border: 1px solid #000 !important;
+    }
+    .range-btn.active {
+      background: #000 !important; color: #fff !important;
+      border: 1px solid #000 !important;
+    }
+    .apply-btn {
+      background: #fff !important; color: #000 !important;
+      border: 1px solid #000 !important;
+    }
+    .apply-btn:hover { background: #000 !important; color: #fff !important; }
+    .date-input { background: #fff !important; color: #000 !important; border: 1px solid #000 !important; }
+    .date-sep { color: #000 !important; }
+
     @media print {
       .no-print { display: none !important; }
+      nav, .nav-home, .nav-links, .status-bar, #statusDot, #statusText,
+      .range-btn, .range-buttons, button, .modal-overlay { display: none !important; }
+      body { background: #fff !important; color: #000 !important; }
+      .page { max-width: 100% !important; padding: 0 !important; }
+      a { color: #000 !important; text-decoration: none !important; }
+      @page { margin: 1.5cm; }
     }
   </style>
   <script src="https://cdn.counter.dev/script.js" data-id="0f7db49f-3699-43bc-b09e-d45b58c39067" data-utcoffset="1"></script>
