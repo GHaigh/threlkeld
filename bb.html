@@ -1,0 +1,2268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <meta name="theme-color" content="#0d1a0d">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Threlkeld">
+    <meta property="og:type" content="website">
+  <meta property="og:title" content="Weather &amp; Wildlife History for Beneath Blencathra · Threlkeld Nature Watch">
+  <meta property="og:description" content="Monthly and seasonal weather and wildlife summaries for Threlkeld, Cumbria — built for the village magazine.">
+  <meta property="og:url" content="https://threlkeld.info/bb.html">
+  <meta property="og:image" content="https://threlkeld.info/favicon.svg">
+  <meta property="og:site_name" content="Threlkeld Nature Watch">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Weather &amp; Wildlife History for Beneath Blencathra · Threlkeld Nature Watch">
+  <meta name="twitter:description" content="Monthly and seasonal weather and wildlife summaries for Threlkeld, Cumbria — built for the village magazine.">
+  <meta name="description" content="Monthly and seasonal weather and wildlife summaries for Threlkeld, Cumbria — built for the village magazine.">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Weather &amp; Wildlife History for Beneath Blencathra · Threlkeld Nature Watch</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Source+Sans+3:wght@300;400;500&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/5.3.4/mqtt.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --forest-deep: #0d1a0d;
+      --forest-dark: #1a2e1a;
+      --forest-mid: #243022;
+      --forest-light: #3b6d11;
+      --sage: #7ab87a;
+      --sage-light: #a8d4a8;
+      --cream: #e8f0e4;
+      --cream-dim: #b8c8b4;
+      --divider: rgba(122, 184, 122, 0.15);
+      --blue: #4a90a4;
+      --gold: #c8a84b;
+      --red: #c85a4a;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--forest-deep);
+      color: var(--cream);
+      font-family: 'Source Sans 3', sans-serif;
+      font-weight: 300;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: 
+        radial-gradient(ellipse at 20% 50%, rgba(59, 109, 17, 0.08) 0%, transparent 60%),
+        radial-gradient(ellipse at 80% 20%, rgba(122, 184, 122, 0.05) 0%, transparent 50%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .page {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+      position: relative;
+      z-index: 1;
+    }
+
+    nav {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      padding: 16px 0;
+      border-bottom: 1px solid var(--divider);
+      margin-bottom: 28px;
+    }
+
+    .nav-home {
+      font-size: 11px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--sage);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .nav-home:hover { color: var(--cream); }
+    .nav-divider { color: var(--divider); font-size: 12px; }
+
+    .nav-links {
+      display: flex;
+      gap: 20px;
+      margin-left: auto;
+    }
+
+    .nav-link {
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--cream-dim);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .nav-link:hover { color: var(--cream); }
+    .nav-link.active { color: var(--sage); }
+
+    header {
+      padding: 20px 0 28px;
+      border-bottom: 1px solid var(--divider);
+      margin-bottom: 28px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .header-eyebrow {
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--sage);
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .header-eyebrow::before {
+      content: '';
+      display: inline-block;
+      width: 20px;
+      height: 1px;
+      background: var(--sage);
+    }
+
+    h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(24px, 4vw, 40px);
+      font-weight: 400;
+      color: var(--cream);
+    }
+
+    h1 em { font-style: italic; color: var(--sage-light); }
+
+    .header-right {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 6px;
+    }
+
+    .status-dot {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--cream-dim);
+    }
+
+    .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #666;
+    }
+
+    .dot.connected {
+      background: var(--sage);
+      box-shadow: 0 0 6px var(--sage);
+      animation: pulse 2s infinite;
+    }
+
+    .dot.error { background: #e05555; }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .last-update { font-size: 11px; color: var(--cream-dim); }
+
+    /* Info tooltips */
+    .info-tooltip { position: relative; display: inline-flex; align-items: center; margin-left: 8px; cursor: help; }
+    .info-tooltip .info-icon { width: 16px; height: 16px; border-radius: 50%; background: rgba(122,184,122,0.2); border: 1px solid rgba(122,184,122,0.4); color: var(--sage); font-size: 10px; font-style: normal; font-family: serif; display: flex; align-items: center; justify-content: center; line-height: 1; flex-shrink: 0; }
+    .info-tooltip .info-box { display: none; position: absolute; top: 24px; left: 0; width: 280px; background: #1a2e1a; border: 1px solid rgba(122,184,122,0.3); border-radius: 8px; padding: 10px 14px; font-size: 12px; color: var(--cream-dim); line-height: 1.7; z-index: 100; box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
+    .info-tooltip:hover .info-box { display: block; }
+    .info-box strong { color: var(--cream); font-weight: 500; }
+
+
+    /* Stargazing + Aurora grid (was Stargazing + Aurora + Weather Cam; Weather Cam lives on weather.html) */
+    .stargazing-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 28px; align-items: start; }
+    @media (max-width: 800px) {
+      .stargazing-grid { grid-template-columns: 1fr; }
+      .sky-events-grid { grid-template-columns: 1fr !important; }
+    }
+
+    /* Review generator panels */
+    .review-section { background: var(--forest-dark); border: 1px solid var(--divider); border-radius: 10px; padding: 24px; margin: 0 0 28px; }
+    .review-section h2 { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 400; color: var(--cream); margin: 0 0 8px; }
+    .review-section p { font-size: 13px; color: var(--cream-dim); line-height: 1.7; margin: 0 0 16px; }
+    .review-controls { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 16px; }
+    .review-select { font-family: 'Source Sans 3', sans-serif; font-size: 13px; padding: 8px 12px; border: 1px solid var(--divider); border-radius: 6px; background: var(--forest-mid); color: var(--cream); }
+    .review-btn { font-family: 'Source Sans 3', sans-serif; font-size: 13px; font-weight: 500; padding: 8px 20px; border: none; border-radius: 6px; background: var(--sage); color: var(--forest-deep); cursor: pointer; letter-spacing: 0.03em; }
+    .review-btn:hover { background: var(--sage-light); }
+    .review-status { font-size: 12px; color: var(--cream-dim); }
+    .review-archive { font-size: 13px; }
+    .review-archive a { color: var(--sage); text-decoration: none; }
+    .review-archive a:hover { color: var(--sage-light); }
+
+    /* Records section */
+    .records-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; margin-bottom: 28px; }
+    .record-card { background: var(--forest-dark); border: 1px solid var(--divider); border-radius: 8px; padding: 14px; }
+    .record-icon { font-size: 20px; margin-bottom: 6px; }
+    .record-value { font-family: 'Playfair Display', serif; font-size: 24px; color: var(--cream); line-height: 1; margin-bottom: 2px; }
+    .record-label { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--sage); }
+    .record-date { font-size: 11px; color: var(--cream-dim); margin-top: 4px; }
+
+    /* Growing degree days */
+    .gdd-card {
+      background: var(--forest-dark);
+      border: 1px solid var(--divider);
+      border-radius: 10px;
+      padding: 20px 24px;
+      margin-bottom: 28px;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 24px;
+      align-items: start;
+    }
+    @media (max-width: 600px) { .gdd-card { grid-template-columns: 1fr; } }
+    .gdd-score { text-align: left; }
+    .gdd-value { font-family: 'Playfair Display', serif; font-size: 52px; color: var(--cream); line-height: 1; }
+    .gdd-unit { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--sage); margin-top: 4px; }
+    .gdd-facts { display: grid; grid-template-columns: 1fr 1fr; gap: 0 24px; margin-top: 4px; }
+    .gdd-fact { display: flex; justify-content: space-between; font-size: 12px; gap: 12px; border-bottom: 1px solid var(--divider); padding: 5px 0; }
+    .gdd-fact:nth-last-child(-n+2) { border-bottom: none; }
+    .gdd-fact-label { color: var(--cream-dim); white-space: nowrap; }
+    .gdd-fact-value { color: var(--cream); text-align: right; }
+    .gdd-progress { text-align: right; }
+    .gdd-progress-label { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--sage); margin-bottom: 8px; }
+    .gdd-bar-wrap { width: 120px; height: 8px; background: var(--forest-mid); border-radius: 4px; overflow: hidden; margin-bottom: 6px; }
+    .gdd-bar-fill { height: 100%; border-radius: 4px; background: var(--sage); transition: width 0.5s; }
+    .gdd-bar-label { font-size: 11px; color: var(--cream-dim); }
+
+    /* Stargazing + Aurora */
+    .sg-card { background: var(--forest-dark); border: 1px solid var(--divider); border-radius: 10px; padding: 20px 24px; display: flex; flex-direction: column; height: 100%; }
+    .sg-panel { display: flex; flex-direction: column; }
+    .sg-score { font-family: 'Playfair Display', serif; font-size: 48px; color: var(--cream); line-height: 1; }
+    .sg-score.excellent { color: #a8d4ff; }
+    .sg-score.good { color: var(--sage); }
+    .sg-score.fair { color: #c8a84a; }
+    .sg-label { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; margin-top: 4px; color: var(--cream-dim); }
+    .sg-label.excellent { color: #a8d4ff; }
+    .sg-label.good { color: var(--sage); }
+    .sg-label.fair { color: #c8a84a; }
+    .sg-label.poor { color: var(--cream-dim); }
+    .sg-facts { display: flex; flex-direction: column; gap: 0; margin-top: 14px; max-width: 320px; }
+    .sg-fact { display: flex; justify-content: space-between; font-size: 12px; gap: 12px; border-bottom: 1px solid var(--divider); padding: 5px 0; }
+    .sg-fact:last-child { border-bottom: none; }
+    .sg-fact span:first-child { color: var(--cream-dim); white-space: nowrap; }
+    .sg-fact span:last-child { color: var(--cream); text-align: right; }
+    .aurora-rating { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; padding: 3px 10px; border-radius: 10px; display: inline-block; }
+    .aurora-rating.none { background: rgba(184,200,180,0.1); color: var(--cream-dim); }
+    .aurora-rating.slight { background: rgba(122,184,122,0.15); color: var(--sage); }
+    .aurora-rating.possible { background: rgba(160,196,255,0.15); color: #a0c4ff; }
+    .aurora-rating.likely { background: rgba(120,160,255,0.2); color: #90b4ff; }
+    .aurora-rating.storm { background: rgba(200,100,255,0.2); color: #d090ff; }
+
+    /* Correlation */
+    .correlation-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; margin-bottom: 28px; }
+    .correlation-card { background: var(--forest-dark); border: 1px solid var(--divider); border-radius: 8px; padding: 16px; }
+    .correlation-title { font-size: 13px; color: var(--cream); margin-bottom: 4px; }
+    .correlation-stat { font-family: 'Playfair Display', serif; font-size: 22px; color: var(--cream); margin: 8px 0 2px; }
+    .correlation-desc { font-size: 12px; color: var(--cream-dim); line-height: 1.6; }
+
+    /* Charts section */
+    .charts-section { margin-bottom: 40px; }
+
+    .section-header {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      margin-bottom: 16px;
+      margin-top: 32px;
+    }
+
+    .section-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 20px;
+      font-weight: 400;
+      color: var(--cream);
+    }
+
+    .section-sub { font-size: 11px; color: var(--sage); }
+
+    .charts-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    @media (max-width: 900px) {
+      .charts-grid { grid-template-columns: 1fr; }
+      .records-grid { grid-template-columns: repeat(3, 1fr); }
+    }
+    @media (max-width: 600px) {
+      .records-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    .chart-panel {
+      background: var(--forest-dark);
+      border: 1px solid var(--divider);
+      border-radius: 8px;
+      padding: 16px;
+      cursor: pointer;
+      transition: border-color 0.2s, transform 0.15s;
+      position: relative;
+    }
+
+    .chart-panel:hover {
+      border-color: rgba(122, 184, 122, 0.35);
+      transform: translateY(-1px);
+    }
+
+    .chart-panel:hover .expand-hint { opacity: 1; }
+
+    .chart-title {
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--sage);
+      margin-bottom: 4px;
+    }
+
+    .chart-subtitle {
+      font-size: 10px;
+      color: var(--cream-dim);
+      margin-bottom: 10px;
+    }
+
+    .expand-hint {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      font-size: 10px;
+      color: var(--sage);
+      opacity: 0;
+      transition: opacity 0.2s;
+      letter-spacing: 0.05em;
+    }
+
+    .chart-wrapper { position: relative; height: 160px; }
+    .chart-wrapper.tall { height: 200px; }
+
+    /* Modal */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(5, 10, 5, 0.92);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      backdrop-filter: blur(4px);
+    }
+
+    .modal-overlay.open { display: flex; }
+
+    .modal {
+      background: var(--forest-dark);
+      border: 1px solid var(--divider);
+      border-radius: 12px;
+      width: 100%;
+      max-width: 1100px;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: 28px;
+      position: relative;
+      animation: modalIn 0.2s ease;
+    }
+
+    @keyframes modalIn {
+      from { opacity: 0; transform: scale(0.97); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 24px;
+      gap: 16px;
+    }
+
+    .modal-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 22px;
+      font-weight: 400;
+      color: var(--cream);
+    }
+
+    .modal-close {
+      background: var(--forest-mid);
+      border: 1px solid var(--divider);
+      border-radius: 6px;
+      color: var(--cream-dim);
+      font-size: 18px;
+      cursor: pointer;
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .modal-close:hover { background: var(--forest-light); color: var(--cream); }
+
+    /* Range selector */
+    .range-selector {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .range-label {
+      font-size: 10px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--sage);
+      margin-right: 4px;
+    }
+
+    .range-btn {
+      background: var(--forest-mid);
+      border: 1px solid var(--divider);
+      border-radius: 20px;
+      color: var(--cream-dim);
+      font-size: 12px;
+      padding: 5px 14px;
+      cursor: pointer;
+      transition: all 0.15s;
+      font-family: 'Source Sans 3', sans-serif;
+    }
+
+    .range-btn:hover { border-color: var(--sage); color: var(--cream); }
+    .range-btn.active { background: var(--forest-light); border-color: var(--sage); color: var(--cream); }
+
+    .custom-range {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-left: auto;
+      flex-wrap: wrap;
+    }
+
+    .date-input {
+      background: var(--forest-mid);
+      border: 1px solid var(--divider);
+      border-radius: 6px;
+      color: var(--cream);
+      font-size: 12px;
+      padding: 5px 10px;
+      font-family: 'Source Sans 3', sans-serif;
+      outline: none;
+      cursor: pointer;
+    }
+
+    .date-input:focus { border-color: rgba(122, 184, 122, 0.4); }
+
+    .date-sep { font-size: 11px; color: var(--cream-dim); }
+
+    .apply-btn {
+      background: var(--forest-light);
+      border: none;
+      border-radius: 6px;
+      color: var(--cream);
+      font-size: 12px;
+      padding: 5px 14px;
+      cursor: pointer;
+      font-family: 'Source Sans 3', sans-serif;
+      transition: background 0.15s;
+    }
+
+    .apply-btn:hover { background: var(--sage); color: var(--forest-deep); }
+
+    .modal-chart-wrapper { position: relative; height: 400px; }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--divider);
+      padding: 20px 0 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .footer-text { font-size: 11px; color: var(--cream-dim); }
+    .footer-brand { font-size: 11px; color: var(--sage); letter-spacing: 0.1em; }
+
+    .loading-overlay {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--cream-dim);
+      font-style: italic;
+    }
+
+    .loading-spinner {
+      width: 24px;
+      height: 24px;
+      border: 2px solid var(--divider);
+      border-top-color: var(--sage);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 16px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--forest-deep); }
+    ::-webkit-scrollbar-thumb { background: var(--forest-light); border-radius: 3px; }
+
+    /* Mobile hamburger nav */
+    .nav-hamburger {
+      display: none;
+      flex-direction: column;
+      gap: 5px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 4px;
+      margin-left: auto;
+    }
+    .nav-hamburger span {
+      display: block;
+      width: 22px;
+      height: 2px;
+      background: var(--cream-dim);
+      border-radius: 2px;
+      transition: all 0.25s;
+    }
+    .nav-hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+    .nav-hamburger.open span:nth-child(2) { opacity: 0; }
+    .nav-hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+    @media (max-width: 700px) {
+      .nav-hamburger { display: flex; }
+      .nav-links {
+        display: none;
+        position: absolute;
+        top: 56px;
+        left: 0;
+        right: 0;
+        background: var(--forest-dark);
+        border-bottom: 1px solid var(--divider);
+        padding: 12px 24px;
+        flex-direction: column;
+        gap: 14px;
+        z-index: 100;
+      }
+      .nav-links.open { display: flex; }
+      .nav-divider { display: none; }
+      nav { position: relative; }
+    }
+
+    /* Moon calendar */
+    .moon-calendar { background: var(--forest-dark); border: 1px solid var(--divider); border-radius: 10px; padding: 20px 24px; margin-bottom: 28px; }
+    .moon-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; }
+    .moon-day-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--cream-dim); padding: 4px 0; }
+    .moon-day { font-size: 11px; padding: 6px 2px; border-radius: 4px; color: var(--cream-dim); position: relative; }
+    .moon-day .moon-icon { font-size: 18px; display: block; line-height: 1.2; }
+    .moon-day .moon-date { font-size: 9px; color: var(--cream-dim); }
+    .moon-day.today { background: rgba(122,184,122,0.15); border: 1px solid var(--sage); }
+    .moon-day.today .moon-date { color: var(--sage); font-weight: 500; }
+    .moon-day:not(.empty):hover { background: rgba(255,255,255,0.05); cursor: default; }
+    .moon-day.empty { visibility: hidden; }
+    .moon-day[data-tip]:hover::after {
+      content: attr(data-tip);
+      position: absolute;
+      bottom: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      margin-bottom: 6px;
+      white-space: nowrap;
+      background: var(--forest-mid, #14241a);
+      color: var(--cream, #e8f5e0);
+      border: 1px solid var(--sage);
+      border-radius: 6px;
+      padding: 5px 9px;
+      font-size: 11px;
+      font-weight: 400;
+      letter-spacing: 0.02em;
+      z-index: 20;
+      pointer-events: none;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    }
+  </style>
+  <script src="https://cdn.counter.dev/script.js" data-id="0f7db49f-3699-43bc-b09e-d45b58c39067" data-utcoffset="1"></script>
+
+  <script>
+    // Threlkeld Analytics
+    (function() {
+      fetch('https://rlpzmepeautd1v5pgoumz9aa2qhd92xd.ui.nabu.casa/api/webhook/-FGc31SjPhOeecG848YzrwkwP', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          page: 'bb.html',
+          referrer: document.referrer || '',
+          screen: window.screen.width + 'x' + window.screen.height,
+          userAgent: navigator.userAgent
+        })
+      }).catch(() => {});
+    })();
+  </script>
+
+  <style>
+    .install-banner {
+      display: none;
+      position: fixed;
+      bottom: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #1a2e1a;
+      border: 1px solid rgba(122,184,122,0.3);
+      border-radius: 12px;
+      padding: 12px 18px;
+      z-index: 999;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+      max-width: 360px;
+      width: calc(100% - 32px);
+      font-family: 'Source Sans 3', sans-serif;
+      animation: slideUp 0.3s ease;
+    }
+    @keyframes slideUp { from { opacity:0; transform: translateX(-50%) translateY(20px); } to { opacity:1; transform: translateX(-50%) translateY(0); } }
+    .install-banner-inner { display: flex; align-items: center; gap: 12px; }
+    .install-banner-icon { font-size: 24px; flex-shrink: 0; }
+    .install-banner-text { flex: 1; }
+    .install-banner-title { font-size: 13px; font-weight: 500; color: #e8f0e4; margin-bottom: 2px; }
+    .install-banner-sub { font-size: 11px; color: rgba(232,240,228,0.6); line-height: 1.4; }
+    .install-banner-actions { display: flex; gap: 8px; margin-top: 10px; }
+    .install-btn { background: rgba(122,184,122,0.2); border: 1px solid rgba(122,184,122,0.4); color: #7ab87a; font-size: 12px; padding: 6px 14px; border-radius: 20px; cursor: pointer; font-family: inherit; }
+    .install-btn:hover { background: rgba(122,184,122,0.3); }
+    .install-dismiss { background: none; border: none; color: rgba(232,240,228,0.4); font-size: 12px; cursor: pointer; font-family: inherit; padding: 6px 8px; }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <nav>
+      <a href="index.html" class="nav-home">← Threlkeld Nature Watch</a>
+      <span class="nav-divider">|</span>
+      <div class="nav-links">
+        <a href="naturalist.html" class="nav-link">📖 Naturalist</a>
+        <a href="birds.html" class="nav-link">🐦 Birds</a>
+        <a href="bats.html" class="nav-link">🦇 Bats</a>
+        <a href="fells.html" class="nav-link">🏔️ Fells</a>
+        <a href="planes.html" class="nav-link">✈️ Planes</a>
+        <a href="river.html" class="nav-link">🌊 Rivers</a>
+        <a href="weather.html" class="nav-link">🌤️ Weather</a>
+        <a href="wildlife.html" class="nav-link">🦔 Wildlife</a>
+        <a href="about.html" class="nav-link">ℹ️ About</a>
+        <a href="data.html" class="nav-link">⚙️ Data</a>
+      </div>
+      <button class="nav-hamburger" id="navHamburger" aria-label="Menu">
+        <span></span><span></span><span></span>
+      </button>
+    </nav>
+
+    <header>
+      <div>
+        <div class="header-eyebrow">Beneath Blencathra</div>
+        <h1>Weather &amp; Wildlife <em>History</em></h1>
+      </div>
+      <div class="header-right">
+        <div class="status-dot">
+          <div class="dot" id="statusDot"></div>
+          <span id="statusText">Connecting...</span>
+        </div>
+        <div class="last-update" id="lastUpdate"></div>
+        <div class="last-update" id="currentDate"></div>
+      </div>
+    </header>
+
+    <p style="max-width:720px;font-size:14px;color:var(--cream-dim);line-height:1.75;margin-bottom:20px">
+      This page is for pulling together useful weather and wildlife notes for the village magazine, and for
+      generating the A5-sized monthly and seasonal summaries below. Records, growing degree days, stargazing,
+      aurora, ISS passes, the moon calendar and historical charts are all still here — it's just the live
+      current-readings cards and weather cam that have moved to the <a href="weather.html" style="color:var(--sage)">Weather</a> page.
+    </p>
+
+    <!-- ===== Monthly Weather Review generator (for the parish magazine) ===== -->
+    <section class="review-section">
+      <h2>Monthly &amp; Seasonal Weather Review</h2>
+      <p>
+        Generate a printable A5 weather review for the parish magazine. Pick a month and generate it once —
+        it's then saved and can be viewed or downloaded (PDF / JPG) any time.
+        <br><span style="color:var(--cream-dim)">Each month's review now generates itself automatically at 7am on the 1st, and season reviews do the same at 7am on 1 Mar / 1 Jun / 1 Sep / 1 Dec — only use this button if one hasn't appeared by 8am that day, or to regenerate a specific month or season.</span>
+      </p>
+      <div class="review-controls">
+        <select id="mrMonth" class="review-select"></select>
+        <button id="mrGenerate" class="review-btn">Generate review</button>
+        <span id="mrStatus" class="review-status"></span>
+      </div>
+      <div id="mrArchive" class="review-archive"></div>
+    </section>
+
+    <!-- ===== Monthly Wildlife Review generator (birds & bats, weather-correlated) ===== -->
+    <section class="review-section">
+      <h2>Monthly &amp; Seasonal Wildlife Review</h2>
+      <p>
+        Generate a printable A5 birds &amp; bats review for the parish magazine, correlated with the month's weather.
+        Pick a month and generate it once — it's then saved and can be viewed or downloaded (PDF / JPG) any time.
+        <br><span style="color:var(--cream-dim)">Each month's review now generates itself automatically at 7am on the 1st, and season reviews do the same at 7am on 1 Mar / 1 Jun / 1 Sep / 1 Dec — only use this button if one hasn't appeared by 8am that day, or to regenerate a specific month or season.</span>
+      </p>
+      <div class="review-controls">
+        <select id="wrMonth" class="review-select"></select>
+        <button id="wrGenerate" class="review-btn">Generate review</button>
+        <span id="wrStatus" class="review-status"></span>
+      </div>
+      <div id="wrArchive" class="review-archive"></div>
+    </section>
+
+    <script>
+    (function () {
+      // POSTs to the Node-RED webhook via the Nabu Casa base (same host as fellcam).
+      const NR_BASE = 'https://rlpzmepeautd1v5pgoumz9aa2qhd92xd.ui.nabu.casa';
+      // HA native Automation webhook trigger (webhook_id: monthly-review-trigger).
+      // Data travels as URL query params - trigger.query in the automation.
+      const GEN_URL = NR_BASE + '/api/webhook/monthly-review-trigger';
+      const INDEX_URL = NR_BASE + '/local/monthly/monthly_index.json';
+      const REVIEW_URL = (id) => NR_BASE + '/local/monthly/' + id + '.json';
+      const REVIEW_PAGE = 'weather-monthly.html';
+
+      const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+      // Populate the month dropdown: Jul 2026 -> last complete month.
+      // Earlier months are excluded on purpose — generating them would just
+      // burn Node-RED/webhook resources for reviews nobody needs.
+      function populateMonths() {
+        const sel = document.getElementById('mrMonth');
+        const now = new Date();
+        // last complete month = the month before the current one
+        let y = now.getFullYear(), m = now.getMonth(); // 0-based; m is current month, so previous is m-1
+        const opts = [];
+        let yy = 2026, mm = 6; // Jul 2026
+        while (yy < y || (yy === y && mm <= m - 1) || (yy === y && m === 0 && false)) {
+          const id = yy + '-' + String(mm+1).padStart(2,'0');
+          const label = monthNames[mm] + ' ' + yy;
+          opts.push({ id, label, y:yy, m:mm });
+          mm++; if (mm > 11) { mm = 0; yy++; }
+          if (yy > y + 1) break; // safety
+        }
+        // newest first
+        opts.reverse();
+        sel.innerHTML = opts.map(o => '<option value="'+o.id+'" data-label="'+o.label+'" data-y="'+o.y+'" data-m="'+o.m+'">'+o.label+'</option>').join('');
+      }
+
+      function monthRange(y, m) {
+        const start = y + '-' + String(m+1).padStart(2,'0') + '-01';
+        const endDate = new Date(y, m+1, 0); // last day of month
+        const end = y + '-' + String(m+1).padStart(2,'0') + '-' + String(endDate.getDate()).padStart(2,'0');
+        return { start, end };
+      }
+
+      async function loadArchive() {
+        const box = document.getElementById('mrArchive');
+        try {
+          const res = await fetch(INDEX_URL, { cache:'no-store' });
+          if (!res.ok) { box.innerHTML = '<span style="color:var(--cream-dim)">No reviews generated yet.</span>'; return; }
+          const idx = await res.json();
+          if (!Array.isArray(idx) || !idx.length) { box.innerHTML = '<span style="color:var(--cream-dim)">No reviews generated yet.</span>'; return; }
+          box.innerHTML = '<div style="font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--sage);margin-bottom:8px">Generated reviews</div>' +
+            idx.map(x => '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--divider)">'
+              + '<span>'+x.label+'</span>'
+              + '<a href="'+REVIEW_PAGE+'?m='+x.id+'" target="_blank" style="font-weight:500">View &amp; download &rarr;</a>'
+              + '</div>').join('');
+        } catch(e) { box.innerHTML = '<span style="color:var(--cream-dim)">Could not load the archive.</span>'; }
+      }
+
+      function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
+
+      // Home Assistant's webhook returns its own generic OK immediately - it
+      // doesn't hand back the generated review. So: fire the POST, then POLL
+      // for the file to appear (the flow writes it once Claude's done).
+      async function waitForReview(id, label, status) {
+        const started = Date.now();
+        const timeoutMs = 60000, intervalMs = 2000;
+        while (Date.now() - started < timeoutMs) {
+          await sleep(intervalMs);
+          try {
+            const res = await fetch(REVIEW_URL(id), { cache:'no-store' });
+            if (res.ok) return true;
+          } catch(e) {}
+          const waited = Math.round((Date.now()-started)/1000);
+          status.textContent = 'Generating ' + label + '… (' + waited + 's)';
+        }
+        return false;
+      }
+
+      document.getElementById('mrGenerate').addEventListener('click', async () => {
+        const sel = document.getElementById('mrMonth');
+        const opt = sel.options[sel.selectedIndex];
+        if (!opt) return;
+        const id = opt.value, label = opt.getAttribute('data-label');
+        const y = +opt.getAttribute('data-y'), m = +opt.getAttribute('data-m');
+        const { start, end } = monthRange(y, m);
+        const status = document.getElementById('mrStatus');
+
+        // Already generated? Just open it.
+        try {
+          const check = await fetch(REVIEW_URL(id), { cache:'no-store' });
+          if (check.ok) {
+            window.open(REVIEW_PAGE + '?m=' + id, '_blank');
+            return;
+          }
+        } catch(e) {}
+
+        status.textContent = 'Generating ' + label + '… (this can take a few seconds)';
+        try {
+          // Data travels as URL query params (no body, no custom headers) -
+          // a plain request, no CORS preflight possible. Fire-and-forget: the
+          // HA webhook doesn't return the generated result in its response.
+          const qs = new URLSearchParams({ start, end, id, label }).toString();
+          fetch(GEN_URL + '?' + qs, { method:'POST' }).catch(()=>{});
+        } catch(e) {}
+
+        const ok = await waitForReview(id, label, status);
+        if (ok) {
+          status.textContent = label + ' generated.';
+          await loadArchive();
+          window.open(REVIEW_PAGE + '?m=' + id, '_blank');
+        } else {
+          status.textContent = 'Still generating — check back in a moment, or try again.';
+        }
+      });
+
+      populateMonths();
+      loadArchive();
+    })();
+    </script>
+
+    <script>
+    (function () {
+      // Same pattern as the Weather review generator above, POSTing to its own
+      // Node-RED webhook and polling for the generated file. Content here is
+      // bird + bat detections for the month, correlated against the weather.
+      const NR_BASE = 'https://rlpzmepeautd1v5pgoumz9aa2qhd92xd.ui.nabu.casa';
+      // HA native Automation webhook trigger (webhook_id: wildlife-review-trigger).
+      const GEN_URL = NR_BASE + '/api/webhook/wildlife-review-trigger';
+      const INDEX_URL = NR_BASE + '/local/wildlife/wildlife_index.json';
+      const REVIEW_URL = (id) => NR_BASE + '/local/wildlife/' + id + '.json';
+      const REVIEW_PAGE = 'wildlife-monthly.html';
+
+      const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+      // Populate the month dropdown: Jul 2026 -> last complete month.
+      // Earlier months are excluded on purpose — generating them would just
+      // burn Node-RED/webhook resources for reviews nobody needs.
+      function populateMonths() {
+        const sel = document.getElementById('wrMonth');
+        const now = new Date();
+        let y = now.getFullYear(), m = now.getMonth();
+        const opts = [];
+        let yy = 2026, mm = 6; // Jul 2026
+        while (yy < y || (yy === y && mm <= m - 1) || (yy === y && m === 0 && false)) {
+          const id = yy + '-' + String(mm+1).padStart(2,'0');
+          const label = monthNames[mm] + ' ' + yy;
+          opts.push({ id, label, y:yy, m:mm });
+          mm++; if (mm > 11) { mm = 0; yy++; }
+          if (yy > y + 1) break; // safety
+        }
+        opts.reverse();
+        sel.innerHTML = opts.map(o => '<option value="'+o.id+'" data-label="'+o.label+'" data-y="'+o.y+'" data-m="'+o.m+'">'+o.label+'</option>').join('');
+      }
+
+      function monthRange(y, m) {
+        const start = y + '-' + String(m+1).padStart(2,'0') + '-01';
+        const endDate = new Date(y, m+1, 0);
+        const end = y + '-' + String(m+1).padStart(2,'0') + '-' + String(endDate.getDate()).padStart(2,'0');
+        return { start, end };
+      }
+
+      async function loadArchive() {
+        const box = document.getElementById('wrArchive');
+        try {
+          const res = await fetch(INDEX_URL, { cache:'no-store' });
+          if (!res.ok) { box.innerHTML = '<span style="color:var(--cream-dim)">No reviews generated yet.</span>'; return; }
+          const idx = await res.json();
+          if (!Array.isArray(idx) || !idx.length) { box.innerHTML = '<span style="color:var(--cream-dim)">No reviews generated yet.</span>'; return; }
+          box.innerHTML = '<div style="font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--sage);margin-bottom:8px">Generated reviews</div>' +
+            idx.map(x => '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--divider)">'
+              + '<span>'+x.label+'</span>'
+              + '<a href="'+REVIEW_PAGE+'?m='+x.id+'" target="_blank" style="font-weight:500">View &amp; download &rarr;</a>'
+              + '</div>').join('');
+        } catch(e) { box.innerHTML = '<span style="color:var(--cream-dim)">Could not load the archive.</span>'; }
+      }
+
+      function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
+
+      async function waitForReview(id, label, status, beforeText) {
+        const started = Date.now();
+        const timeoutMs = 60000, intervalMs = 2000;
+        while (Date.now() - started < timeoutMs) {
+          await sleep(intervalMs);
+          try {
+            const res = await fetch(REVIEW_URL(id), { cache:'no-store' });
+            if (res.ok) {
+              const text = await res.text();
+              // Wait for genuinely new content, not just "a file exists" -
+              // a stale report from a previous generation would already
+              // satisfy res.ok immediately, before the fresh one is written.
+              if (beforeText === null || text !== beforeText) return true;
+            }
+          } catch(e) {}
+          const waited = Math.round((Date.now()-started)/1000);
+          status.textContent = 'Generating ' + label + '… (' + waited + 's)';
+        }
+        return false;
+      }
+
+      document.getElementById('wrGenerate').addEventListener('click', async () => {
+        const sel = document.getElementById('wrMonth');
+        const opt = sel.options[sel.selectedIndex];
+        if (!opt) return;
+        const id = opt.value, label = opt.getAttribute('data-label');
+        const y = +opt.getAttribute('data-y'), m = +opt.getAttribute('data-m');
+        const { start, end } = monthRange(y, m);
+        const status = document.getElementById('wrStatus');
+
+        // Note: this used to open the existing file and stop here without
+        // regenerating if one already existed for this month. "Generate"
+        // should always generate - reopening a past review is what the
+        // archive list's "View & download" link is for.
+        let beforeText = null;
+        try {
+          const before = await fetch(REVIEW_URL(id), { cache:'no-store' });
+          if (before.ok) beforeText = await before.text();
+        } catch(e) {}
+
+        status.textContent = 'Generating ' + label + '… (this can take a few seconds)';
+        try {
+          // force:true bypasses the backend's "already generated, skip" guard -
+          // this button always means "regenerate", the archive list is for
+          // reopening past reviews without regenerating them.
+          const qs = new URLSearchParams({ start, end, id, label, force: 'true' }).toString();
+          fetch(GEN_URL + '?' + qs, { method:'POST' }).catch(()=>{});
+        } catch(e) {}
+
+        const ok = await waitForReview(id, label, status, beforeText);
+        if (ok) {
+          status.textContent = label + ' generated.';
+          await loadArchive();
+          window.open(REVIEW_PAGE + '?m=' + id, '_blank');
+        } else {
+          status.textContent = 'Still generating — check back in a moment, or try again.';
+        }
+      });
+
+      populateMonths();
+      loadArchive();
+    })();
+    </script>
+
+    <!-- Offline banner -->
+    <div id="offlineBanner" style="display:none;background:rgba(200,168,74,0.1);border:1px solid rgba(200,168,74,0.3);border-radius:8px;padding:10px 16px;margin-bottom:16px;font-size:12px;color:var(--cream-dim);align-items:center;gap:10px">
+      <span>⚠️</span>
+      <span>Live data unavailable — showing cached data from <strong id="offlineAge">a moment ago</strong>. Reconnecting...</span>
+    </div>
+    <div id="mainContent">
+      <div class="loading-overlay">
+        <div class="loading-spinner"></div>
+        Loading weather data...
+      </div>
+    </div>
+
+    <footer>
+      <div class="footer-text">Threlkeld, Cumbria &middot; Ecowitt WS90 Weather Station</div>
+      <div class="footer-brand">Threlkeld Nature Watch &middot; Weather &amp; Wildlife History for Beneath Blencathra</div>
+    </footer>
+  </div>
+
+  <!-- Modal -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title" id="modalTitle"></div>
+        <button class="modal-close" id="modalClose">✕</button>
+      </div>
+      <div class="range-selector">
+        <span class="range-label">Show</span>
+        <button class="range-btn active" data-days="30">30 days</button>
+        <button class="range-btn" data-days="90">3 months</button>
+        <button class="range-btn" data-days="180">6 months</button>
+        <button class="range-btn" data-days="365">1 year</button>
+        <button class="range-btn" data-days="0">All time</button>
+        <div class="custom-range">
+          <input type="date" class="date-input" id="dateFrom">
+          <span class="date-sep">to</span>
+          <input type="date" class="date-input" id="dateTo">
+          <button class="apply-btn" id="applyRange">Apply</button>
+        </div>
+      </div>
+      <div class="modal-chart-wrapper">
+        <canvas id="modalChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const MQTT_HOST = 'broker.hivemq.com';
+    const MQTT_PORT = 8884;
+    const CURRENT_TOPIC = 'birdnetpi/greg2026/weather/current';
+    const HISTORY_TOPIC = 'birdnetpi/greg2026/weather/history';
+
+    // Static rainfall history (Open-Meteo modelled data from 2026-01-01).
+    // The piezo rain gauge was faulty; its historical data is unusable, so the
+    // rainfall chart is sourced from this file instead of the live history topic.
+    const RAINFALL_HISTORY_URL = 'rainfall_history.json';
+    let rainfallHistoryLoaded = false;
+    async function applyRainfallHistory() {
+      try {
+        const res = await fetch(RAINFALL_HISTORY_URL, { cache: 'no-store' });
+        if (!res.ok) return;
+        const rf = await res.json();
+        if (rf && Array.isArray(rf.daily_rain_rate_piezo) && historyData) {
+          // Overwrite the (now-empty) rain key with the good static series.
+          historyData.daily_rain_rate_piezo = rf.daily_rain_rate_piezo;
+          rainfallHistoryLoaded = true;
+        }
+      } catch (e) { /* leave rain chart empty if the file isn't there yet */ }
+    }
+
+    // Derive Weekly / Monthly / Yearly rainfall totals from the Open-Meteo history.
+    // The live tipping-bucket gauge was newly installed, so its own long-period
+    // accumulators read ~0; these modelled totals are meaningful from day one.
+    let _rainStandaloneTried = false;
+    async function loadRainfallStandalone() {
+      if (_rainStandaloneTried) return; _rainStandaloneTried = true;
+      try {
+        const res = await fetch(RAINFALL_HISTORY_URL, { cache: 'no-store' });
+        if (!res.ok) return;
+        const rf = await res.json();
+        if (rf && Array.isArray(rf.daily_rain_rate_piezo)) {
+          if (!historyData) historyData = {};
+          historyData.daily_rain_rate_piezo = rf.daily_rain_rate_piezo;
+          rainfallHistoryLoaded = true;
+          if (currentData) renderCurrent(currentData);   // refresh card with totals
+          if (currentData) renderMiniCharts();
+        }
+      } catch (e) {}
+    }
+
+    function rainfallPeriodTotals() {
+      const series = (historyData && Array.isArray(historyData.daily_rain_rate_piezo))
+        ? historyData.daily_rain_rate_piezo : null;
+      if (!series || !series.length) {
+        // History rain not loaded yet — trigger a standalone load so a later
+        // render can show the totals (covers current-before-history ordering).
+        if (!rainfallHistoryLoaded) { loadRainfallStandalone(); }
+        return null;
+      }
+      const now = Date.now();
+      const sumSince = (ms) => {
+        const cutoff = now - ms;
+        return series.reduce((s, d) => (d.t >= cutoff ? s + (d._daily || 0) : s), 0);
+      };
+      const yearStart = new Date(new Date().getFullYear(), 0, 1).getTime();
+      const yearly = series.reduce((s, d) => (d.t >= yearStart ? s + (d._daily || 0) : s), 0);
+      return {
+        weekly: Math.round(sumSince(7 * 86400000) * 10) / 10,
+        monthly: Math.round(sumSince(30 * 86400000) * 10) / 10,
+        yearly: Math.round(yearly * 10) / 10
+      };
+    }
+
+    document.getElementById('currentDate').textContent = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+
+    let currentData = null;
+    let historyData = null;
+    let miniCharts = {};
+    let modalChart = null;
+    let activeChartConfig = null;
+    let activeDays = 30;
+
+    function fmt(val, decimals=1) {
+      if (val === null || val === undefined || val === 'unavailable' || val === 'unknown') return 'N/A';
+      const n = parseFloat(val);
+      if (isNaN(n)) return val;
+      return n.toFixed(decimals);
+    }
+
+    function calcDailyDiff(arr) {
+      // For cumulative sensors like rain, calculate daily difference from sum
+      return arr.map((d, i) => {
+        if (i === 0) return { ...d, _daily: 0 };
+        const prev = arr[i - 1];
+        const diff = (d.sum || 0) - (prev.sum || 0);
+        // If diff is negative (yearly reset on Jan 1) use today's sum value
+        return { ...d, _daily: Math.max(0, diff < 0 ? (d.sum || 0) : diff) };
+      });
+    }
+
+    function filterByDays(arr, days, diff = false) {
+      if (!arr || arr.length === 0) return [];
+      const data = diff ? calcDailyDiff(arr) : arr;
+      if (days === 0) return data;
+      const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
+      return data.filter(d => d.t > cutoff);
+    }
+
+    function filterByDateRange(arr, from, to, diff = false) {
+      if (!arr) return [];
+      const data = diff ? calcDailyDiff(arr) : arr;
+      const fromTs = new Date(from).getTime();
+      const toTs = new Date(to).getTime() + 86400000;
+      return data.filter(d => d.t >= fromTs && d.t <= toTs);
+    }
+
+    function getLabels(data) {
+      return data.map(d => new Date(d.t).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: '2-digit' }));
+    }
+
+    Chart.defaults.color = '#b8c8b4';
+    Chart.defaults.borderColor = 'rgba(122, 184, 122, 0.08)';
+    Chart.defaults.font.family = "'Source Sans 3', sans-serif";
+    Chart.defaults.font.size = 10;
+
+    const chartConfigs = [
+      {
+        id: 'chartTemp',
+        title: '🌡️ Temperature',
+        subtitle: 'Daily Min / Mean / Max · °C',
+        modalTitle: '🌡️ Temperature — Daily Min / Mean / Max (°C)',
+        key: 'outdoor_temperature',
+        type: 'line',
+        tall: true,
+        datasets: (data) => [
+          { label: 'Max', data: data.map(d => d.max), borderColor: '#c85a4a', backgroundColor: 'transparent', borderWidth: 1.5 },
+          { label: 'Mean', data: data.map(d => d.mean), borderColor: '#7ab87a', backgroundColor: 'rgba(122,184,122,0.1)', borderWidth: 2, fill: true },
+          { label: 'Min', data: data.map(d => d.min), borderColor: '#4a90a4', backgroundColor: 'transparent', borderWidth: 1.5 },
+        ]
+      },
+      {
+        id: 'chartRain',
+        title: '🌧️ Rainfall',
+        subtitle: 'Daily Total · mm · historical data quantified by Open-Meteo',
+        modalTitle: '🌧️ Rainfall — Daily Total (mm) · historical data quantified by Open-Meteo',
+        key: 'daily_rain_rate_piezo',
+        type: 'bar',
+        calcDiff: true,
+        datasets: (data) => [
+          { label: 'Rain', data: data.map(d => d._daily || 0), backgroundColor: 'rgba(74,144,164,0.6)', borderColor: '#4a90a4', borderWidth: 1 }
+        ]
+      },
+      {
+        id: 'chartWind',
+        title: '💨 Wind Speed',
+        subtitle: 'Daily Mean · km/h',
+        modalTitle: '💨 Wind Speed — Daily Mean (km/h)',
+        key: 'wind_speed',
+        type: 'line',
+        datasets: (data) => [
+          { label: 'Mean', data: data.map(d => d.mean), borderColor: '#7ab87a', backgroundColor: 'rgba(122,184,122,0.1)', borderWidth: 1.5, fill: true }
+        ]
+      },
+      {
+        id: 'chartSolar',
+        title: '☀️ Solar Radiation',
+        subtitle: 'Daily Mean · W/m²',
+        modalTitle: '☀️ Solar Radiation — Daily Mean (W/m²)',
+        key: 'solar_radiation',
+        type: 'line',
+        datasets: (data) => [
+          { label: 'W/m²', data: data.map(d => d.mean), borderColor: '#c8a84b', backgroundColor: 'rgba(200,168,75,0.1)', borderWidth: 1.5, fill: true }
+        ]
+      },
+      {
+        id: 'chartHumidity',
+        title: '💧 Humidity',
+        subtitle: 'Daily Mean · %',
+        modalTitle: '💧 Humidity — Daily Mean (%)',
+        key: 'humidity',
+        type: 'line',
+        yScale: { min: 0, max: 100 },
+        datasets: (data) => [
+          { label: '%', data: data.map(d => d.mean), borderColor: '#4a90a4', backgroundColor: 'rgba(74,144,164,0.1)', borderWidth: 1.5, fill: true }
+        ]
+      },
+      {
+        id: 'chartPressure',
+        title: '🔵 Pressure',
+        subtitle: 'Daily Mean · hPa',
+        modalTitle: '🔵 Pressure — Daily Mean (hPa)',
+        key: 'relative_pressure',
+        type: 'line',
+        datasets: (data) => [
+          { label: 'hPa', data: data.map(d => d.mean), borderColor: '#a87ab8', backgroundColor: 'rgba(168,122,184,0.1)', borderWidth: 1.5, fill: true }
+        ]
+      },
+
+    ];
+
+    function makeChart(canvasId, type, labels, datasets, options = {}, destroy = true) {
+      if (destroy && miniCharts[canvasId]) { miniCharts[canvasId].destroy(); delete miniCharts[canvasId]; }
+      const ctx = document.getElementById(canvasId);
+      if (!ctx) return null;
+      const chart = new Chart(ctx, {
+        type,
+        data: { labels, datasets },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: datasets.length > 1, labels: { boxWidth: 8, padding: 6, font: { size: 9 } } } },
+          scales: {
+            x: { ticks: { maxTicksLimit: 8, maxRotation: 0 }, grid: { color: 'rgba(122,184,122,0.04)' } },
+            y: { grid: { color: 'rgba(122,184,122,0.04)' }, ...(options.yScale || {}) }
+          },
+          elements: { point: { radius: 0 }, line: { tension: 0.3 } },
+        }
+      });
+      if (!destroy) return chart;
+      miniCharts[canvasId] = chart;
+      return chart;
+    }
+
+    function renderMiniCharts() {
+      chartConfigs.forEach(cfg => {
+        const raw = historyData[cfg.key];
+        if (!raw) return;
+
+        if (cfg.isTable) {
+          // Lightning: show summary stats in the panel
+          const data30 = filterByDays(raw, 30);
+          const totalStrikes = data30.reduce((sum, d) => sum + (d.max || 0), 0);
+          const strikeDays = data30.filter(d => (d.max || 0) > 0);
+          const el = document.getElementById(cfg.id);
+          if (el) {
+            const wrapper = el.closest('.chart-wrapper');
+            if (wrapper) {
+              wrapper.innerHTML = `
+                <div style="display:flex;flex-direction:column;justify-content:center;height:100%;gap:12px;padding:8px 0">
+                  <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--divider)">
+                    <span style="font-size:12px;color:var(--cream-dim)">Strikes in last 30 days</span>
+                    <span style="font-size:20px;font-family:'Playfair Display',serif;color:${totalStrikes > 0 ? 'var(--gold)' : 'var(--cream)'}">${totalStrikes}</span>
+                  </div>
+                  <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--divider)">
+                    <span style="font-size:12px;color:var(--cream-dim)">Days with strikes</span>
+                    <span style="font-size:20px;font-family:'Playfair Display',serif;color:var(--cream)">${strikeDays.length}</span>
+                  </div>
+                  <div style="font-size:11px;color:var(--cream-dim);text-align:center;margin-top:4px">Click for full strike history table</div>
+                </div>`;
+            }
+          }
+          return;
+        }
+
+        const data = filterByDays(raw, 30, cfg.calcDiff || false);
+        if (data.length === 0) return;
+        makeChart(cfg.id, cfg.type, getLabels(data), cfg.datasets(data), { yScale: cfg.yScale });
+      });
+    }
+
+    // Modal
+    function openModal(cfg) {
+      activeChartConfig = cfg;
+      document.getElementById('modalTitle').textContent = cfg.modalTitle;
+      document.getElementById('modalOverlay').classList.add('open');
+      document.body.style.overflow = 'hidden';
+
+      // Set default date inputs
+      const today = new Date();
+      const yearAgo = new Date();
+      yearAgo.setFullYear(yearAgo.getFullYear() - 1);
+      document.getElementById('dateTo').value = today.toISOString().split('T')[0];
+      document.getElementById('dateFrom').value = yearAgo.toISOString().split('T')[0];
+
+      // Reset range buttons
+      document.querySelectorAll('.range-btn').forEach(b => b.classList.remove('active'));
+      document.querySelector('.range-btn[data-days="30"]').classList.add('active');
+      activeDays = 30;
+
+      renderModalChart(30);
+    }
+
+    function closeModal() {
+      document.getElementById('modalOverlay').classList.remove('open');
+      document.body.style.overflow = '';
+      if (modalChart) { modalChart.destroy(); modalChart = null; }
+    }
+
+    function renderModalChart(days, fromDate, toDate) {
+      if (!activeChartConfig) return;
+      const raw = historyData[activeChartConfig.key];
+      if (!raw) return;
+
+      let data;
+      if (fromDate && toDate) {
+        data = filterByDateRange(raw, fromDate, toDate, activeChartConfig.calcDiff || false);
+      } else {
+        data = filterByDays(raw, days, activeChartConfig.calcDiff || false);
+      }
+
+      if (modalChart) { modalChart.destroy(); modalChart = null; }
+
+      const wrapper = document.querySelector('.modal-chart-wrapper');
+
+      if (activeChartConfig.isTable) {
+        // Render lightning as a table
+        const strikeDays = data
+          .filter(d => (d.max || 0) > 0)
+          .sort((a, b) => b.t - a.t);
+
+        const totalStrikes = strikeDays.reduce((sum, d) => sum + (d.max || 0), 0);
+
+        wrapper.innerHTML = `
+          <div style="overflow-y:auto;max-height:380px">
+            <div style="margin-bottom:16px;font-size:13px;color:var(--cream-dim)">
+              ${strikeDays.length} days with lightning strikes · ${totalStrikes} total strikes
+            </div>
+            ${strikeDays.length === 0 ? 
+              '<div style="text-align:center;padding:40px;color:var(--cream-dim);font-style:italic">No lightning strikes in this period</div>' :
+              `<table style="width:100%;border-collapse:collapse">
+                <thead>
+                  <tr style="border-bottom:1px solid var(--divider)">
+                    <th style="text-align:left;padding:8px 12px;font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--sage);font-weight:400">Date</th>
+                    <th style="text-align:right;padding:8px 12px;font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--sage);font-weight:400">Strikes</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${strikeDays.map((d, i) => `
+                    <tr style="border-bottom:1px solid var(--divider);background:${i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)'}">
+                      <td style="padding:10px 12px;font-size:13px;color:var(--cream)">
+                        ${new Date(d.t).toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'long', year:'numeric' })}
+                      </td>
+                      <td style="padding:10px 12px;font-size:14px;color:var(--gold);text-align:right;font-family:'Playfair Display',serif">
+                        ${d.max || 0} ⚡
+                      </td>
+                    </tr>`).join('')}
+                </tbody>
+              </table>`
+            }
+          </div>`;
+        return;
+      }
+
+      // Restore canvas for regular charts
+      wrapper.innerHTML = '<canvas id="modalChart"></canvas>';
+      const ctx = document.getElementById('modalChart');
+      modalChart = new Chart(ctx, {
+        type: activeChartConfig.type,
+        data: { labels: getLabels(data), datasets: activeChartConfig.datasets(data) },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: activeChartConfig.datasets(data).length > 1, labels: { boxWidth: 10, padding: 10 } },
+            tooltip: { mode: 'index', intersect: false }
+          },
+          scales: {
+            x: { ticks: { maxTicksLimit: 16, maxRotation: 0 }, grid: { color: 'rgba(122,184,122,0.06)' } },
+            y: { grid: { color: 'rgba(122,184,122,0.06)' }, ...(activeChartConfig.yScale || {}) }
+          },
+          elements: { point: { radius: 0, hoverRadius: 4 }, line: { tension: 0.3 } },
+        }
+      });
+    }
+
+    // Range button clicks
+    document.querySelectorAll('.range-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.range-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        activeDays = parseInt(btn.dataset.days);
+        renderModalChart(activeDays);
+      });
+    });
+
+    document.getElementById('applyRange').addEventListener('click', () => {
+      const from = document.getElementById('dateFrom').value;
+      const to = document.getElementById('dateTo').value;
+      if (from && to) {
+        document.querySelectorAll('.range-btn').forEach(b => b.classList.remove('active'));
+        renderModalChart(null, from, to);
+      }
+    });
+
+    document.getElementById('modalClose').addEventListener('click', closeModal);
+    document.getElementById('modalOverlay').addEventListener('click', (e) => {
+      if (e.target === document.getElementById('modalOverlay')) closeModal();
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeModal();
+    });
+
+    function renderCurrent(d) {
+      const html = `
+        <!-- Records -->
+        <div class="section-header" style="margin-top:0">
+          <div class="section-title">All-Time Records</div>
+          <div class="section-sub">Since station installation</div>
+        </div>
+        <div class="records-grid" id="recordsGrid"></div>
+
+        <!-- Growing Degree Days -->
+        <div class="section-header">
+          <div class="section-title">Growing Degree Days
+            <span class="info-tooltip">
+              <i class="info-icon">i</i>
+              <span class="info-box"><strong>Growing Degree Days (GDD)</strong> measures accumulated warmth since 1 January. Each day contributes max(0, mean_temp − 5°C) to the total. Plants and insects respond to warmth not calendar dates — a warm April does more biological work than a cold one. Milestones show when key species typically arrive or events occur based on accumulated heat. A confirmed ✓ means BirdNET has actually detected that species this year.</span>
+            </span>
+          </div>
+          <div class="section-sub">Accumulated heat units since 1 Jan · Base 5°C</div>
+        </div>
+        <div class="gdd-card" id="gddCard">
+          <div class="loading"><div class="loading-spinner"></div></div>
+        </div>
+
+        <!-- Stargazing + Aurora (Weather Cam lives on weather.html) -->
+        <div class="stargazing-grid">
+          <div>
+            <div class="section-header" style="margin-top:0">
+              <div class="section-title">Stargazing Conditions
+              <span class="info-tooltip"><i class="info-icon">i</i><span class="info-box"><strong>Stargazing score</strong> is calculated from tonight's cloud cover (Open-Meteo), moon phase and brightness, and visibility. Threlkeld sits in a Bortle 3–4 dark sky zone — one of the darkest in Northern England. Score of 8–10 is excellent, 6–7 good, 4–5 fair, below 4 poor. A full moon reduces the score significantly even on a clear night.</span></span></div>
+              <div class="section-sub">Tonight · Threlkeld Dark Skies</div>
+            </div>
+            <div class="sg-card" id="stargazingCard">
+              <div class="loading"><div class="loading-spinner"></div></div>
+            </div>
+          </div>
+          <div>
+            <div class="section-header" style="margin-top:0">
+              <div class="section-title">Northern Lights
+              <span class="info-tooltip"><i class="info-icon">i</i><span class="info-box"><strong>Kp index</strong> measures global geomagnetic activity on a scale of 0–9. From Threlkeld at 54.6°N, aurora becomes visible at Kp 4+, good displays at Kp 5+, overhead at Kp 7+. We're at Solar Cycle 25 peak (2025–26) so activity is elevated. Data is live from NOAA Space Weather. Cloud cover is shown as it affects visibility even when aurora is active.</span></span></div>
+              <div class="section-sub">NOAA Kp Index · Live forecast</div>
+            </div>
+            <div class="sg-card" id="auroraCard">
+              <div class="loading"><div class="loading-spinner"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Moon Phase Calendar -->
+        <div class="section-header">
+          <div class="section-title">Moon Calendar</div>
+          <div class="section-sub" id="moonCalMonth"></div>
+        </div>
+        <div class="moon-calendar">
+          <div class="moon-grid" id="moonGrid"></div>
+        </div>
+
+        <!-- Sky Events: ISS + Meteor Showers -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:28px;align-items:start" class="sky-events-grid">
+          <div>
+            <div class="section-header" style="margin-top:0">
+              <div class="section-title">ISS Passes
+              <span class="info-tooltip"><i class="info-icon">i</i><span class="info-box"><strong>The International Space Station</strong> orbits ~400km up and is the third-brightest object in the night sky. It appears as a steady (non-blinking) white light gliding west to east, taking 3–6 minutes to cross. Higher peak elevation means brighter and longer. Passes are calculated live using SGP4 orbital propagation from current NORAD data. Only visible passes (when the ISS is sunlit but your sky is dark) are shown.</span></span></div>
+              <div class="section-sub">Visible passes over Threlkeld · Live</div>
+            </div>
+            <div class="sg-card" id="issCard">
+              <div class="loading"><div class="loading-spinner"></div></div>
+            </div>
+          </div>
+          <div>
+            <div class="section-header" style="margin-top:0">
+              <div class="section-title">Meteor Showers
+              <span class="info-tooltip"><i class="info-icon">i</i><span class="info-box"><strong>Meteor showers</strong> ("shooting stars") happen when Earth drifts through dust left behind by comets. The rate shown (e.g. "~100/hr") is roughly how many you might see each hour on the peak night under a clear, dark sky — you'll usually see fewer, but the bigger showers are well worth a look. A bright moon washes them out, so darker nights are best. The radiant is the part of the sky they appear to come from.</span></span></div>
+              <div class="section-sub">Upcoming peaks · Annual calendar</div>
+            </div>
+            <div class="sg-card" id="meteorCard">
+              <div class="loading"><div class="loading-spinner"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bird/Weather Correlation -->
+        <div class="section-header">
+          <div class="section-title">Weather & Bird Activity</div>
+          <div class="section-sub">How conditions affect detections · Last 30 days</div>
+        </div>
+        <div class="correlation-grid" id="correlationGrid"></div>
+
+        <div class="charts-section">
+          <div class="section-header">
+            <div class="section-title">Historical Data</div>
+            <div class="section-sub">Last 30 days · click any chart to explore full history</div>
+          </div>
+          <div class="charts-grid">
+            ${chartConfigs.map(cfg => `
+              <div class="chart-panel" data-chart="${cfg.id}">
+                <div class="expand-hint">Click to explore ↗</div>
+                <div class="chart-title">${cfg.title}</div>
+                <div class="chart-subtitle">${cfg.subtitle}</div>
+                <div class="chart-wrapper ${cfg.tall ? 'tall' : ''}">
+                  <canvas id="${cfg.id}"></canvas>
+                </div>
+              </div>`).join('')}
+          </div>
+        </div>`;
+
+      document.getElementById('mainContent').innerHTML = html;
+      // renderCurrent() runs on every MQTT message (frequent), which just wiped
+      // #stargazingCard/#auroraCard back to their bare loading-spinner markup -
+      // but renderStargazing() only actually re-fetches every 15 minutes (see its
+      // own call site) to stay within the free NOAA/Open-Meteo API limits. Without
+      // this, the cards would sit on a spinner for most of that 15-minute window,
+      // only briefly showing real data right after each scheduled refresh. Restore
+      // whatever was last successfully fetched immediately, at no network cost.
+      if (renderStargazing._lastStargazingHTML) document.getElementById('stargazingCard').innerHTML = renderStargazing._lastStargazingHTML;
+      if (renderStargazing._lastAuroraHTML) document.getElementById('auroraCard').innerHTML = renderStargazing._lastAuroraHTML;
+      renderMoonCalendar();
+      renderISS();
+      renderMeteorShowers();
+
+      // Attach click handlers
+      document.querySelectorAll('.chart-panel').forEach(panel => {
+        panel.addEventListener('click', () => {
+          const chartId = panel.dataset.chart;
+          const cfg = chartConfigs.find(c => c.id === chartId);
+          if (cfg && historyData) openModal(cfg);
+        });
+      });
+
+      if (historyData) renderMiniCharts();
+    }
+
+    // MQTT
+    // ── Records ──────────────────────────────────────────────
+    function renderRecords(history) {
+      if (!history) return;
+      const temps = history.outdoor_temperature || [];
+      const winds = history.wind_speed || [];
+      const rain = history.daily_rain_rate_piezo || [];
+      const pressure = history.relative_pressure || [];
+
+      if (!temps.length) return;
+
+      const fmt = (v, dp=1) => v != null ? Number(v).toFixed(dp) : '—';
+      const fmtDate = d => d ? new Date(d).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' }) : '';
+
+      // Find record values and their indices so we can get dates
+      const hottestIdx = temps.reduce((bi, b, i) => (b.max||0) > (temps[bi].max||0) ? i : bi, 0);
+      const coldestIdx = temps.reduce((bi, b, i) => (b.min??99) < (temps[bi].min??99) ? i : bi, 0);
+      const windiestIdx = winds.length ? winds.reduce((bi, b, i) => (b.max||0) > (winds[bi].max||0) ? i : bi, 0) : -1;
+      const wettestIdx = rain.length ? rain.reduce((bi, b, i) => (b._daily||0) > (rain[bi]._daily||0) ? i : bi, 0) : -1;
+      const highestPIdx = pressure.length ? pressure.reduce((bi, b, i) => (b.max||0) > (pressure[bi].max||0) ? i : bi, 0) : -1;
+      const lowestPIdx = pressure.length ? pressure.reduce((bi, b, i) => (b.min??9999) < (pressure[bi].min??9999) ? i : bi, 0) : -1;
+
+      const hottest = temps[hottestIdx];
+      const coldest = temps[coldestIdx];
+      const windiest = windiestIdx >= 0 ? winds[windiestIdx] : null;
+      const wettest = wettestIdx >= 0 ? rain[wettestIdx] : null;
+      const highestP = highestPIdx >= 0 ? pressure[highestPIdx] : null;
+      const lowestP = lowestPIdx >= 0 ? pressure[lowestPIdx] : null;
+
+      // Estimate dates from index (history is in date order, newest last)
+      // Each entry is one day; work backwards from today
+      function idxToDate(arr, idx) {
+        if (arr[idx]?.date) return new Date(arr[idx].date);
+        const daysAgo = arr.length - 1 - idx;
+        const d = new Date();
+        d.setDate(d.getDate() - daysAgo);
+        return d;
+      }
+      const hottestDate = idxToDate(temps, hottestIdx);
+      const coldestDate = idxToDate(temps, coldestIdx);
+      const windiestDate = windiestIdx >= 0 ? idxToDate(winds, windiestIdx) : null;
+      const wettestDate = wettestIdx >= 0 ? idxToDate(rain, wettestIdx) : null;
+      const highestPDate = highestPIdx >= 0 ? idxToDate(pressure, highestPIdx) : null;
+      const lowestPDate = lowestPIdx >= 0 ? idxToDate(pressure, lowestPIdx) : null;
+
+      const fd = d => d ? d.toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' }) : '';
+      document.getElementById('recordsGrid').innerHTML = `
+        <div class="record-card"><div class="record-icon">🌡️</div><div class="record-value">${fmt(hottest?.max)}°C</div><div class="record-label">Hottest Day</div><div class="record-date">${fd(hottestDate)}</div></div>
+        <div class="record-card"><div class="record-icon">🥶</div><div class="record-value">${fmt(coldest?.min)}°C</div><div class="record-label">Coldest Night</div><div class="record-date">${fd(coldestDate)}</div></div>
+        <div class="record-card"><div class="record-icon">💨</div><div class="record-value">${fmt(windiest?.max)} mph</div><div class="record-label">Strongest Gust</div><div class="record-date">${fd(windiestDate)}</div></div>
+        <div class="record-card"><div class="record-icon">🌧️</div><div class="record-value">${fmt(wettest?._daily)} mm</div><div class="record-label">Wettest Day</div><div class="record-date">${fd(wettestDate)}</div></div>
+        <div class="record-card"><div class="record-icon">⬆️</div><div class="record-value">${fmt(highestP?.max)} hPa</div><div class="record-label">Highest Pressure</div><div class="record-date">${fd(highestPDate)}</div></div>
+        <div class="record-card"><div class="record-icon">⬇️</div><div class="record-value">${fmt(lowestP?.min)} hPa</div><div class="record-label">Lowest Pressure</div><div class="record-date">${fd(lowestPDate)}</div></div>`;
+    }
+
+    // Shared fetch helper for the three external, less-reliable third-party APIs
+    // (Open-Meteo, NOAA SWPC, and the ISS pass API) - retries once after a short
+    // delay and gives up on a hung request via a timeout, rather than a single
+    // attempt with no timeout that can leave a card stuck on its loading spinner.
+    async function fetchWithRetry(url, { retries = 1, timeoutMs = 8000, retryDelayMs = 1500 } = {}) {
+      let lastErr;
+      for (let attempt = 0; attempt <= retries; attempt++) {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), timeoutMs);
+        try {
+          const res = await fetch(url, { signal: controller.signal });
+          clearTimeout(timer);
+          if (!res.ok) throw new Error(url + ' -> HTTP ' + res.status);
+          return res;
+        } catch (e) {
+          clearTimeout(timer);
+          lastErr = e;
+          if (attempt < retries) await new Promise(r => setTimeout(r, retryDelayMs));
+        }
+      }
+      throw lastErr;
+    }
+
+    // ── Stargazing ────────────────────────────────────────────
+    async function renderStargazing(current) {
+      // The stargazing/aurora cards live inside #mainContent, which is only built
+      // once the first live weather message renders it - but this now runs
+      // independently of MQTT (see call site) so it can fire before that DOM
+      // exists yet on first load. Wait for it rather than fail silently.
+      if (!document.getElementById('stargazingCard') || !document.getElementById('auroraCard')) {
+        if (!renderStargazing._waited) renderStargazing._waited = 0;
+        if (renderStargazing._waited > 30000) return; // ~30s, then give up silently
+        renderStargazing._waited += 300;
+        setTimeout(() => renderStargazing(current), 300);
+        return;
+      }
+      try {
+        const lat = 54.616, lon = -3.056;
+
+        // Fetch weather + aurora data in parallel
+        const [weatherRes, auroraRes] = await Promise.all([
+          fetchWithRetry(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=cloudcover,visibility&daily=sunrise,sunset&timezone=Europe%2FLondon&forecast_days=1`),
+          fetchWithRetry('https://services.swpc.noaa.gov/products/noaa-planetary-k-index-forecast.json')
+        ]);
+        const data = await weatherRes.json();
+        const kpData = await auroraRes.json();
+
+        // Weather
+        const sunset = new Date(data.daily.sunset[0]);
+        const now = new Date();
+        const nightHour = Math.max(sunset.getHours(), now.getHours());
+        const hi = Math.min(nightHour, 23);
+        const cloud = data.hourly.cloudcover[hi] || 0;
+        const vis = (data.hourly.visibility[hi] || 0) / 1000;
+
+        // Moon phase
+        const moonAge = ((now - new Date('2000-01-06')) / 86400000) % 29.53;
+        let moonPhase, moonIcon;
+        if (moonAge < 1.85) { moonPhase = 'New Moon'; moonIcon = '🌑'; }
+        else if (moonAge < 7.38) { moonPhase = 'Waxing Crescent'; moonIcon = '🌒'; }
+        else if (moonAge < 9.22) { moonPhase = 'First Quarter'; moonIcon = '🌓'; }
+        else if (moonAge < 14.77) { moonPhase = 'Waxing Gibbous'; moonIcon = '🌔'; }
+        else if (moonAge < 16.61) { moonPhase = 'Full Moon'; moonIcon = '🌕'; }
+        else if (moonAge < 22.15) { moonPhase = 'Waning Gibbous'; moonIcon = '🌖'; }
+        else if (moonAge < 23.99) { moonPhase = 'Last Quarter'; moonIcon = '🌗'; }
+        else { moonPhase = 'Waning Crescent'; moonIcon = '🌘'; }
+        const moonBrightness = moonAge > 7 && moonAge < 22 ? Math.round(Math.sin((moonAge / 29.53) * Math.PI) * 100) : 0;
+
+        // Stargazing score
+        let score = 10;
+        score -= Math.round(cloud / 15);
+        if (moonBrightness > 70) score -= 3;
+        else if (moonBrightness > 40) score -= 1;
+        if (vis < 10) score -= 1;
+        score = Math.max(0, Math.min(10, score));
+        let rating, ratingClass;
+        if (score >= 8) { rating = 'Excellent'; ratingClass = 'excellent'; }
+        else if (score >= 6) { rating = 'Good'; ratingClass = 'good'; }
+        else if (score >= 4) { rating = 'Fair'; ratingClass = 'fair'; }
+        else { rating = 'Poor'; ratingClass = 'poor'; }
+
+        const sunsetTime = sunset.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+        const sunrise = new Date(data.daily.sunrise[0]).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+
+        // Kp index — find tonight's forecast
+        // kpData is array of [time, kp, observed/estimated/predicted]
+        let kpForecast = 0;
+        let kpTime = '';
+        if (Array.isArray(kpData) && kpData.length > 1) {
+          // Skip header row, find next forecast entry
+          const tonight = kpData.slice(1).find(row => {
+            const t = new Date(row[0]);
+            return t > now;
+          });
+          if (tonight) {
+            kpForecast = parseFloat(tonight[1]) || 0;
+            kpTime = new Date(tonight[0]).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+          }
+        }
+
+        // Aurora visibility from Threlkeld (54.6°N)
+        // Kp 4 = slight chance, Kp 5 = possible, Kp 6 = likely, Kp 7+ = storm
+        let auroraRating, auroraClass, auroraDesc;
+        if (kpForecast >= 7) { auroraRating = '🌌 Geomagnetic Storm'; auroraClass = 'storm'; auroraDesc = 'Overhead display likely — go outside now!'; }
+        else if (kpForecast >= 6) { auroraRating = '✅ Likely visible'; auroraClass = 'likely'; auroraDesc = 'Good chance from dark location'; }
+        else if (kpForecast >= 5) { auroraRating = '👀 Possible'; auroraClass = 'possible'; auroraDesc = 'Worth watching from a dark spot'; }
+        else if (kpForecast >= 4) { auroraRating = '🔭 Slight chance'; auroraClass = 'slight'; auroraDesc = 'Low on northern horizon only'; }
+        else { auroraRating = '✗ Unlikely'; auroraClass = 'none'; auroraDesc = 'Quiet geomagnetic conditions'; }
+
+        // Combined aurora score (clouds + Kp)
+        const kpPct = Math.min(100, Math.round((kpForecast / 9) * 100));
+        const cloudPenalty = cloud > 70 ? ' · Clouds blocking' : cloud > 40 ? ' · Partly cloudy' : '';
+        const auroraBarColor = kpForecast >= 6 ? '#d090ff' : kpForecast >= 4 ? '#a0c4ff' : 'rgba(100,120,160,0.5)';
+
+        const stargazingHTML = `
+          <div class="sg-score">${score}/10</div>
+          <div class="sg-label ${ratingClass}">Stargazing</div>
+          <div class="sg-facts">
+            <div class="sg-fact"><span>Cloud cover</span><span>${cloud}%</span></div>
+            <div class="sg-fact"><span>Moon phase</span><span>${moonIcon} ${moonPhase}</span></div>
+            <div class="sg-fact"><span>Moon brightness</span><span>${moonBrightness}%</span></div>
+            <div class="sg-fact"><span>Visibility</span><span>${vis.toFixed(0)}km</span></div>
+            <div class="sg-fact"><span>Dark sky</span><span>Bortle 3–4</span></div>
+            <div class="sg-fact"><span>Sunset / Sunrise</span><span>${sunsetTime} / ${sunrise}</span></div>
+          </div>`;
+
+        const auroraHTML = `
+          <div class="sg-score">${kpForecast.toFixed(1)}</div>
+          <div class="sg-label" style="color:#a0c4ff">Kp Index · Northern Lights</div>
+          <div class="sg-facts">
+            <div class="sg-fact"><span>Likelihood</span><span><span class="aurora-rating ${auroraClass}">${auroraRating}</span></span></div>
+            <div class="sg-fact"><span>Threshold</span><span>Kp 4+ from Threlkeld</span></div>
+            <div class="sg-fact"><span>Solar cycle</span><span>Cycle 25 · Peak 2025–26</span></div>
+            <div class="sg-fact"><span>Cloud cover</span><span>${cloud}%${cloudPenalty}</span></div>
+            <div class="sg-fact"><span>Next forecast</span><span>${kpTime || '—'}</span></div>
+            <div class="sg-fact"><span>Conditions</span><span style="color:var(--cream-dim)">${auroraDesc}</span></div>
+          </div>`;
+
+        document.getElementById('stargazingCard').innerHTML = stargazingHTML;
+        document.getElementById('auroraCard').innerHTML = auroraHTML;
+        // Cache the last successful render so a later MQTT-triggered rebuild of
+        // #mainContent (which recreates these cards from scratch) can restore
+        // this instantly instead of reverting to a bare loading spinner, and so
+        // a failed refresh below can fall back to the last known-good reading
+        // rather than replacing good data with an error message.
+        renderStargazing._lastStargazingHTML = stargazingHTML;
+        renderStargazing._lastAuroraHTML = auroraHTML;
+
+      } catch(e) {
+        const fallbackMsg = '<div style="color:var(--cream-dim);font-style:italic">Could not load data</div>';
+        document.getElementById('stargazingCard').innerHTML = renderStargazing._lastStargazingHTML || fallbackMsg;
+        document.getElementById('auroraCard').innerHTML = renderStargazing._lastAuroraHTML || fallbackMsg;
+      }
+    }
+
+
+    // ── Growing Degree Days ──────────────────────────────────
+    function renderGDD(history) {
+      const el = document.getElementById('gddCard');
+      if (!el || !history) return;
+
+      const temps = history.outdoor_temperature || [];
+      if (temps.length === 0) return;
+
+      const now = new Date();
+      const startOfYear = new Date(now.getFullYear(), 0, 1);
+      const BASE_TEMP = 5;
+
+      let totalGDD = 0;
+      const yearTemps = temps.filter(d => new Date(d.t || d.date) >= startOfYear);
+      yearTemps.forEach(d => {
+        const mean = d.mean ?? ((d.max + d.min) / 2);
+        const gdd = Math.max(0, mean - BASE_TEMP);
+        totalGDD += gdd;
+      });
+      totalGDD = Math.round(totalGDD);
+
+      const milestones = [
+        { gdd: 50,  label: 'Grass growing', icon: '🌱', species: ['Meadow Pipit', 'Skylark', 'Pied Wagtail'] },
+        { gdd: 100, label: 'Chiffchaff arrives', icon: '🌿', species: ['Common Chiffchaff', 'Chiffchaff'] },
+        { gdd: 200, label: 'Swallows arrive', icon: '🍃', species: ['Barn Swallow', 'Swallow', 'House Martin', 'Sand Martin'] },
+        { gdd: 350, label: 'Peak dawn chorus', icon: '🌸', species: ['Common Cuckoo', 'Cuckoo', 'Spotted Flycatcher'] },
+        { gdd: 500, label: 'Swifts arrive', icon: '🐦', species: ['Common Swift', 'Swift', 'Alpine Swift'] },
+        { gdd: 700, label: 'Heather in bloom', icon: '🟣', species: ['Ring Ouzel', 'Wheatear', 'Common Wheatear'] },
+        { gdd: 900, label: 'Redwings arrive', icon: '❄️', species: ['Redwing', 'Fieldfare', 'Brambling'], months: [9,10,11,0,1,2] },
+      ];
+
+      // Cross-check milestones against actual bird detections
+      // Get bird detections from localStorage cache (saved by birds.html)
+      let detections = [];
+      try {
+        const c = localStorage.getItem('threlkeld_birds_cache');
+        if (c) {
+          const raw = JSON.parse(c).data;
+          // raw is indexed object {0:{...}, 1:{...}, count:N}
+          if (Array.isArray(raw)) {
+            detections = raw;
+          } else if (raw && raw.count) {
+            for (let i = 0; i < raw.count; i++) { if (raw[i]) detections.push(raw[i]); }
+          }
+        }
+      } catch(e) {}
+      const detectedSpecies = new Set(detections.map(d => d.bird).filter(Boolean));
+
+      const currentMonth = now.getMonth();
+      const milestonesConfirmed = milestones.map(m => ({
+        ...m,
+        confirmed: m.species
+          ? m.species.some(s => detectedSpecies.has(s)) &&
+            (!m.months || m.months.includes(currentMonth))
+          : false
+      }));
+
+      // If a milestone is confirmed by detection, treat effective GDD as at least that milestone's value
+      const effectiveGDD = milestonesConfirmed.reduce((gdd, m) => {
+        return m.confirmed && m.gdd > gdd ? m.gdd : gdd;
+      }, totalGDD);
+
+      const reached = milestonesConfirmed.filter(m => effectiveGDD >= m.gdd || m.confirmed);
+      const next = milestonesConfirmed.find(m => effectiveGDD < m.gdd && !m.confirmed);
+      const last = reached[reached.length - 1];
+
+      const dayOfYear = Math.round((now - startOfYear) / (1000 * 60 * 60 * 24));
+      const annualTarget = 1000;
+
+      // Extra stats
+      const last7 = yearTemps.slice(-7);
+      const gddLast7 = Math.round(last7.reduce((s, d) => s + Math.max(0, (d.mean ?? ((d.max+d.min)/2)) - 5), 0) * 10) / 10;
+      const gddPerDay = yearTemps.length > 0 ? totalGDD / yearTemps.length : 0;
+      const projectedTotal = Math.round(totalGDD + (gddPerDay * (365 - dayOfYear)));
+      const avgTemp = yearTemps.length > 0
+        ? (yearTemps.reduce((s, d) => s + (d.mean ?? ((d.max+d.min)/2)), 0) / yearTemps.length).toFixed(1)
+        : '—';
+      const warmestDay = yearTemps.reduce((a, b) => (b.max||0) > (a.max||0) ? b : a, yearTemps[0]);
+      const warmestTemp = warmestDay ? warmestDay.max : '—';
+
+      el.innerHTML = `
+        <div class="gdd-score">
+          <div class="gdd-value">${totalGDD}</div>
+          <div class="gdd-unit">Degree Days</div>
+        </div>
+        <div class="gdd-facts">
+          <div class="gdd-fact"><span class="gdd-fact-label">Base temperature</span><span class="gdd-fact-value">5°C</span></div>
+          <div class="gdd-fact"><span class="gdd-fact-label">Days recorded</span><span class="gdd-fact-value">${yearTemps.length} of ${dayOfYear}</span></div>
+          <div class="gdd-fact"><span class="gdd-fact-label">Last 7 days</span><span class="gdd-fact-value">${gddLast7} GDD</span></div>
+          <div class="gdd-fact"><span class="gdd-fact-label">Projected year total</span><span class="gdd-fact-value">${projectedTotal} GDD</span></div>
+          <div class="gdd-fact"><span class="gdd-fact-label">Mean temp this year</span><span class="gdd-fact-value">${avgTemp}°C</span></div>
+          <div class="gdd-fact"><span class="gdd-fact-label">Warmest day</span><span class="gdd-fact-value">${warmestTemp}°C</span></div>
+          <div class="gdd-fact"><span class="gdd-fact-label">Latest milestone</span><span class="gdd-fact-value">${last ? last.icon + ' ' + last.label + (last.confirmed && totalGDD < last.gdd ? ' ✓ detected' : '') : 'Season starting'}</span></div>
+          <div class="gdd-fact"><span class="gdd-fact-label">Next milestone</span><span class="gdd-fact-value">${next ? next.icon + ' ' + next.label + ' (' + next.gdd + ' GDD)' : '✅ All reached'}</span></div>
+        </div>
+        <div class="gdd-progress">
+          <div class="gdd-progress-label">Season progress</div>
+          ${milestones.map(m => `
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;font-size:11px">
+              <span>${m.icon}</span>
+              <div style="flex:1;height:4px;background:var(--forest-mid);border-radius:2px;overflow:hidden;width:80px">
+                <div style="height:100%;width:${(effectiveGDD >= m.gdd || m.confirmed) ? 100 : 0}%;background:${m.confirmed && totalGDD < m.gdd ? '#c8a84a' : 'var(--sage)'};border-radius:2px"></div>
+              </div>
+              <span style="color:${(totalGDD >= m.gdd || m.confirmed) ? 'var(--sage)' : 'var(--cream-dim)'};min-width:30px">${m.confirmed && totalGDD < m.gdd ? '✓' : m.gdd}</span>
+            </div>`).join('')}
+        </div>`;
+    }
+
+    // ── Bird/Weather Correlation ──────────────────────────────
+    function renderCorrelation(history) {
+      const el = document.getElementById('correlationGrid');
+      if (!el || !history) return;
+
+      const temps = history.outdoor_temperature || [];
+      const rain = history.daily_rain_rate_piezo || [];
+      const winds = history.wind_speed || [];
+      const pressure = history.relative_pressure || [];
+
+      if (temps.length < 7) return;
+
+      const t30 = temps.slice(-30);
+      const r30 = calcDailyDiff(rain).slice(-30);  // _daily = real daily total (mm)
+      const w30 = winds.slice(-30);
+      const p30 = pressure.slice(-30);
+      const days = t30.length;
+      if (days === 0) return;
+
+      const rainyDays = r30.filter(d => (d._daily || 0) > 2).length;
+      const dryDays = days - rainyDays;
+      const windyDays = w30.filter(d => (d.mean || 0) >= 10).length;
+      const calmDays = days - windyDays;
+
+      const recent7 = p30.slice(-7).map(d => d.mean || 0);
+      const pressureTrend = recent7.length > 1 ? recent7[recent7.length-1] - recent7[0] : 0;
+      const pressureDir = pressureTrend > 2 ? '📈 Rising — improving' : pressureTrend < -2 ? '📉 Falling — deteriorating' : '➡️ Stable';
+
+      const idealCount = t30.filter((t, i) => {
+        const rv = r30[i]?._daily || 0;
+        const wv = w30[i]?.mean || 0;
+        return rv < 1 && wv < 15 && (t.max || 0) > 8;
+      }).length;
+
+      const avgMaxTemp = (t30.reduce((s, d) => s + (d.max || 0), 0) / days).toFixed(1);
+
+      el.innerHTML = `
+        <div class="correlation-card">
+          <div class="correlation-title">☀️ Dry vs Rainy Days</div>
+          <div class="correlation-stat">${dryDays} / ${rainyDays}</div>
+          <div class="correlation-desc">Dry vs rainy days (over 2mm) in the last 30 days. Dry mornings typically produce the best dawn chorus activity.</div>
+        </div>
+        <div class="correlation-card">
+          <div class="correlation-title">💨 Calm vs Windy Days</div>
+          <div class="correlation-stat">${calmDays} / ${windyDays}</div>
+          <div class="correlation-desc">Calm days (under 10mph average) vs windy in the last 30 days. Calm mornings favour bird song carrying further.</div>
+        </div>
+        <div class="correlation-card">
+          <div class="correlation-title">🔵 Pressure Trend</div>
+          <div class="correlation-stat">${Math.abs(pressureTrend).toFixed(1)} hPa</div>
+          <div class="correlation-desc">${pressureDir} over the last 7 days. Rising pressure generally brings clearer, calmer conditions — good for birding.</div>
+        </div>
+        <div class="correlation-card">
+          <div class="correlation-title">🐦 Ideal Birding Days</div>
+          <div class="correlation-stat">${idealCount} / 30</div>
+          <div class="correlation-desc">Days under 1mm rain, under 15mph wind, above 8°C in the last 30 days. Average daytime high: ${avgMaxTemp}°C.</div>
+        </div>`;
+    }
+
+    // ── MQTT resilience ───────────────────────────────────────
+    const CACHE_KEY = 'threlkeld_weather_cache';
+
+    function saveCache(data) {
+      try { localStorage.setItem(CACHE_KEY, JSON.stringify({ data, ts: Date.now() })); } catch(e) {}
+    }
+
+    function loadCache() {
+      try {
+        const raw = localStorage.getItem(CACHE_KEY);
+        if (!raw) return null;
+        const { data, ts } = JSON.parse(raw);
+        const age = Math.round((Date.now() - ts) / 60000);
+        return { data, age };
+      } catch(e) { return null; }
+    }
+
+    function showOfflineBanner(age) {
+      const el = document.getElementById('offlineBanner');
+      if (el) el.style.display = 'flex';
+      const ageEl = document.getElementById('offlineAge');
+      if (ageEl) ageEl.textContent = age < 60
+        ? `${age} minute${age !== 1 ? 's' : ''} ago`
+        : `${Math.round(age/60)} hour${Math.round(age/60) !== 1 ? 's' : ''} ago`;
+    }
+
+    function hideOfflineBanner() {
+      const el = document.getElementById('offlineBanner');
+      if (el) el.style.display = 'none';
+    }
+
+    // Load cached data on startup
+    const cached = loadCache();
+    if (cached) { showOfflineBanner(cached.age); }
+
+    // Stargazing/aurora call two free third-party APIs (Open-Meteo, NOAA SWPC).
+    // This used to be re-fetched on every live MQTT message (which can arrive every
+    // few seconds), hammering both APIs far more than they tolerate and producing
+    // exactly the kind of intermittent failure this section used to show. Load once
+    // now and refresh every 15 minutes instead - conditions don't change faster than
+    // that anyway.
+    renderStargazing();
+    setInterval(renderStargazing, 15 * 60 * 1000);
+
+    const client = mqtt.connect(`wss://${MQTT_HOST}:${MQTT_PORT}/mqtt`);
+
+    client.on('connect', () => {
+      document.getElementById('statusDot').className = 'dot live';
+      document.getElementById('statusText').textContent = 'Live';
+      client.subscribe(CURRENT_TOPIC);
+      client.subscribe(HISTORY_TOPIC);
+    });
+
+    client.on('error', () => {
+      document.getElementById('statusDot').className = 'dot error';
+      document.getElementById('statusText').textContent = 'Connection error';
+    });
+
+    client.on('close', () => {
+      document.getElementById('statusDot').className = 'dot error';
+      document.getElementById('statusText').textContent = 'Disconnected — reconnecting...';
+      const c = loadCache();
+      if (c) showOfflineBanner(c.age);
+    });
+
+    client.on('reconnect', () => {
+      document.getElementById('statusDot').className = 'dot connecting';
+      document.getElementById('statusText').textContent = 'Reconnecting...';
+    });
+
+    client.on('message', (topic, message) => {
+      try {
+        const data = JSON.parse(message.toString());
+        document.getElementById('lastUpdate').textContent = `Updated ${new Date().toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'})}`;
+        if (topic === CURRENT_TOPIC) {
+          currentData = data;
+          hideOfflineBanner(); saveCache({ current: data, history: historyData });
+          renderCurrent(data);
+          if (historyData) {
+            renderMiniCharts();
+            renderRecords(historyData);
+            renderGDD(historyData);
+            renderCorrelation(historyData);
+          }
+        }
+        if (topic === HISTORY_TOPIC) {
+          historyData = data;
+          // Rainfall history now comes from a static Open-Meteo file (the piezo
+          // gauge was faulty and its data unusable). Merge it in before rendering.
+          applyRainfallHistory().finally(() => {
+            if (currentData) {
+              renderCurrent(currentData);   // refresh card so Weekly/Monthly/Yearly pick up Open-Meteo totals
+              renderMiniCharts();
+              renderRecords(historyData);
+              renderGDD(historyData);
+              renderCorrelation(historyData);
+            }
+          });
+        }
+      } catch(e) { console.error('Parse error:', e); }
+    });
+
+    // Mobile nav
+    document.getElementById('navHamburger').addEventListener('click', function() {
+      this.classList.toggle('open');
+      document.querySelector('.nav-links').classList.toggle('open');
+    });
+    document.querySelectorAll('.nav-link').forEach(l => {
+      l.addEventListener('click', () => {
+        document.getElementById('navHamburger').classList.remove('open');
+        document.querySelector('.nav-links').classList.remove('open');
+      });
+    });
+
+
+    // ── ISS Passes ────────────────────────────────────────────
+    async function renderISS() {
+      const card = document.getElementById('issCard');
+      if (!card) return;
+      const lat = 54.616, lon = -3.056;
+      try {
+        const res = await fetchWithRetry(`https://iss-api.polluxlabs.io/iss-pass?lat=${lat}&lon=${lon}&visible_only=true`);
+        const json = await res.json();
+        const passes = (json && Array.isArray(json.passes)) ? json.passes : [];
+        if (passes.length === 0) {
+          card.innerHTML = renderISS._lastHTML = '<div class="sg-score" style="font-size:34px">🛰️</div>'
+            + '<div class="sg-label">No visible passes right now</div>'
+            + '<div style="font-size:12px;color:var(--cream-dim);margin-top:14px;line-height:1.5">The ISS is currently passing over in daylight or through Earth\'s shadow, so it isn\'t visible from Threlkeld. Bright evening and dawn passes return every few weeks — check back soon.</div>';
+          return;
+        }
+        const now = new Date();
+        const upcoming = passes
+          .map(p => ({
+            rise: new Date(p.rise.time),
+            set: new Date(p.set.time),
+            dir: p.rise.compass || '',
+            setDir: p.set.compass || '',
+            elev: Math.round(p.culmination ? p.culmination.elevation_deg : 0),
+            mins: Math.round((p.duration_sec || 0) / 60) + ' min'
+          }))
+          .filter(p => p.rise > now)
+          .sort((a, b) => a.rise - b.rise)
+          .slice(0, 4);
+
+        if (upcoming.length === 0) {
+          card.innerHTML = renderISS._lastHTML = '<div class="sg-score" style="font-size:28px">—</div><div class="sg-label">No upcoming visible passes</div>';
+          return;
+        }
+
+        const next = upcoming[0];
+        const quality = next.elev >= 40 ? 'excellent' : next.elev >= 20 ? 'good' : 'fair';
+        const qLabel = next.elev >= 40 ? 'Excellent pass' : next.elev >= 20 ? 'Good pass' : 'Low pass';
+        const dayLabel = d => {
+          const today = new Date(); today.setHours(0,0,0,0);
+          const dd = new Date(d); dd.setHours(0,0,0,0);
+          const diff = Math.round((dd - today) / 86400000);
+          if (diff === 0) return 'Tonight';
+          if (diff === 1) return 'Tomorrow';
+          return d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+        };
+        const tm = d => d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+
+        let facts = '';
+        upcoming.forEach(p => {
+          facts += `<div class="sg-fact"><span>${dayLabel(p.rise)} ${tm(p.rise)}</span><span>${p.dir}→${p.setDir} · ${p.elev}° · ${p.mins}</span></div>`;
+        });
+
+        card.innerHTML = renderISS._lastHTML = `
+          <div class="sg-score ${quality}" style="font-size:40px">${next.elev}°</div>
+          <div class="sg-label ${quality}">${qLabel} · max elevation</div>
+          <div class="sg-facts">${facts}</div>`;
+      } catch (e) {
+        // Keep whatever passes were last successfully fetched on screen rather than
+        // replacing good data with an error on a single transient API hiccup -
+        // renderISS() reruns on every MQTT tick, so it'll self-correct shortly anyway.
+        card.innerHTML = renderISS._lastHTML || '<div class="sg-score" style="font-size:28px">—</div><div class="sg-label">Pass data unavailable</div>';
+      }
+    }
+
+    // ── Meteor Showers ────────────────────────────────────────
+    function renderMeteorShowers() {
+      const card = document.getElementById('meteorCard');
+      if (!card) return;
+      // Major annual showers: name, peak month (0-idx), peak day, ZHR, radiant
+      const showers = [
+        { name: 'Quadrantids',    m: 0,  d: 3,  zhr: 110, radiant: 'Boötes' },
+        { name: 'Lyrids',         m: 3,  d: 22, zhr: 18,  radiant: 'Lyra' },
+        { name: 'Eta Aquariids',  m: 4,  d: 6,  zhr: 50,  radiant: 'Aquarius' },
+        { name: 'Delta Aquariids',m: 6,  d: 30, zhr: 25,  radiant: 'Aquarius' },
+        { name: 'Perseids',       m: 7,  d: 12, zhr: 100, radiant: 'Perseus' },
+        { name: 'Draconids',      m: 9,  d: 8,  zhr: 10,  radiant: 'Draco' },
+        { name: 'Orionids',       m: 9,  d: 21, zhr: 20,  radiant: 'Orion' },
+        { name: 'Taurids',        m: 10, d: 5,  zhr: 5,   radiant: 'Taurus' },
+        { name: 'Leonids',        m: 10, d: 17, zhr: 15,  radiant: 'Leo' },
+        { name: 'Geminids',       m: 11, d: 14, zhr: 120, radiant: 'Gemini' },
+        { name: 'Ursids',         m: 11, d: 22, zhr: 10,  radiant: 'Ursa Minor' }
+      ];
+      const now = new Date();
+      const yr = now.getFullYear();
+      // Build dated peaks for this year and next, keep the next 4 upcoming
+      let peaks = [];
+      [yr, yr + 1].forEach(y => {
+        showers.forEach(s => peaks.push({ ...s, date: new Date(y, s.m, s.d, 12) }));
+      });
+      const upcoming = peaks.filter(p => p.date >= new Date(now.getFullYear(), now.getMonth(), now.getDate()))
+                            .sort((a, b) => a.date - b.date)
+                            .slice(0, 4);
+      const next = upcoming[0];
+      const daysTo = Math.round((next.date - new Date(now.getFullYear(), now.getMonth(), now.getDate())) / 86400000);
+      const intensity = next.zhr >= 80 ? 'excellent' : next.zhr >= 30 ? 'good' : 'fair';
+      const dayLabel = d => {
+        const diff = Math.round((d - new Date(now.getFullYear(), now.getMonth(), now.getDate())) / 86400000);
+        if (diff === 0) return 'Peaks tonight';
+        if (diff === 1) return 'Peaks tomorrow';
+        return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+      };
+      let facts = '';
+      upcoming.forEach(p => {
+        facts += `<div class="sg-fact"><span>${p.name}</span><span>${dayLabel(p.date)} · ~${p.zhr}/hr · ${p.radiant}</span></div>`;
+      });
+      card.innerHTML = `
+        <div class="sg-score ${intensity}" style="font-size:40px">~${next.zhr}</div>
+        <div class="sg-label ${intensity}">${next.name} · ${daysTo === 0 ? 'peaks tonight' : 'in ' + daysTo + ' days'}</div>
+        <div class="sg-facts">${facts}</div>`;
+    }
+
+    // Moon Phase Calendar
+    function renderMoonCalendar() {
+      const now = new Date();
+      const monthLabel = document.getElementById('moonCalMonth');
+
+      // Reference new moon: 6 Jan 2000
+      const refNewMoon = new Date('2000-01-06T18:14:00Z');
+      const SYNODIC = 29.53058867;
+
+      function getMoonPhase(date) {
+        const diff = (date - refNewMoon) / 86400000;
+        const age = ((diff % SYNODIC) + SYNODIC) % SYNODIC;
+        if (age < 1.85) return { icon: '🌑', name: 'New Moon' };
+        if (age < 7.38) return { icon: '🌒', name: 'Waxing Crescent' };
+        if (age < 9.22) return { icon: '🌓', name: 'First Quarter' };
+        if (age < 14.77) return { icon: '🌔', name: 'Waxing Gibbous' };
+        if (age < 16.61) return { icon: '🌕', name: 'Full Moon' };
+        if (age < 22.15) return { icon: '🌖', name: 'Waning Gibbous' };
+        if (age < 23.99) return { icon: '🌗', name: 'Last Quarter' };
+        return { icon: '🌘', name: 'Waning Crescent' };
+      }
+
+      // Rolling window centred on today: start from the Sunday of the week
+      // ~2 weeks before today, render 5 weeks (35 days).
+      const todayMid = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12);
+      const start = new Date(todayMid);
+      start.setDate(start.getDate() - 14);
+      start.setDate(start.getDate() - start.getDay()); // back to Sunday
+      const WEEKS = 5;
+
+      // Label shows the span, e.g. "May – June 2026"
+      const end = new Date(start);
+      end.setDate(end.getDate() + WEEKS * 7 - 1);
+      const sMon = start.toLocaleDateString('en-GB', { month: 'long' });
+      const eMon = end.toLocaleDateString('en-GB', { month: 'long' });
+      const yr = end.getFullYear();
+      const spanLabel = (sMon === eMon) ? `${sMon} ${yr}` : `${sMon} – ${eMon} ${yr}`;
+      if (monthLabel) monthLabel.textContent = spanLabel;
+
+      const labels = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+      let html = labels.map(l => '<div class="moon-day-label">' + l + '</div>').join('');
+
+      const todayKey = todayMid.toDateString();
+      for (let i = 0; i < WEEKS * 7; i++) {
+        const date = new Date(start);
+        date.setDate(start.getDate() + i);
+        date.setHours(12, 0, 0, 0);
+        const moon = getMoonPhase(date);
+        const isToday = date.toDateString() === todayKey;
+        const dayNum = date.getDate();
+        const monShort = date.toLocaleDateString('en-GB', { month: 'short' });
+        const full = date.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+        html += '<div class="moon-day' + (isToday ? ' today' : '') + '"'
+             + ' data-tip="' + full + ' · ' + moon.name + '">'
+             + '<span class="moon-icon">' + moon.icon + '</span>'
+             + '<span class="moon-date">' + (dayNum === 1 ? monShort + ' ' : '') + dayNum + '</span>'
+             + '</div>';
+      }
+
+      const grid = document.getElementById('moonGrid');
+      if (grid) grid.innerHTML = html;
+    }
+
+    // Footer timestamp</script>
+
+  <!-- PWA Install Banner -->
+  <div class="install-banner" id="installBanner">
+    <div class="install-banner-inner">
+      <div class="install-banner-icon">🏔️</div>
+      <div class="install-banner-text">
+        <div class="install-banner-title">Install Threlkeld Nature Watch</div>
+        <div class="install-banner-sub" id="installBannerSub">Add to your home screen for quick access</div>
+      </div>
+    </div>
+    <div class="install-banner-actions">
+      <button class="install-btn" id="installBtn">Install</button>
+      <button class="install-dismiss" id="installDismiss">Not now</button>
+    </div>
+  </div>
+
+  <script>
+    // PWA Install prompt
+    (function() {
+      if (localStorage.getItem('pwa_dismissed')) return;
+      const banner = document.getElementById('installBanner');
+      const sub = document.getElementById('installBannerSub');
+      const installBtn = document.getElementById('installBtn');
+      const dismissBtn = document.getElementById('installDismiss');
+
+      function dismiss() {
+        banner.style.display = 'none';
+        localStorage.setItem('pwa_dismissed', '1');
+      }
+      dismissBtn.addEventListener('click', dismiss);
+
+      // Android/Chrome — intercept beforeinstallprompt
+      let deferredPrompt;
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        banner.style.display = 'block';
+        installBtn.addEventListener('click', async () => {
+          banner.style.display = 'none';
+          deferredPrompt.prompt();
+          const { outcome } = await deferredPrompt.userChoice;
+          if (outcome === 'accepted') localStorage.setItem('pwa_dismissed', '1');
+          deferredPrompt = null;
+        });
+      });
+
+      // iOS Safari — show manual instructions
+      const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+      const isInStandaloneMode = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+      if (isIOS && !isInStandaloneMode) {
+        setTimeout(() => {
+          sub.textContent = 'Tap the Share button ↑ then "Add to Home Screen"';
+          installBtn.textContent = 'Got it';
+          installBtn.addEventListener('click', dismiss);
+          banner.style.display = 'block';
+        }, 3000);
+      }
+    })();
+  </script>
+</body>
+</html>
