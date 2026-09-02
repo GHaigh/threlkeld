@@ -1057,10 +1057,23 @@
     }
 
     function fmt(val, decimals=1) {
-      if (val === null || val === undefined || val === 'unavailable') return 'N/A';
+      if (val === null || val === undefined || val === 'unavailable' || val === 'unknown') return 'N/A';
       const n = parseFloat(val);
       if (isNaN(n)) return val;
       return n.toFixed(decimals);
+    }
+
+    // The GW2000A only reports windchill when it's genuinely cold and breezy enough for
+    // the figure to mean anything (roughly ≤10°C) - above that its own sensor correctly
+    // has nothing to report, rather than a misleading value. Say so plainly instead of
+    // showing a bare "N/A" that reads as broken.
+    function windchillDisplay(d) {
+      const raw = d.windchill;
+      const known = raw !== null && raw !== undefined && raw !== 'unavailable' && raw !== 'unknown' && !isNaN(parseFloat(raw));
+      if (known) return fmt(raw, 1) + '°C';
+      const t = parseFloat(d.temperature);
+      if (!isNaN(t) && t > 10) return 'N/A — too mild';
+      return 'N/A';
     }
 
     function fmtDate(val) {
@@ -1411,7 +1424,7 @@
                 <div class="temp-feels">Feels like ${fmt(d.feels_like, 1)}°C</div>
               </div>
               <div class="condition-row"><span class="condition-label">Dewpoint</span><span class="condition-value">${fmt(d.dewpoint, 1)}°C</span></div>
-              <div class="condition-row"><span class="condition-label">Windchill</span><span class="condition-value">${fmt(d.windchill, 1)}°C</span></div>
+              <div class="condition-row"><span class="condition-label">Windchill</span><span class="condition-value">${windchillDisplay(d)}</span></div>
               <div class="condition-row"><span class="condition-label">Humidity</span><span class="condition-value highlight">${fmt(d.humidity, 0)}%</span></div>
             </div>
           </div>
