@@ -26,18 +26,19 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
   <style>
     :root {
-      --forest-deep: #0d1a0d;
-      --forest-dark: #1a2e1a;
-      --forest-mid: #243022;
-      --forest-light: #3b6d11;
-      --sage: #7ab87a;
-      --sage-light: #a8d4a8;
-      --cream: #e8f0e4;
-      --cream-dim: #b8c8b4;
-      --divider: rgba(122, 184, 122, 0.15);
-      --blue: #4a90a4;
-      --gold: #c8a84b;
-      --red: #c85a4a;
+      /* Black & white print theme (matches the old weather-adam.html) */
+      --forest-deep: #ffffff;
+      --forest-dark: #ffffff;
+      --forest-mid: #f4f4f4;
+      --forest-light: #000000;
+      --sage: #000000;
+      --sage-light: #000000;
+      --cream: #000000;
+      --cream-dim: #333333;
+      --divider: rgba(0, 0, 0, 0.25);
+      --blue: #000000;
+      --gold: #000000;
+      --red: #000000;
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -608,6 +609,10 @@
       pointer-events: none;
       box-shadow: 0 4px 12px rgba(0,0,0,0.4);
     }
+
+    @media print {
+      .no-print { display: none !important; }
+    }
   </style>
   <script src="https://cdn.counter.dev/script.js" data-id="0f7db49f-3699-43bc-b09e-d45b58c39067" data-utcoffset="1"></script>
 
@@ -658,6 +663,9 @@
   </style>
 </head>
 <body>
+  <div class="no-print" style="text-align:center;padding:12px;background:#000;color:#fff;font-family:sans-serif;font-size:13px">
+    Print edition (black &amp; white) &middot; <button onclick="window.print()" style="background:#fff;color:#000;border:none;padding:4px 12px;border-radius:3px;cursor:pointer;font-weight:600">Print this page</button>
+  </div>
   <div class="page">
     <nav>
       <a href="index.html" class="nav-home">← Threlkeld Nature Watch</a>
@@ -694,7 +702,7 @@
       </div>
     </header>
 
-    <p style="max-width:720px;font-size:14px;color:var(--cream-dim);line-height:1.75;margin-bottom:20px">
+    <p style="font-size:14px;color:var(--cream-dim);line-height:1.75;margin-bottom:20px">
       This page is for pulling together useful weather and wildlife notes for the village magazine, and for
       generating the A5-sized monthly and seasonal summaries below. Records, growing degree days, stargazing,
       aurora, ISS passes, the moon calendar and historical charts are all still here — it's just the live
@@ -702,7 +710,7 @@
     </p>
 
     <!-- ===== Monthly Weather Review generator (for the parish magazine) ===== -->
-    <section class="review-section">
+    <section class="review-section no-print">
       <h2>Monthly &amp; Seasonal Weather Review</h2>
       <p>
         Generate a printable A5 weather review for the parish magazine. Pick a month and generate it once —
@@ -718,7 +726,7 @@
     </section>
 
     <!-- ===== Monthly Wildlife Review generator (birds & bats, weather-correlated) ===== -->
-    <section class="review-section">
+    <section class="review-section no-print">
       <h2>Monthly &amp; Seasonal Wildlife Review</h2>
       <p>
         Generate a printable A5 birds &amp; bats review for the parish magazine, correlated with the month's weather.
