@@ -397,7 +397,7 @@
     .wind-label { font-size: 11px; color: var(--cream-dim); }
 
     /* Records section */
-    .records-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; margin-bottom: 28px; }
+    .records-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; margin-bottom: 28px; }
     .record-card { background: var(--forest-dark); border: 1px solid var(--divider); border-radius: 8px; padding: 14px; }
     .record-icon { font-size: 20px; margin-bottom: 6px; }
     .record-value { font-family: 'Playfair Display', serif; font-size: 24px; color: var(--cream); line-height: 1; margin-bottom: 2px; }
@@ -491,6 +491,10 @@
     @media (max-width: 900px) {
       .charts-grid { grid-template-columns: 1fr; }
       .conditions-grid { grid-template-columns: 1fr; }
+      .records-grid { grid-template-columns: repeat(3, 1fr); }
+    }
+    @media (max-width: 600px) {
+      .records-grid { grid-template-columns: repeat(2, 1fr); }
     }
 
     .chart-panel {
