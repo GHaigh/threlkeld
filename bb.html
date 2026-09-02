@@ -1142,8 +1142,8 @@
       return data.map(d => new Date(d.t).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: '2-digit' }));
     }
 
-    Chart.defaults.color = '#b8c8b4';
-    Chart.defaults.borderColor = 'rgba(122, 184, 122, 0.08)';
+    Chart.defaults.color = '#000000';
+    Chart.defaults.borderColor = 'rgba(0, 0, 0, 0.15)';
     Chart.defaults.font.family = "'Source Sans 3', sans-serif";
     Chart.defaults.font.size = 10;
 
@@ -1157,9 +1157,9 @@
         type: 'line',
         tall: true,
         datasets: (data) => [
-          { label: 'Max', data: data.map(d => d.max), borderColor: '#c85a4a', backgroundColor: 'transparent', borderWidth: 1.5 },
-          { label: 'Mean', data: data.map(d => d.mean), borderColor: '#7ab87a', backgroundColor: 'rgba(122,184,122,0.1)', borderWidth: 2, fill: true },
-          { label: 'Min', data: data.map(d => d.min), borderColor: '#4a90a4', backgroundColor: 'transparent', borderWidth: 1.5 },
+          { label: 'Max', data: data.map(d => d.max), borderColor: '#000', backgroundColor: 'transparent', borderWidth: 1.5, borderDash: [] },
+          { label: 'Mean', data: data.map(d => d.mean), borderColor: '#000', backgroundColor: 'rgba(0,0,0,0.06)', borderWidth: 1.5, fill: true, borderDash: [6,3] },
+          { label: 'Min', data: data.map(d => d.min), borderColor: '#000', backgroundColor: 'transparent', borderWidth: 1.5, borderDash: [2,2] },
         ]
       },
       {
@@ -1171,7 +1171,7 @@
         type: 'bar',
         calcDiff: true,
         datasets: (data) => [
-          { label: 'Rain', data: data.map(d => d._daily || 0), backgroundColor: 'rgba(74,144,164,0.6)', borderColor: '#4a90a4', borderWidth: 1 }
+          { label: 'Rain', data: data.map(d => d._daily || 0), backgroundColor: 'rgba(0,0,0,0.35)', borderColor: '#000', borderWidth: 1 }
         ]
       },
       {
@@ -1182,7 +1182,7 @@
         key: 'wind_speed',
         type: 'line',
         datasets: (data) => [
-          { label: 'Mean', data: data.map(d => d.mean), borderColor: '#7ab87a', backgroundColor: 'rgba(122,184,122,0.1)', borderWidth: 1.5, fill: true }
+          { label: 'Mean', data: data.map(d => d.mean), borderColor: '#000', backgroundColor: 'rgba(0,0,0,0.06)', borderWidth: 1.5, fill: true }
         ]
       },
       {
@@ -1193,7 +1193,7 @@
         key: 'solar_radiation',
         type: 'line',
         datasets: (data) => [
-          { label: 'W/m²', data: data.map(d => d.mean), borderColor: '#c8a84b', backgroundColor: 'rgba(200,168,75,0.1)', borderWidth: 1.5, fill: true }
+          { label: 'W/m²', data: data.map(d => d.mean), borderColor: '#000', backgroundColor: 'rgba(0,0,0,0.06)', borderWidth: 1.5, fill: true }
         ]
       },
       {
@@ -1205,7 +1205,7 @@
         type: 'line',
         yScale: { min: 0, max: 100 },
         datasets: (data) => [
-          { label: '%', data: data.map(d => d.mean), borderColor: '#4a90a4', backgroundColor: 'rgba(74,144,164,0.1)', borderWidth: 1.5, fill: true }
+          { label: '%', data: data.map(d => d.mean), borderColor: '#000', backgroundColor: 'rgba(0,0,0,0.06)', borderWidth: 1.5, fill: true }
         ]
       },
       {
@@ -1216,7 +1216,7 @@
         key: 'relative_pressure',
         type: 'line',
         datasets: (data) => [
-          { label: 'hPa', data: data.map(d => d.mean), borderColor: '#a87ab8', backgroundColor: 'rgba(168,122,184,0.1)', borderWidth: 1.5, fill: true }
+          { label: 'hPa', data: data.map(d => d.mean), borderColor: '#000', backgroundColor: 'rgba(0,0,0,0.06)', borderWidth: 1.5, fill: true }
         ]
       },
 
