@@ -190,6 +190,8 @@
       grid-template-columns: repeat(3, 1fr);
       gap: 16px;
       margin-bottom: 40px;
+      align-items: start; /* each card sizes to its own content instead of stretching
+                              to match the tallest card in its grid row (Rainfall) */
     }
 
     /* Info tooltips */
@@ -917,7 +919,7 @@
 
     <!-- ===== Monthly Weather Review generator (for the parish magazine) ===== -->
     <section class="monthly-review no-print" style="border:1px solid #000;border-radius:8px;padding:20px;margin:32px 0;background:#fff">
-      <h2 style="font-family:'Playfair Display',serif;font-size:22px;margin:0 0 4px;color:#000">Beneath Blencathra — Monthly Weather Review</h2>
+      <h2 style="font-family:'Playfair Display',serif;font-size:22px;margin:0 0 4px;color:#000">Beneath Blencathra — Monthly &amp; Seasonal Weather Review</h2>
       <p style="font-size:13px;color:#333;margin:0 0 16px;font-family:'Source Sans 3',sans-serif">
         Generate a printable A5 weather review for the parish magazine. Pick a month and generate it once —
         it's then saved and can be viewed or downloaded (PDF / JPG) any time.
@@ -933,7 +935,7 @@
 
     <!-- ===== Monthly Wildlife Review generator (birds & bats, weather-correlated) ===== -->
     <section class="monthly-review no-print" style="border:1px solid #000;border-radius:8px;padding:20px;margin:32px 0;background:#fff">
-      <h2 style="font-family:'Playfair Display',serif;font-size:22px;margin:0 0 4px;color:#000">Beneath Blencathra — Monthly Wildlife Review</h2>
+      <h2 style="font-family:'Playfair Display',serif;font-size:22px;margin:0 0 4px;color:#000">Beneath Blencathra — Monthly &amp; Seasonal Wildlife Review</h2>
       <p style="font-size:13px;color:#333;margin:0 0 16px;font-family:'Source Sans 3',sans-serif">
         Generate a printable A5 birds &amp; bats review for the parish magazine, correlated with the month's weather.
         Pick a month and generate it once — it's then saved and can be viewed or downloaded (PDF / JPG) any time.

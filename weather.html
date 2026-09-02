@@ -8,7 +8,7 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Threlkeld">
-  <meta property="og:type" content="website">
+    <meta property="og:type" content="website">
   <meta property="og:title" content="Weather · Threlkeld">
   <meta property="og:description" content="Live weather data from a personal weather station in Threlkeld, Cumbria. Temperature, wind, rainfall and historical charts.">
   <meta property="og:url" content="https://threlkeld.info/weather.html">
@@ -170,7 +170,7 @@
       background: #666;
     }
 
-    .dot.connected, .dot.live {
+    .dot.connected {
       background: var(--sage);
       box-shadow: 0 0 6px var(--sage);
       animation: pulse 2s infinite;
@@ -191,6 +191,8 @@
       grid-template-columns: repeat(3, 1fr);
       gap: 16px;
       margin-bottom: 40px;
+      align-items: start; /* each card sizes to its own content instead of stretching
+                              to match the tallest card in its grid row (Rainfall) */
     }
 
     /* Info tooltips */
@@ -199,6 +201,7 @@
     .info-tooltip .info-box { display: none; position: absolute; top: 24px; left: 0; width: 280px; background: #1a2e1a; border: 1px solid rgba(122,184,122,0.3); border-radius: 8px; padding: 10px 14px; font-size: 12px; color: var(--cream-dim); line-height: 1.7; z-index: 100; box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
     .info-tooltip:hover .info-box { display: block; }
     .info-box strong { color: var(--cream); font-weight: 500; }
+
 
     /* Fell cam */
     @media (max-width: 800px) {
@@ -978,6 +981,8 @@
     const HISTORY_TOPIC = 'birdnetpi/greg2026/weather/history';
 
     // Static rainfall history (Open-Meteo modelled data from 2026-01-01).
+    // The piezo rain gauge was faulty; its historical data is unusable, so the
+    // rainfall chart is sourced from this file instead of the live history topic.
     const RAINFALL_HISTORY_URL = 'rainfall_history.json';
     let rainfallHistoryLoaded = false;
     async function applyRainfallHistory() {
@@ -986,12 +991,16 @@
         if (!res.ok) return;
         const rf = await res.json();
         if (rf && Array.isArray(rf.daily_rain_rate_piezo) && historyData) {
+          // Overwrite the (now-empty) rain key with the good static series.
           historyData.daily_rain_rate_piezo = rf.daily_rain_rate_piezo;
           rainfallHistoryLoaded = true;
         }
       } catch (e) { /* leave rain chart empty if the file isn't there yet */ }
     }
 
+    // Derive Weekly / Monthly / Yearly rainfall totals from the Open-Meteo history.
+    // The live tipping-bucket gauge was newly installed, so its own long-period
+    // accumulators read ~0; these modelled totals are meaningful from day one.
     let _rainStandaloneTried = false;
     async function loadRainfallStandalone() {
       if (_rainStandaloneTried) return; _rainStandaloneTried = true;
@@ -1013,6 +1022,8 @@
       const series = (historyData && Array.isArray(historyData.daily_rain_rate_piezo))
         ? historyData.daily_rain_rate_piezo : null;
       if (!series || !series.length) {
+        // History rain not loaded yet — trigger a standalone load so a later
+        // render can show the totals (covers current-before-history ordering).
         if (!rainfallHistoryLoaded) { loadRainfallStandalone(); }
         return null;
       }
@@ -1060,10 +1071,12 @@
     }
 
     function calcDailyDiff(arr) {
+      // For cumulative sensors like rain, calculate daily difference from sum
       return arr.map((d, i) => {
         if (i === 0) return { ...d, _daily: 0 };
         const prev = arr[i - 1];
         const diff = (d.sum || 0) - (prev.sum || 0);
+        // If diff is negative (yearly reset on Jan 1) use today's sum value
         return { ...d, _daily: Math.max(0, diff < 0 ? (d.sum || 0) : diff) };
       });
     }
@@ -1165,6 +1178,7 @@
           { label: 'hPa', data: data.map(d => d.mean), borderColor: '#a87ab8', backgroundColor: 'rgba(168,122,184,0.1)', borderWidth: 1.5, fill: true }
         ]
       },
+
     ];
 
     function makeChart(canvasId, type, labels, datasets, options = {}, destroy = true) {
@@ -1191,12 +1205,12 @@
     }
 
     function renderMiniCharts() {
-      if (!historyData) return;
       chartConfigs.forEach(cfg => {
         const raw = historyData[cfg.key];
         if (!raw) return;
 
         if (cfg.isTable) {
+          // Lightning: show summary stats in the panel
           const data30 = filterByDays(raw, 30);
           const totalStrikes = data30.reduce((sum, d) => sum + (d.max || 0), 0);
           const strikeDays = data30.filter(d => (d.max || 0) > 0);
@@ -1234,12 +1248,14 @@
       document.getElementById('modalOverlay').classList.add('open');
       document.body.style.overflow = 'hidden';
 
+      // Set default date inputs
       const today = new Date();
       const yearAgo = new Date();
       yearAgo.setFullYear(yearAgo.getFullYear() - 1);
       document.getElementById('dateTo').value = today.toISOString().split('T')[0];
       document.getElementById('dateFrom').value = yearAgo.toISOString().split('T')[0];
 
+      // Reset range buttons
       document.querySelectorAll('.range-btn').forEach(b => b.classList.remove('active'));
       document.querySelector('.range-btn[data-days="30"]').classList.add('active');
       activeDays = 30;
@@ -1254,7 +1270,7 @@
     }
 
     function renderModalChart(days, fromDate, toDate) {
-      if (!activeChartConfig || !historyData) return;
+      if (!activeChartConfig) return;
       const raw = historyData[activeChartConfig.key];
       if (!raw) return;
 
@@ -1270,6 +1286,7 @@
       const wrapper = document.querySelector('.modal-chart-wrapper');
 
       if (activeChartConfig.isTable) {
+        // Render lightning as a table
         const strikeDays = data
           .filter(d => (d.max || 0) > 0)
           .sort((a, b) => b.t - a.t);
@@ -1307,6 +1324,7 @@
         return;
       }
 
+      // Restore canvas for regular charts
       wrapper.innerHTML = '<canvas id="modalChart"></canvas>';
       const ctx = document.getElementById('modalChart');
       modalChart = new Chart(ctx, {
@@ -1328,6 +1346,7 @@
       });
     }
 
+    // Range button clicks
     document.querySelectorAll('.range-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         document.querySelectorAll('.range-btn').forEach(b => b.classList.remove('active'));
@@ -1455,7 +1474,7 @@
               <div class="condition-row"><span class="condition-label">UV Index</span><span class="condition-value ${parseFloat(d.uv) >= 6 ? 'warning' : ''}">${fmt(d.uv, 0)}</span></div>
             </div>
           </div>
-        </div>
+        </div></div>
 
         <!-- Records -->
         <div class="section-header" style="margin-top:28px">
@@ -1580,11 +1599,12 @@
       renderISS();
       renderMeteorShowers();
 
-      if (d && d.wind_dir !== null && d.wind_dir !== undefined) {
-        const arrow = document.getElementById('compassArrow');
-        if (arrow) arrow.style.transform = `translateX(-50%) translateY(-100%) rotate(${d.wind_dir}deg)`;
+      if (d.wind_dir !== null) {
+        document.getElementById('compassArrow').style.transform =
+          `translateX(-50%) translateY(-100%) rotate(${d.wind_dir}deg)`;
       }
 
+      // Attach click handlers
       document.querySelectorAll('.chart-panel').forEach(panel => {
         panel.addEventListener('click', () => {
           const chartId = panel.dataset.chart;
@@ -1596,6 +1616,7 @@
       if (historyData) renderMiniCharts();
     }
 
+    // MQTT
     // ── Forecast ─────────────────────────────────────────────
     function wmoIcon(code) {
       if (code === 0) return '☀️';
@@ -1609,6 +1630,18 @@
       return '⛈️';
     }
 
+    function wmoDesc(code) {
+      if (code === 0) return 'Clear';
+      if (code <= 2) return 'Partly cloudy';
+      if (code <= 3) return 'Overcast';
+      if (code <= 48) return 'Foggy';
+      if (code <= 55) return 'Drizzle';
+      if (code <= 65) return 'Rain';
+      if (code <= 77) return 'Snow';
+      if (code <= 82) return 'Showers';
+      return 'Thunderstorm';
+    }
+
     async function loadForecast() {
       try {
         const res = await fetch(
@@ -1619,6 +1652,7 @@
         );
         const data = await res.json();
 
+        // ── 7-day cards ──
         const daysEl = document.getElementById('forecastDays');
         if (!daysEl) return;
 
@@ -1649,6 +1683,7 @@
             </div>`;
         }).join('');
 
+        // ── Hourly for today ──
         const hourlyEl = document.getElementById('forecastHourly');
         if (!hourlyEl) return;
 
@@ -1702,8 +1737,10 @@
 
       if (!temps.length) return;
 
-      const fmtNum = (v, dp=1) => v != null ? Number(v).toFixed(dp) : '—';
+      const fmt = (v, dp=1) => v != null ? Number(v).toFixed(dp) : '—';
+      const fmtDate = d => d ? new Date(d).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' }) : '';
 
+      // Find record values and their indices so we can get dates
       const hottestIdx = temps.reduce((bi, b, i) => (b.max||0) > (temps[bi].max||0) ? i : bi, 0);
       const coldestIdx = temps.reduce((bi, b, i) => (b.min??99) < (temps[bi].min??99) ? i : bi, 0);
       const windiestIdx = winds.length ? winds.reduce((bi, b, i) => (b.max||0) > (winds[bi].max||0) ? i : bi, 0) : -1;
@@ -1718,6 +1755,8 @@
       const highestP = highestPIdx >= 0 ? pressure[highestPIdx] : null;
       const lowestP = lowestPIdx >= 0 ? pressure[lowestPIdx] : null;
 
+      // Estimate dates from index (history is in date order, newest last)
+      // Each entry is one day; work backwards from today
       function idxToDate(arr, idx) {
         if (arr[idx]?.date) return new Date(arr[idx].date);
         const daysAgo = arr.length - 1 - idx;
@@ -1733,27 +1772,21 @@
       const lowestPDate = lowestPIdx >= 0 ? idxToDate(pressure, lowestPIdx) : null;
 
       const fd = d => d ? d.toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' }) : '';
-      const recordsEl = document.getElementById('recordsGrid');
-      if (recordsEl) {
-        recordsEl.innerHTML = `
-          <div class="record-card"><div class="record-icon">🌡️</div><div class="record-value">${fmtNum(hottest?.max)}°C</div><div class="record-label">Hottest Day</div><div class="record-date">${fd(hottestDate)}</div></div>
-          <div class="record-card"><div class="record-icon">🥶</div><div class="record-value">${fmtNum(coldest?.min)}°C</div><div class="record-label">Coldest Night</div><div class="record-date">${fd(coldestDate)}</div></div>
-          <div class="record-card"><div class="record-icon">💨</div><div class="record-value">${fmtNum(windiest?.max)} mph</div><div class="record-label">Strongest Gust</div><div class="record-date">${fd(windiestDate)}</div></div>
-          <div class="record-card"><div class="record-icon">🌧️</div><div class="record-value">${fmtNum(wettest?._daily)} mm</div><div class="record-label">Wettest Day</div><div class="record-date">${fd(wettestDate)}</div></div>
-          <div class="record-card"><div class="record-icon">⬆️</div><div class="record-value">${fmtNum(highestP?.max)} hPa</div><div class="record-label">Highest Pressure</div><div class="record-date">${fd(highestPDate)}</div></div>
-          <div class="record-card"><div class="record-icon">⬇️</div><div class="record-value">${fmtNum(lowestP?.min)} hPa</div><div class="record-label">Lowest Pressure</div><div class="record-date">${fd(lowestPDate)}</div></div>`;
-      }
+      document.getElementById('recordsGrid').innerHTML = `
+        <div class="record-card"><div class="record-icon">🌡️</div><div class="record-value">${fmt(hottest?.max)}°C</div><div class="record-label">Hottest Day</div><div class="record-date">${fd(hottestDate)}</div></div>
+        <div class="record-card"><div class="record-icon">🥶</div><div class="record-value">${fmt(coldest?.min)}°C</div><div class="record-label">Coldest Night</div><div class="record-date">${fd(coldestDate)}</div></div>
+        <div class="record-card"><div class="record-icon">💨</div><div class="record-value">${fmt(windiest?.max)} mph</div><div class="record-label">Strongest Gust</div><div class="record-date">${fd(windiestDate)}</div></div>
+        <div class="record-card"><div class="record-icon">🌧️</div><div class="record-value">${fmt(wettest?._daily)} mm</div><div class="record-label">Wettest Day</div><div class="record-date">${fd(wettestDate)}</div></div>
+        <div class="record-card"><div class="record-icon">⬆️</div><div class="record-value">${fmt(highestP?.max)} hPa</div><div class="record-label">Highest Pressure</div><div class="record-date">${fd(highestPDate)}</div></div>
+        <div class="record-card"><div class="record-icon">⬇️</div><div class="record-value">${fmt(lowestP?.min)} hPa</div><div class="record-label">Lowest Pressure</div><div class="record-date">${fd(lowestPDate)}</div></div>`;
     }
 
     // ── Stargazing ────────────────────────────────────────────
     async function renderStargazing(current) {
-      const sgEl = document.getElementById('stargazingCard');
-      const auEl = document.getElementById('auroraCard');
-      if (!sgEl || !auEl) return;
-
       try {
         const lat = 54.616, lon = -3.056;
 
+        // Fetch weather + aurora data in parallel
         const [weatherRes, auroraRes] = await Promise.all([
           fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=cloudcover,visibility&daily=sunrise,sunset&timezone=Europe%2FLondon&forecast_days=1`),
           fetch('https://services.swpc.noaa.gov/products/noaa-planetary-k-index-forecast.json')
@@ -1761,6 +1794,7 @@
         const data = await weatherRes.json();
         const kpData = await auroraRes.json();
 
+        // Weather
         const sunset = new Date(data.daily.sunset[0]);
         const now = new Date();
         const nightHour = Math.max(sunset.getHours(), now.getHours());
@@ -1768,6 +1802,7 @@
         const cloud = data.hourly.cloudcover[hi] || 0;
         const vis = (data.hourly.visibility[hi] || 0) / 1000;
 
+        // Moon phase
         const moonAge = ((now - new Date('2000-01-06')) / 86400000) % 29.53;
         let moonPhase, moonIcon;
         if (moonAge < 1.85) { moonPhase = 'New Moon'; moonIcon = '🌑'; }
@@ -1780,6 +1815,7 @@
         else { moonPhase = 'Waning Crescent'; moonIcon = '🌘'; }
         const moonBrightness = moonAge > 7 && moonAge < 22 ? Math.round(Math.sin((moonAge / 29.53) * Math.PI) * 100) : 0;
 
+        // Stargazing score
         let score = 10;
         score -= Math.round(cloud / 15);
         if (moonBrightness > 70) score -= 3;
@@ -1795,9 +1831,12 @@
         const sunsetTime = sunset.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
         const sunrise = new Date(data.daily.sunrise[0]).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 
+        // Kp index — find tonight's forecast
+        // kpData is array of [time, kp, observed/estimated/predicted]
         let kpForecast = 0;
         let kpTime = '';
         if (Array.isArray(kpData) && kpData.length > 1) {
+          // Skip header row, find next forecast entry
           const tonight = kpData.slice(1).find(row => {
             const t = new Date(row[0]);
             return t > now;
@@ -1808,6 +1847,8 @@
           }
         }
 
+        // Aurora visibility from Threlkeld (54.6°N)
+        // Kp 4 = slight chance, Kp 5 = possible, Kp 6 = likely, Kp 7+ = storm
         let auroraRating, auroraClass, auroraDesc;
         if (kpForecast >= 7) { auroraRating = '🌌 Geomagnetic Storm'; auroraClass = 'storm'; auroraDesc = 'Overhead display likely — go outside now!'; }
         else if (kpForecast >= 6) { auroraRating = '✅ Likely visible'; auroraClass = 'likely'; auroraDesc = 'Good chance from dark location'; }
@@ -1815,9 +1856,12 @@
         else if (kpForecast >= 4) { auroraRating = '🔭 Slight chance'; auroraClass = 'slight'; auroraDesc = 'Low on northern horizon only'; }
         else { auroraRating = '✗ Unlikely'; auroraClass = 'none'; auroraDesc = 'Quiet geomagnetic conditions'; }
 
+        // Combined aurora score (clouds + Kp)
+        const kpPct = Math.min(100, Math.round((kpForecast / 9) * 100));
         const cloudPenalty = cloud > 70 ? ' · Clouds blocking' : cloud > 40 ? ' · Partly cloudy' : '';
+        const auroraBarColor = kpForecast >= 6 ? '#d090ff' : kpForecast >= 4 ? '#a0c4ff' : 'rgba(100,120,160,0.5)';
 
-        sgEl.innerHTML = `
+        document.getElementById('stargazingCard').innerHTML = `
           <div class="sg-score">${score}/10</div>
           <div class="sg-label ${ratingClass}">Stargazing</div>
           <div class="sg-facts">
@@ -1829,7 +1873,7 @@
             <div class="sg-fact"><span>Sunset / Sunrise</span><span>${sunsetTime} / ${sunrise}</span></div>
           </div>`;
 
-        auEl.innerHTML = `
+        document.getElementById('auroraCard').innerHTML = `
           <div class="sg-score">${kpForecast.toFixed(1)}</div>
           <div class="sg-label" style="color:#a0c4ff">Kp Index · Northern Lights</div>
           <div class="sg-facts">
@@ -1842,10 +1886,11 @@
           </div>`;
 
       } catch(e) {
-        sgEl.innerHTML = '<div style="color:var(--cream-dim);font-style:italic">Could not load data</div>';
-        auEl.innerHTML = '<div style="color:var(--cream-dim);font-style:italic">Could not load data</div>';
+        document.getElementById('stargazingCard').innerHTML = '<div style="color:var(--cream-dim);font-style:italic">Could not load data</div>';
+        document.getElementById('auroraCard').innerHTML = '<div style="color:var(--cream-dim);font-style:italic">Could not load data</div>';
       }
     }
+
 
     // ── Growing Degree Days ──────────────────────────────────
     function renderGDD(history) {
@@ -1878,11 +1923,14 @@
         { gdd: 900, label: 'Redwings arrive', icon: '❄️', species: ['Redwing', 'Fieldfare', 'Brambling'], months: [9,10,11,0,1,2] },
       ];
 
+      // Cross-check milestones against actual bird detections
+      // Get bird detections from localStorage cache (saved by birds.html)
       let detections = [];
       try {
         const c = localStorage.getItem('threlkeld_birds_cache');
         if (c) {
           const raw = JSON.parse(c).data;
+          // raw is indexed object {0:{...}, 1:{...}, count:N}
           if (Array.isArray(raw)) {
             detections = raw;
           } else if (raw && raw.count) {
@@ -1901,6 +1949,7 @@
           : false
       }));
 
+      // If a milestone is confirmed by detection, treat effective GDD as at least that milestone's value
       const effectiveGDD = milestonesConfirmed.reduce((gdd, m) => {
         return m.confirmed && m.gdd > gdd ? m.gdd : gdd;
       }, totalGDD);
@@ -1910,7 +1959,9 @@
       const last = reached[reached.length - 1];
 
       const dayOfYear = Math.round((now - startOfYear) / (1000 * 60 * 60 * 24));
+      const annualTarget = 1000;
 
+      // Extra stats
       const last7 = yearTemps.slice(-7);
       const gddLast7 = Math.round(last7.reduce((s, d) => s + Math.max(0, (d.mean ?? ((d.max+d.min)/2)) - 5), 0) * 10) / 10;
       const gddPerDay = yearTemps.length > 0 ? totalGDD / yearTemps.length : 0;
@@ -1962,7 +2013,7 @@
       if (temps.length < 7) return;
 
       const t30 = temps.slice(-30);
-      const r30 = calcDailyDiff(rain).slice(-30);
+      const r30 = calcDailyDiff(rain).slice(-30);  // _daily = real daily total (mm)
       const w30 = winds.slice(-30);
       const p30 = pressure.slice(-30);
       const days = t30.length;
@@ -2041,21 +2092,7 @@
 
     // Load cached data on startup
     const cached = loadCache();
-    if (cached && cached.data) {
-      showOfflineBanner(cached.age);
-      if (cached.data.current) {
-        currentData = cached.data.current;
-        renderCurrent(currentData);
-        loadForecast();
-        renderStargazing(currentData);
-      }
-      if (cached.data.history) {
-        historyData = cached.data.history;
-        renderRecords(historyData);
-        renderGDD(historyData);
-        renderCorrelation(historyData);
-      }
-    }
+    if (cached) { showOfflineBanner(cached.age); }
 
     const client = mqtt.connect(`wss://${MQTT_HOST}:${MQTT_PORT}/mqtt`);
 
@@ -2087,16 +2124,12 @@
       try {
         const data = JSON.parse(message.toString());
         document.getElementById('lastUpdate').textContent = `Updated ${new Date().toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'})}`;
-        
         if (topic === CURRENT_TOPIC) {
           currentData = data;
-          hideOfflineBanner(); 
-          saveCache({ current: data, history: historyData });
-
-          renderCurrent(data);
+          hideOfflineBanner(); saveCache({ current: data, history: historyData });
           loadForecast();
+          renderCurrent(data);
           renderStargazing(data);
-
           if (historyData) {
             renderMiniCharts();
             renderRecords(historyData);
@@ -2104,15 +2137,13 @@
             renderCorrelation(historyData);
           }
         }
-        
         if (topic === HISTORY_TOPIC) {
           historyData = data;
+          // Rainfall history now comes from a static Open-Meteo file (the piezo
+          // gauge was faulty and its data unusable). Merge it in before rendering.
           applyRainfallHistory().finally(() => {
             if (currentData) {
-              renderCurrent(currentData);
-              loadForecast();
-              renderStargazing(currentData);
-
+              renderCurrent(currentData);   // refresh card so Weekly/Monthly/Yearly pick up Open-Meteo totals
               renderMiniCharts();
               renderRecords(historyData);
               renderGDD(historyData);
@@ -2138,6 +2169,7 @@
       if (sub) sub.textContent = 'Updated ' + now.toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'});
       if (headerSub) {
         const hour = now.getHours();
+        // Approximate daylight hours for Threlkeld — use sun cache if available
         const sunriseH = 4.5, sunsetH = 21.5;
         const isDaylight = hour >= Math.floor(sunriseH) && hour < Math.ceil(sunsetH);
         headerSub.textContent = isDaylight ? 'Reolink · Updated ' + now.toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'}) : 'Reolink · Daylight hours only';
@@ -2166,7 +2198,8 @@
         tlStop();
       }
     }
-    document.addEventListener('keydown', e => { if (e.key === 'Escape') { const o = document.getElementById('tlModalOverlay'); if (o && o.classList.contains('open')) toggleTimelapse(); } });
+    // Close on backdrop click or Escape
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') { const o = document.getElementById('tlModalOverlay'); if (o.classList.contains('open')) toggleTimelapse(); } });
 
     async function initTimelapse() {
       const idx = fellcamIndex || await loadFellcamIndex();
@@ -2255,6 +2288,7 @@
       });
     });
 
+
     // ── ISS Passes ────────────────────────────────────────────
     async function renderISS() {
       const card = document.getElementById('issCard');
@@ -2321,6 +2355,7 @@
     function renderMeteorShowers() {
       const card = document.getElementById('meteorCard');
       if (!card) return;
+      // Major annual showers: name, peak month (0-idx), peak day, ZHR, radiant
       const showers = [
         { name: 'Quadrantids',    m: 0,  d: 3,  zhr: 110, radiant: 'Boötes' },
         { name: 'Lyrids',         m: 3,  d: 22, zhr: 18,  radiant: 'Lyra' },
@@ -2336,6 +2371,7 @@
       ];
       const now = new Date();
       const yr = now.getFullYear();
+      // Build dated peaks for this year and next, keep the next 4 upcoming
       let peaks = [];
       [yr, yr + 1].forEach(y => {
         showers.forEach(s => peaks.push({ ...s, date: new Date(y, s.m, s.d, 12) }));
@@ -2367,6 +2403,7 @@
       const now = new Date();
       const monthLabel = document.getElementById('moonCalMonth');
 
+      // Reference new moon: 6 Jan 2000
       const refNewMoon = new Date('2000-01-06T18:14:00Z');
       const SYNODIC = 29.53058867;
 
@@ -2383,12 +2420,15 @@
         return { icon: '🌘', name: 'Waning Crescent' };
       }
 
+      // Rolling window centred on today: start from the Sunday of the week
+      // ~2 weeks before today, render 5 weeks (35 days).
       const todayMid = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12);
       const start = new Date(todayMid);
       start.setDate(start.getDate() - 14);
-      start.setDate(start.getDate() - start.getDay());
+      start.setDate(start.getDate() - start.getDay()); // back to Sunday
       const WEEKS = 5;
 
+      // Label shows the span, e.g. "May – June 2026"
       const end = new Date(start);
       end.setDate(end.getDate() + WEEKS * 7 - 1);
       const sMon = start.toLocaleDateString('en-GB', { month: 'long' });
@@ -2420,7 +2460,8 @@
       const grid = document.getElementById('moonGrid');
       if (grid) grid.innerHTML = html;
     }
-  </script>
+
+    // Footer timestamp</script>
 
   <!-- PWA Install Banner -->
   <div class="install-banner" id="installBanner">
@@ -2438,6 +2479,7 @@
   </div>
 
   <script>
+    // PWA Install prompt
     (function() {
       if (localStorage.getItem('pwa_dismissed')) return;
       const banner = document.getElementById('installBanner');
@@ -2451,6 +2493,7 @@
       }
       dismissBtn.addEventListener('click', dismiss);
 
+      // Android/Chrome — intercept beforeinstallprompt
       let deferredPrompt;
       window.addEventListener('beforeinstallprompt', (e) => {
         e.preventDefault();
@@ -2465,6 +2508,7 @@
         });
       });
 
+      // iOS Safari — show manual instructions
       const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
       const isInStandaloneMode = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
       if (isIOS && !isInStandaloneMode) {
