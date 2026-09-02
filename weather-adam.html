@@ -1886,6 +1886,15 @@
         </div>`;
 
       document.getElementById('mainContent').innerHTML = html;
+      // renderCurrent() runs on every MQTT message (frequent), which just wiped
+      // #stargazingCard/#auroraCard back to their bare loading-spinner markup -
+      // but renderStargazing() only actually re-fetches every 15 minutes (see its
+      // own call site) to stay within the free NOAA/Open-Meteo API limits. Without
+      // this, the cards would sit on a spinner for most of that 15-minute window,
+      // only briefly showing real data right after each scheduled refresh. Restore
+      // whatever was last successfully fetched immediately, at no network cost.
+      if (renderStargazing._lastStargazingHTML) document.getElementById('stargazingCard').innerHTML = renderStargazing._lastStargazingHTML;
+      if (renderStargazing._lastAuroraHTML) document.getElementById('auroraCard').innerHTML = renderStargazing._lastAuroraHTML;
       refreshFellCam();
       renderMoonCalendar();
       renderISS();
@@ -1963,6 +1972,29 @@
         <div class="record-card"><div class="record-icon">⬇️</div><div class="record-value">${fmt(lowestP?.min)} hPa</div><div class="record-label">Lowest Pressure</div><div class="record-date">${fd(lowestPDate)}</div></div>`;
     }
 
+    // Shared fetch helper for the three external, less-reliable third-party APIs
+    // (Open-Meteo, NOAA SWPC, and the ISS pass API) - retries once after a short
+    // delay and gives up on a hung request via a timeout, rather than a single
+    // attempt with no timeout that can leave a card stuck on its loading spinner.
+    async function fetchWithRetry(url, { retries = 1, timeoutMs = 8000, retryDelayMs = 1500 } = {}) {
+      let lastErr;
+      for (let attempt = 0; attempt <= retries; attempt++) {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), timeoutMs);
+        try {
+          const res = await fetch(url, { signal: controller.signal });
+          clearTimeout(timer);
+          if (!res.ok) throw new Error(url + ' -> HTTP ' + res.status);
+          return res;
+        } catch (e) {
+          clearTimeout(timer);
+          lastErr = e;
+          if (attempt < retries) await new Promise(r => setTimeout(r, retryDelayMs));
+        }
+      }
+      throw lastErr;
+    }
+
     // ── Stargazing ────────────────────────────────────────────
     async function renderStargazing(current) {
       // The stargazing/aurora cards live inside #mainContent, which only gets
@@ -1983,8 +2015,8 @@
 
         // Fetch weather + aurora data in parallel
         const [weatherRes, auroraRes] = await Promise.all([
-          fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=cloudcover,visibility&daily=sunrise,sunset&timezone=Europe%2FLondon&forecast_days=1`),
-          fetch('https://services.swpc.noaa.gov/products/noaa-planetary-k-index-forecast.json')
+          fetchWithRetry(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=cloudcover,visibility&daily=sunrise,sunset&timezone=Europe%2FLondon&forecast_days=1`),
+          fetchWithRetry('https://services.swpc.noaa.gov/products/noaa-planetary-k-index-forecast.json')
         ]);
         const data = await weatherRes.json();
         const kpData = await auroraRes.json();
@@ -2056,7 +2088,7 @@
         const cloudPenalty = cloud > 70 ? ' · Clouds blocking' : cloud > 40 ? ' · Partly cloudy' : '';
         const auroraBarColor = kpForecast >= 6 ? '#d090ff' : kpForecast >= 4 ? '#a0c4ff' : 'rgba(100,120,160,0.5)';
 
-        document.getElementById('stargazingCard').innerHTML = `
+        const stargazingHTML = `
           <div class="sg-score">${score}/10</div>
           <div class="sg-label ${ratingClass}">Stargazing</div>
           <div class="sg-facts">
@@ -2068,7 +2100,7 @@
             <div class="sg-fact"><span>Sunset / Sunrise</span><span>${sunsetTime} / ${sunrise}</span></div>
           </div>`;
 
-        document.getElementById('auroraCard').innerHTML = `
+        const auroraHTML = `
           <div class="sg-score">${kpForecast.toFixed(1)}</div>
           <div class="sg-label" style="color:#a0c4ff">Kp Index · Northern Lights</div>
           <div class="sg-facts">
@@ -2080,9 +2112,20 @@
             <div class="sg-fact"><span>Conditions</span><span style="color:var(--cream-dim)">${auroraDesc}</span></div>
           </div>`;
 
+        document.getElementById('stargazingCard').innerHTML = stargazingHTML;
+        document.getElementById('auroraCard').innerHTML = auroraHTML;
+        // Cache the last successful render so a later MQTT-triggered rebuild of
+        // #mainContent (which recreates these cards from scratch) can restore
+        // this instantly instead of reverting to a bare loading spinner, and so
+        // a failed refresh below can fall back to the last known-good reading
+        // rather than replacing good data with an error message.
+        renderStargazing._lastStargazingHTML = stargazingHTML;
+        renderStargazing._lastAuroraHTML = auroraHTML;
+
       } catch(e) {
-        document.getElementById('stargazingCard').innerHTML = '<div style="color:var(--cream-dim);font-style:italic">Could not load data</div>';
-        document.getElementById('auroraCard').innerHTML = '<div style="color:var(--cream-dim);font-style:italic">Could not load data</div>';
+        const fallbackMsg = '<div style="color:var(--cream-dim);font-style:italic">Could not load data</div>';
+        document.getElementById('stargazingCard').innerHTML = renderStargazing._lastStargazingHTML || fallbackMsg;
+        document.getElementById('auroraCard').innerHTML = renderStargazing._lastAuroraHTML || fallbackMsg;
       }
     }
 
@@ -2494,12 +2537,11 @@
       if (!card) return;
       const lat = 54.616, lon = -3.056;
       try {
-        const res = await fetch(`https://iss-api.polluxlabs.io/iss-pass?lat=${lat}&lon=${lon}&visible_only=true`);
-        if (!res.ok) throw new Error('iss api ' + res.status);
+        const res = await fetchWithRetry(`https://iss-api.polluxlabs.io/iss-pass?lat=${lat}&lon=${lon}&visible_only=true`);
         const json = await res.json();
         const passes = (json && Array.isArray(json.passes)) ? json.passes : [];
         if (passes.length === 0) {
-          card.innerHTML = '<div class="sg-score" style="font-size:34px">🛰️</div>'
+          card.innerHTML = renderISS._lastHTML = '<div class="sg-score" style="font-size:34px">🛰️</div>'
             + '<div class="sg-label">No visible passes right now</div>'
             + '<div style="font-size:12px;color:var(--cream-dim);margin-top:14px;line-height:1.5">The ISS is currently passing over in daylight or through Earth\'s shadow, so it isn\'t visible from Threlkeld. Bright evening and dawn passes return every few weeks — check back soon.</div>';
           return;
@@ -2519,7 +2561,7 @@
           .slice(0, 4);
 
         if (upcoming.length === 0) {
-          card.innerHTML = '<div class="sg-score" style="font-size:28px">—</div><div class="sg-label">No upcoming visible passes</div>';
+          card.innerHTML = renderISS._lastHTML = '<div class="sg-score" style="font-size:28px">—</div><div class="sg-label">No upcoming visible passes</div>';
           return;
         }
 
@@ -2541,12 +2583,15 @@
           facts += `<div class="sg-fact"><span>${dayLabel(p.rise)} ${tm(p.rise)}</span><span>${p.dir}→${p.setDir} · ${p.elev}° · ${p.mins}</span></div>`;
         });
 
-        card.innerHTML = `
+        card.innerHTML = renderISS._lastHTML = `
           <div class="sg-score ${quality}" style="font-size:40px">${next.elev}°</div>
           <div class="sg-label ${quality}">${qLabel} · max elevation</div>
           <div class="sg-facts">${facts}</div>`;
       } catch (e) {
-        card.innerHTML = '<div class="sg-score" style="font-size:28px">—</div><div class="sg-label">Pass data unavailable</div>';
+        // Keep whatever passes were last successfully fetched on screen rather than
+        // replacing good data with an error on a single transient API hiccup -
+        // renderISS() reruns on every MQTT tick, so it'll self-correct shortly anyway.
+        card.innerHTML = renderISS._lastHTML || '<div class="sg-score" style="font-size:28px">—</div><div class="sg-label">Pass data unavailable</div>';
       }
     }
 
