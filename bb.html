@@ -630,6 +630,19 @@
     .date-input { background: #fff !important; color: #000 !important; border: 1px solid #000 !important; }
     .date-sep { color: #000 !important; }
 
+    /* Same issue on the "i" info tooltips: .info-icon and .info-box use hardcoded
+       green rgba()/hex values (not the swappable theme variables), so in this B&W
+       theme they stay green-tinted instead of black-on-white, and the popup box
+       ends up near-black text on a near-black (#1a2e1a) background. */
+    .info-tooltip .info-icon {
+      background: #fff !important; border: 1px solid #000 !important; color: #000 !important;
+    }
+    .info-tooltip .info-box {
+      background: #fff !important; border: 1px solid #000 !important; color: #000 !important;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3) !important;
+    }
+    .info-box strong { color: #000 !important; }
+
     @media print {
       .no-print { display: none !important; }
       nav, .nav-home, .nav-links, .status-bar, #statusDot, #statusText,
