@@ -177,8 +177,11 @@
   // the full-size sheet. This is the one place both the preview and the
   // downloads (which capture #sheet as-is) get their dimensions from.
   const SHEET_PROFILE = {
-    third:   { heightMm: 210 / 3, padMm: 6, brandPt: 8,   rangePt: 6.5, bodyPt: 7,   bodyLH: 1.3,  chartMm: 15, capPt: 5 },
-    quarter: { heightMm: 210 / 4, padMm: 5, brandPt: 7,   rangePt: 5.5, bodyPt: 6,   bodyLH: 1.25, chartMm: 10, capPt: 4.5 },
+    third:   { heightMm: 210 / 3, padMm: 6, brandPt: 8,   rangePt: 6.5, bodyPt: 7,   bodyLH: 1.3,  chartMm: 15, capPt: 5,   speciesN: 3 },
+    // At 10mm the chart-holder simply doesn't have room for 3 clean species
+    // rows (tried it - labels start colliding even with the tightened
+    // layout), so the quarter size shows the top 2 species instead of 3.
+    quarter: { heightMm: 210 / 4, padMm: 5, brandPt: 7,   rangePt: 5.5, bodyPt: 6,   bodyLH: 1.25, chartMm: 10, capPt: 4.5, speciesN: 2 },
   };
   function applyProfile() {
     const p = SHEET_PROFILE[SIZE];
@@ -259,17 +262,63 @@
     };
   }
 
+  // Species mini-charts draw their own name + value labels rather than relying
+  // on Chart.js's native y-axis tick labels: at this size (a handful of px per
+  // row) those ticks have no collision-avoidance for category axes and just
+  // overlap each other once names get long. This plugin sizes the font to the
+  // actual row height, truncates a name that still won't fit, and places the
+  // name in the gap above its own bar (reserved via categoryPercentage) so
+  // rows can never collide.
+  function speciesLabelPlugin(formatter) {
+    return {
+      id: 'speciesLabels',
+      afterDatasetsDraw(chart) {
+        const { ctx, chartArea } = chart;
+        const meta = chart.getDatasetMeta(0);
+        const data = chart.data.datasets[0].data;
+        const labels = chart.data.labels;
+        const rowH = meta.data.length ? (chartArea.bottom - chartArea.top) / meta.data.length : 8;
+        const fontPx = Math.max(4.5, Math.min(6, rowH * 0.4));
+        const maxW = Math.max(20, chartArea.right - chartArea.left - 4);
+        ctx.save();
+        ctx.fillStyle = '#111';
+        meta.data.forEach((bar, i) => {
+          ctx.font = fontPx + "px Calibri, Candara, 'Segoe UI', Optima, Arial, sans-serif";
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'alphabetic';
+          let name = String(labels[i] || '');
+          if (ctx.measureText(name).width > maxW) {
+            while (name.length > 3 && ctx.measureText(name + '…').width > maxW) name = name.slice(0, -1);
+            name = name.replace(/\s+$/, '') + '…';
+          }
+          ctx.fillText(name, chartArea.left, bar.y - bar.height / 2 - 1.5);
+
+          ctx.font = "bold " + fontPx + "px Calibri, Candara, 'Segoe UI', Optima, Arial, sans-serif";
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(formatter(data[i], i), bar.x + 4, bar.y);
+        });
+        ctx.restore();
+      }
+    };
+  }
+
   let _charts = [];
-  function speciesBarChart(canvasId, list) {
-    const top = (list || []).slice(0, 3);
+  function speciesBarChart(canvasId, list, n) {
+    const top = (list || []).slice(0, n || 3);
     if (!top.length) return null;
     return new Chart(document.getElementById(canvasId), {
       type: 'bar',
-      data: { labels: top.map(s=>s.name), datasets: [ { data: top.map(s=>s.count), ...BAR_STYLE } ] },
+      data: { labels: top.map(s=>s.name), datasets: [ { data: top.map(s=>s.count), ...BAR_STYLE, barPercentage:0.5, categoryPercentage:0.9 } ] },
       options: { ...noLegend, indexAxis:'y',
-        scales: { x: { grid:{ color:'rgba(0,0,0,0.08)' }, ticks:{ maxTicksLimit:2 }, grace:'25%' },
-                  y: { grid:{ display:false }, ticks:{ font:{size:6}, autoSkip:false } } } },
-      plugins: [ valueLabelPlugin(v => v.toLocaleString('en-GB')) ]
+        // Reserve room above the plot area so the topmost bar's name label
+        // (drawn by speciesLabelPlugin, above its bar) doesn't get clipped
+        // against the canvas edge - there's no category above it to borrow
+        // gap space from the way the other rows can.
+        layout: { padding: { top: 8 } },
+        scales: { x: { grid:{ color:'rgba(0,0,0,0.08)' }, ticks:{ maxTicksLimit:2 }, grace:'30%' },
+                  y: { grid:{ display:false }, ticks:{ display:false } } } },
+      plugins: [ speciesLabelPlugin(v => v.toLocaleString('en-GB')) ]
     });
   }
   function weatherBarChart(canvasId, w) {
@@ -291,8 +340,9 @@
     _charts.forEach(c => { if (c) { try { c.destroy(); } catch(e){} } });
     _charts = [];
     const wl = DATA.wildlife || {}, w = DATA.weather || {};
-    _charts.push(speciesBarChart('birdMiniChart', wl.topSpecies));
-    _charts.push(speciesBarChart('batMiniChart', friendlyBatSpecies(wl.topBatSpecies)));
+    const n = SHEET_PROFILE[SIZE].speciesN;
+    _charts.push(speciesBarChart('birdMiniChart', wl.topSpecies, n));
+    _charts.push(speciesBarChart('batMiniChart', friendlyBatSpecies(wl.topBatSpecies), n));
     _charts.push(weatherBarChart('weatherMiniChart', w));
   }
 
