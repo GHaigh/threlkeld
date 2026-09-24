@@ -32,13 +32,14 @@
   .controls button.toggle-off { background: #eee; color: #111; border: 1px solid #999; }
   .controls .hint { width: 100%; text-align: center; font-size: 11px; color: #555; margin-top: 2px; }
 
-  /* The on-screen preview only shows as much of the sheet as the content
-     actually fills (set in px by fitPreviewHeight()) so a short 1/3 or 1/4
-     page item doesn't look like a full A5 page with blank space below it.
-     #sheet itself keeps its full A5 dimensions underneath - that's what
-     downloadPDF/JPG/Word actually capture, unchanged. */
+  /* The on-screen preview shows #sheet visually scaled down to a true 1/3
+     or 1/4 of an A5 page height (width/height set in px by
+     fitPreviewHeight()), so it reads as a genuinely compact item rather
+     than a full A5 page. #sheet itself keeps its real, full A5 dimensions
+     underneath - that's what downloadPDF/JPG/Word actually capture,
+     completely unaffected by the preview's scale. */
   .sheet-preview {
-    width: 148mm; margin: 0 auto 24px; overflow: hidden;
+    margin: 0 auto 24px; overflow: hidden;
     box-shadow: 0 2px 14px rgba(0,0,0,0.25);
   }
   .sheet {
@@ -143,30 +144,57 @@
     return [weatherBit, wildlifeBit].filter(Boolean).join(' ');
   }
 
-  // Crops the visible preview box down to how much of the A5 sheet the
-  // content actually fills, so it reads as a compact 1/3 or 1/4 page item
-  // rather than a near-empty full page. #sheet itself is untouched - it
-  // stays a full A5 box underneath, which is what the downloads capture.
+  // Converts a length in mm to px at the current zoom, via a throwaway probe
+  // element - more reliable than assuming 96dpi across browsers/zoom levels.
+  function mmToPx(mm) {
+    const probe = document.createElement('div');
+    probe.style.cssText = 'height:' + mm + 'mm;width:0;position:absolute;visibility:hidden;';
+    document.body.appendChild(probe);
+    const px = probe.getBoundingClientRect().height;
+    document.body.removeChild(probe);
+    return px;
+  }
+
+  // The body text at full 11pt/12pt size genuinely fills most of an A5
+  // page (that's correct - it's the same type size as the full review
+  // pages, and the download is meant to be a normal A5 page you crop into
+  // a magazine layout). But shown at that size on screen, the preview
+  // looks like "a full page", which is misleading for something labelled
+  // 1/3 or 1/4 page. So the on-screen preview is visually scaled down to
+  // a genuine 1/3 or 1/4 of an A5 page height - a true small thumbnail,
+  // not just a crop. #sheet's own layout size never changes; capture()
+  // always resets this transform before generating a download, so the
+  // PDF/JPG/Word files are completely unaffected and stay full-size.
   function fitPreviewHeight() {
     const wrap = document.getElementById('sheetPreview');
     const sheetEl = document.getElementById('sheet');
     const capEl = document.querySelector('.caption');
     if (!wrap || !sheetEl || !capEl) return;
-    const sheetTop = sheetEl.getBoundingClientRect().top;
+
+    // Reset any scale from a previous render before measuring, so the
+    // rect below reflects the sheet's natural, unscaled layout size.
+    sheetEl.style.transform = 'none';
+
+    const sheetRect = sheetEl.getBoundingClientRect();
     const capBottom = capEl.getBoundingClientRect().bottom;
-    const probe = document.createElement('div');
-    probe.style.cssText = 'height:10mm;width:0;position:absolute;visibility:hidden;';
-    document.body.appendChild(probe);
-    const padPx = probe.getBoundingClientRect().height;
-    document.body.removeChild(probe);
-    wrap.style.height = Math.ceil(capBottom - sheetTop + padPx) + 'px';
+    const padPx = mmToPx(10); // .sheet's own bottom padding
+    const contentPx = capBottom - sheetRect.top + padPx;
+
+    const fraction = SIZE === 'third' ? (1 / 3) : (1 / 4);
+    const targetPx = mmToPx(210 * fraction);
+    const scale = Math.min(1, targetPx / contentPx);
+
+    sheetEl.style.transformOrigin = 'top left';
+    sheetEl.style.transform = 'scale(' + scale + ')';
+    wrap.style.width = Math.ceil(sheetRect.width * scale) + 'px';
+    wrap.style.height = Math.ceil(contentPx * scale) + 'px';
   }
 
   function render() {
     const w = DATA.weather || {}, wl = DATA.wildlife || {};
     document.getElementById('rangeText').textContent = '— ' + (w.monthName || wl.monthName || '');
     document.getElementById('bodyText').textContent = buildBodyText(SIZE);
-    document.getElementById('sizeHint').textContent = SIZE === 'third' ? 'Showing: 1/3 page version' : 'Showing: 1/4 page version';
+    document.getElementById('sizeHint').textContent = (SIZE === 'third' ? 'Showing: 1/3 page version' : 'Showing: 1/4 page version') + ' (preview shown to scale)';
     document.getElementById('btnThird').className = SIZE === 'third' ? '' : 'toggle-off';
     document.getElementById('btnQuarter').className = SIZE === 'quarter' ? '' : 'toggle-off';
     buildCharts();
@@ -238,7 +266,16 @@
 
   async function capture() {
     const sheet = document.getElementById('sheet');
-    return await html2canvas(sheet, { scale: 3, backgroundColor:'#ffffff', useCORS:true });
+    // The preview shows #sheet visually scaled down (see fitPreviewHeight) -
+    // always capture the real, full-size sheet regardless of that, so JPG
+    // and PDF downloads are unaffected by whatever the preview looks like.
+    const prevTransform = sheet.style.transform;
+    sheet.style.transform = 'none';
+    try {
+      return await html2canvas(sheet, { scale: 3, backgroundColor:'#ffffff', useCORS:true });
+    } finally {
+      sheet.style.transform = prevTransform;
+    }
   }
   async function downloadJPG() {
     const canvas = await capture();
