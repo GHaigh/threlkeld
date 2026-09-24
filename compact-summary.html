@@ -20,17 +20,41 @@
   }
 
   .controls {
-    max-width: 148mm; margin: 16px auto 8px; display: flex; gap: 8px;
-    justify-content: center; flex-wrap: wrap;
+    max-width: 500px; margin: 16px auto 4px; display: flex; gap: 10px;
+    justify-content: center; align-items: center; flex-wrap: wrap;
   }
-  .controls button {
+  /* Size toggle is its own segmented-control group, visually distinct from
+     the plain action buttons below it - a Download button and a size
+     button used to look identical (both solid black), which is exactly
+     why it wasn't clear which size was being previewed. */
+  .size-toggle {
+    display: inline-flex; background: #e2e2e2; border-radius: 7px; padding: 3px; gap: 2px;
+  }
+  .size-toggle button {
+    font-family: Calibri, Candara, 'Segoe UI', Optima, Arial, sans-serif; font-size: 13px; font-weight: 600;
+    background: transparent; color: #333; border: none; border-radius: 5px;
+    padding: 7px 14px; cursor: pointer;
+  }
+  .size-toggle button.active { background: #111; color: #fff; }
+  .size-toggle button:not(.active):hover { background: #d2d2d2; }
+
+  .action-group { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+  .action-group button {
     font-family: Calibri, Candara, 'Segoe UI', Optima, Arial, sans-serif; font-size: 13px; font-weight: 600;
     background: #111; color: #fff; border: none; border-radius: 4px;
     padding: 7px 16px; cursor: pointer;
   }
-  .controls button:hover { background: #333; }
-  .controls button.toggle-off { background: #eee; color: #111; border: 1px solid #999; }
+  .action-group button:hover { background: #333; }
+
   .controls .hint { width: 100%; text-align: center; font-size: 11px; color: #555; margin-top: 2px; }
+
+  /* Large, plain-language label sat directly above the preview it describes,
+     so which size is showing is obvious at a glance without reading the
+     toggle state - updated by render() every time the size changes. */
+  .preview-label {
+    max-width: 148mm; margin: 4px auto 10px; text-align: center;
+    font-size: 13px; font-weight: 600; color: #111;
+  }
 
   /* #sheet is always full A5 width (148mm) - "1/3" and "1/4" only ever
      change its HEIGHT, to true fractions of the 210mm A5 height (70mm /
@@ -38,7 +62,7 @@
      the actual content fits for real at that height, at full width -
      this is a genuine preview of the final page, not a scaled thumbnail,
      and downloadPDF/JPG/Word all capture this same sheet as-is. */
-  .sheet-preview { margin: 0 auto 24px; }
+  .sheet-preview { display: flex; justify-content: center; margin: 0 auto 24px; }
   .sheet {
     width: 148mm; background: var(--paper);
     position: relative;
@@ -61,19 +85,24 @@
 
   .caption { font-style: italic; color: var(--ink-soft); margin: 0; }
 
-  .size-hint { font-size: 11px; color: #888; text-align: center; margin-top: 6px; }
 </style>
 </head>
 <body>
 
   <div class="controls">
-    <button id="btnThird" onclick="setSize('third')">1/3 Page</button>
-    <button id="btnQuarter" onclick="setSize('quarter')">1/4 Page</button>
-    <button onclick="downloadPDF()">Download PDF</button>
-    <button onclick="downloadJPG()">Download JPG</button>
-    <button onclick="downloadWord()">Download Word</button>
+    <div class="size-toggle">
+      <button id="btnThird" onclick="setSize('third')">1/3 Page</button>
+      <button id="btnQuarter" onclick="setSize('quarter')">1/4 Page</button>
+    </div>
+    <div class="action-group">
+      <button onclick="downloadPDF()">Download PDF</button>
+      <button onclick="downloadJPG()">Download JPG</button>
+      <button onclick="downloadWord()">Download Word</button>
+    </div>
     <div class="hint">A5 width · black &amp; white · shown true-size for a 1/3 or 1/4 page slot in the parish magazine</div>
   </div>
+
+  <div class="preview-label" id="previewLabel">Previewing: 1/3 page (true size)</div>
 
   <div class="sheet-preview" id="sheetPreview">
     <div class="sheet" id="sheet">
@@ -89,7 +118,6 @@
       <p class="caption">Top birds, bats, and this period's weather. Full data: threlkeld.info</p>
     </div>
   </div>
-  <div class="size-hint" id="sizeHint"></div>
 
 <script>
   // ===== DATA — combines monthly/<id>.json (weather) + wildlife/<id>.json,
@@ -201,9 +229,9 @@
     const w = DATA.weather || {}, wl = DATA.wildlife || {};
     document.getElementById('rangeText').textContent = '— ' + (w.monthName || wl.monthName || '');
     document.getElementById('bodyText').textContent = buildBodyText(SIZE);
-    document.getElementById('sizeHint').textContent = SIZE === 'third' ? 'Showing: 1/3 page version (true size)' : 'Showing: 1/4 page version (true size)';
-    document.getElementById('btnThird').className = SIZE === 'third' ? '' : 'toggle-off';
-    document.getElementById('btnQuarter').className = SIZE === 'quarter' ? '' : 'toggle-off';
+    document.getElementById('previewLabel').textContent = SIZE === 'third' ? 'Previewing: 1/3 page (true size)' : 'Previewing: 1/4 page (true size)';
+    document.getElementById('btnThird').className = SIZE === 'third' ? 'active' : '';
+    document.getElementById('btnQuarter').className = SIZE === 'quarter' ? 'active' : '';
     applyProfile();
     buildCharts();
   }
