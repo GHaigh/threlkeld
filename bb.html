@@ -754,8 +754,13 @@
       <h2>Monthly &amp; Seasonal Weather Review</h2>
       <p>
         A printable A5 weather review for the parish magazine.
-        <br><span style="color:var(--cream-dim)">Every period generated so far - calendar months, seasons, and the rolling 25th-to-24th window - appears below, most recent first. The rolling window is captured and generated automatically at 8am on the 25th, nothing to trigger by hand.</span>
+        <br><span style="color:var(--cream-dim)">Every period generated so far - calendar months, seasons, and the rolling 25th-to-24th window - appears below, most recent first. The rolling window is captured and generated automatically at 8am on the 25th. Use the control below to generate (or re-generate) a specific calendar month or season on demand.</span>
       </p>
+      <div class="review-controls">
+        <select id="mrPeriodSelect" class="review-select"></select>
+        <button class="review-btn" id="mrGenBtn" onclick="generatePeriod('weather')">Generate review</button>
+        <span class="review-status" id="mrGenStatus"></span>
+      </div>
       <div id="mrArchive" class="review-archive"></div>
     </section>
 
@@ -764,8 +769,13 @@
       <h2>Monthly &amp; Seasonal Wildlife Review</h2>
       <p>
         A printable A5 birds &amp; bats review for the parish magazine, correlated with the period's weather.
-        <br><span style="color:var(--cream-dim)">Same set of periods as the Weather Review above, most recent first.</span>
+        <br><span style="color:var(--cream-dim)">Same set of periods as the Weather Review above, most recent first. Use the control below to generate (or re-generate) a specific calendar month or season on demand.</span>
       </p>
+      <div class="review-controls">
+        <select id="wrPeriodSelect" class="review-select"></select>
+        <button class="review-btn" id="wrGenBtn" onclick="generatePeriod('wildlife')">Generate review</button>
+        <span class="review-status" id="wrGenStatus"></span>
+      </div>
       <div id="wrArchive" class="review-archive"></div>
     </section>
 
@@ -790,6 +800,134 @@
       const NR_BASE = 'https://rlpzmepeautd1v5pgoumz9aa2qhd92xd.ui.nabu.casa';
       const MONTHLY_INDEX_URL = NR_BASE + '/local/monthly/monthly_index.json';
       const WILDLIFE_INDEX_URL = NR_BASE + '/local/wildlife/wildlife_index.json';
+      const WEBHOOK_WEATHER = NR_BASE + '/api/webhook/monthly-review-trigger';
+      const WEBHOOK_WILDLIFE = NR_BASE + '/api/webhook/wildlife-review-trigger';
+
+      // ---- On-demand generation: build a dropdown of recent completed
+      // calendar months and seasons, and fire the same HA webhook the
+      // rolling-window cron uses (query-string start/end/id/label), then
+      // poll the index file until the new id appears.
+      function pad2(n) { return String(n).padStart(2, '0'); }
+      const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+      const SEASON_DEFS = [
+        { key: 'winter', months: [12, 1, 2] },
+        { key: 'spring', months: [3, 4, 5] },
+        { key: 'summer', months: [6, 7, 8] },
+        { key: 'autumn', months: [9, 10, 11] },
+      ];
+
+      function monthPeriod(year, month) { // month is 1-12
+        const start = year + '-' + pad2(month) + '-01';
+        const lastDay = new Date(year, month, 0).getDate();
+        const end = year + '-' + pad2(month) + '-' + pad2(lastDay);
+        return {
+          id: year + '-' + pad2(month),
+          start, end,
+          label: MONTH_NAMES[month - 1] + ' ' + year,
+          completeAt: new Date(year, month, 1), // first of the following month
+        };
+      }
+
+      function seasonPeriod(endYear, key) {
+        const s = SEASON_DEFS.find(x => x.key === key);
+        const startMonth = s.months[0];
+        const endMonth = s.months[s.months.length - 1];
+        const startYear = (key === 'winter') ? endYear - 1 : endYear;
+        const start = startYear + '-' + pad2(startMonth) + '-01';
+        const lastDay = new Date(endYear, endMonth, 0).getDate();
+        const end = endYear + '-' + pad2(endMonth) + '-' + pad2(lastDay);
+        return {
+          id: endYear + '-' + key,
+          start, end,
+          label: key.charAt(0).toUpperCase() + key.slice(1) + ' ' + endYear,
+          completeAt: new Date(endYear, endMonth, 1), // first of the month after the season ends
+        };
+      }
+
+      function buildPeriodOptions() {
+        const now = new Date();
+        const months = [];
+        for (let y = now.getFullYear(); y >= now.getFullYear() - 2; y--) {
+          for (let m = 1; m <= 12; m++) months.push(monthPeriod(y, m));
+        }
+        const seasons = [];
+        for (let y = now.getFullYear(); y >= now.getFullYear() - 2; y--) {
+          for (const s of SEASON_DEFS) seasons.push(seasonPeriod(y, s.key));
+        }
+        return months.concat(seasons)
+          .filter(p => p.completeAt <= now)
+          .sort((a, b) => b.completeAt - a.completeAt)
+          .slice(0, 16);
+      }
+
+      function populatePeriodSelect(selectId) {
+        const sel = document.getElementById(selectId);
+        if (!sel) return;
+        sel.innerHTML = '';
+        buildPeriodOptions().forEach(p => {
+          const opt = document.createElement('option');
+          opt.value = JSON.stringify(p);
+          opt.textContent = p.label + ' (' + p.id + ')';
+          sel.appendChild(opt);
+        });
+      }
+
+      async function pollForPeriod(indexUrl, id, attempts, delayMs) {
+        for (let i = 0; i < attempts; i++) {
+          await new Promise(r => setTimeout(r, delayMs));
+          try {
+            const res = await fetch(indexUrl, { cache: 'no-store' });
+            if (res.ok) {
+              const idx = await res.json();
+              if (Array.isArray(idx) && idx.some(x => x.id === id)) return true;
+            }
+          } catch (e) { /* keep polling */ }
+        }
+        return false;
+      }
+
+      async function generatePeriod(kind) {
+        const isWeather = kind === 'weather';
+        const selId = isWeather ? 'mrPeriodSelect' : 'wrPeriodSelect';
+        const btnId = isWeather ? 'mrGenBtn' : 'wrGenBtn';
+        const statusId = isWeather ? 'mrGenStatus' : 'wrGenStatus';
+        const webhookUrl = isWeather ? WEBHOOK_WEATHER : WEBHOOK_WILDLIFE;
+        const indexUrl = isWeather ? MONTHLY_INDEX_URL : WILDLIFE_INDEX_URL;
+
+        const sel = document.getElementById(selId);
+        const btn = document.getElementById(btnId);
+        const status = document.getElementById(statusId);
+        if (!sel || !sel.value) return;
+        const period = JSON.parse(sel.value);
+
+        btn.disabled = true;
+        status.textContent = 'Requesting ' + period.label + '...';
+
+        try {
+          const qs = new URLSearchParams({ start: period.start, end: period.end, id: period.id, label: period.label });
+          const res = await fetch(webhookUrl + '?' + qs.toString(), { method: 'POST' });
+          if (!res.ok) {
+            status.textContent = 'The generator did not accept the request (HTTP ' + res.status + ').';
+            btn.disabled = false;
+            return;
+          }
+        } catch (e) {
+          status.textContent = 'Could not reach the generator - check the connection.';
+          btn.disabled = false;
+          return;
+        }
+
+        status.textContent = period.label + ' requested - waiting for it to finish (this can take a minute or two)...';
+        const found = await pollForPeriod(indexUrl, period.id, 24, 5000); // up to ~2 minutes
+        if (found) {
+          status.textContent = period.label + ' is ready below.';
+          loadAllArchives();
+        } else {
+          status.textContent = period.label + ' was requested but is taking longer than expected - refresh the page in a minute to check.';
+        }
+        btn.disabled = false;
+      }
+      window.generatePeriod = generatePeriod;
 
       function allPeriods(idx) {
         return (Array.isArray(idx) ? idx : [])
@@ -834,6 +972,8 @@
         renderArchive('magArchive', magPeriods, 'compact-summary.html');
       }
 
+      populatePeriodSelect('mrPeriodSelect');
+      populatePeriodSelect('wrPeriodSelect');
       loadAllArchives();
     })();
     </script>
