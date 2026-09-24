@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Threlkeld Nature Watch — 1/3 &amp; 1/4 Page Summary</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://unpkg.com/docx@9.6.1/dist/index.umd.cjs"></script>
+<style>
+  :root { --ink: #111111; --ink-soft: #444444; --paper: #ffffff; }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: #d9d9d9;
+    font-family: Calibri, Candara, 'Segoe UI', Optima, Arial, sans-serif;
+    color: var(--ink);
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+
+  .controls {
+    max-width: 148mm; margin: 16px auto 8px; display: flex; gap: 8px;
+    justify-content: center; flex-wrap: wrap;
+  }
+  .controls button {
+    font-family: Calibri, Candara, 'Segoe UI', Optima, Arial, sans-serif; font-size: 13px; font-weight: 600;
+    background: #111; color: #fff; border: none; border-radius: 4px;
+    padding: 7px 16px; cursor: pointer;
+  }
+  .controls button:hover { background: #333; }
+  .controls button.toggle-off { background: #eee; color: #111; border: 1px solid #999; }
+  .controls .hint { width: 100%; text-align: center; font-size: 11px; color: #555; margin-top: 2px; }
+
+  .sheet {
+    width: 148mm; min-height: 210mm; background: var(--paper);
+    margin: 0 auto 24px; padding: 10mm;
+    position: relative;
+    box-shadow: 0 2px 14px rgba(0,0,0,0.25);
+  }
+
+  .title-line { margin: 0 0 10px; }
+  .title-line .brand { font-size: 24px; font-weight: 700; } /* 12pt */
+  .title-line .range { font-size: 22px; font-style: italic; margin-left: 6px; } /* 11pt */
+
+  .body-text { font-size: 22px; line-height: 1.5; margin: 0 0 12px; } /* 11pt */
+
+  .charts-row {
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6mm;
+    margin: 4px 0 8px;
+  }
+  .chart-col { min-width: 0; }
+  .chart-holder { height: 26mm; position: relative; min-width: 0; }
+
+  .caption { font-size: 15px; font-style: italic; color: var(--ink-soft); margin: 0; } /* 7.5pt */
+
+  .size-hint { font-size: 11px; color: #888; text-align: center; margin-top: 6px; }
+</style>
+</head>
+<body>
+
+  <div class="controls">
+    <button id="btnThird" onclick="setSize('third')">1/3 Page</button>
+    <button id="btnQuarter" onclick="setSize('quarter')">1/4 Page</button>
+    <button onclick="downloadPDF()">Download PDF</button>
+    <button onclick="downloadJPG()">Download JPG</button>
+    <button onclick="downloadWord()">Download Word</button>
+    <div class="hint">A5 sheet · black &amp; white · sized to fit a 1/3 or 1/4 page slot in the parish magazine</div>
+  </div>
+
+  <div class="sheet" id="sheet">
+    <p class="title-line">
+      <span class="brand">Threlkeld Nature Watch</span><span class="range" id="rangeText">— 25 August to 24 September 2026</span>
+    </p>
+    <p class="body-text" id="bodyText">Loading…</p>
+    <div class="charts-row">
+      <div class="chart-col"><div class="chart-holder"><canvas id="birdMiniChart"></canvas></div></div>
+      <div class="chart-col"><div class="chart-holder"><canvas id="batMiniChart"></canvas></div></div>
+      <div class="chart-col"><div class="chart-holder"><canvas id="weatherMiniChart"></canvas></div></div>
+    </div>
+    <p class="caption">Top birds, bats, and this period's weather. Full data: threlkeld.info</p>
+  </div>
+  <div class="size-hint" id="sizeHint"></div>
+
+<script>
+  // ===== DATA — combines monthly/<id>.json (weather) + wildlife/<id>.json,
+  // the same JSON the full review pages already read. ?m=<id> selects the
+  // period. Both must exist for a period to render here (the archive on
+  // bb.html only lists ids present in both indexes).
+  const NR_BASE = 'https://rlpzmepeautd1v5pgoumz9aa2qhd92xd.ui.nabu.casa';
+
+  function sampleData() {
+    return {
+      weather: {
+        monthName: '25 August to 24 September 2026 (sample)',
+        summary: 'A settled, unremarkable spell for the valley. Rain fell on eleven days for a total of 48.2mm, well within the typical range, with the warmest afternoon reaching 19.3°C.',
+        stats: { rainTotal:'48.2', tMax:'19.3', tMin:'6.1' },
+      },
+      wildlife: {
+        summary: 'Bird activity held steady through the month, with jackdaws again the most-recorded visitor. Bat passes picked up on the mildest nights, led by the common pipistrelle.',
+        topSpecies: [ { name:'Eurasian Jackdaw', count:12000 }, { name:'Common Chaffinch', count:3400 }, { name:'Dunnock', count:1200 } ],
+        topBatSpecies: [ { name:'Common Pipistrelle', count:4200 }, { name:'Soprano Pipistrelle', count:1800 }, { name:"Nathusius' Pipistrelle", count:900 } ],
+      },
+    };
+  }
+
+  let DATA = null;
+  let SIZE = 'third';
+
+  // First N sentences of a paragraph - a plain, automatic way to compress the
+  // AI-written naturalist summary down to a highlight or two, without needing
+  // someone to hand-pick highlights every period.
+  function firstSentences(text, n) {
+    if (!text) return '';
+    // Some summaries lead with a markdown heading line (e.g. "# Threlkeld
+    // Wildlife Notes: July Observations") before the actual prose — strip
+    // any such leading heading block so it doesn't leak into the display.
+    let cleaned = text.replace(/^\s*#{1,6}[^\n]*\n+/, '').trim();
+    if (!cleaned) cleaned = text.trim();
+    // Protect decimal points (e.g. "42.6") from being mistaken for sentence
+    // endings by the split below, then restore them afterwards.
+    const protectedText = cleaned.replace(/(\d)\.(\d)/g, '$1\u0000$2');
+    const parts = protectedText.match(/[^.!?]+[.!?]+/g) || [protectedText];
+    const restore = s => s.replace(/\u0000/g, '.').trim();
+    return parts.slice(0, n).map(restore).join(' ').trim();
+  }
+
+  function buildBodyText(size) {
+    const w = DATA.weather || {}, wl = DATA.wildlife || {};
+    const n = size === 'third' ? 2 : 1;
+    const weatherBit = firstSentences(w.summary, n);
+    const wildlifeBit = firstSentences(wl.summary, n);
+    return [weatherBit, wildlifeBit].filter(Boolean).join(' ');
+  }
+
+  function render() {
+    const w = DATA.weather || {}, wl = DATA.wildlife || {};
+    document.getElementById('rangeText').textContent = '— ' + (w.monthName || wl.monthName || '');
+    document.getElementById('bodyText').textContent = buildBodyText(SIZE);
+    document.getElementById('sizeHint').textContent = SIZE === 'third' ? 'Showing: 1/3 page version' : 'Showing: 1/4 page version';
+    document.getElementById('btnThird').className = SIZE === 'third' ? '' : 'toggle-off';
+    document.getElementById('btnQuarter').className = SIZE === 'quarter' ? '' : 'toggle-off';
+    buildCharts();
+  }
+
+  function setSize(size) { SIZE = size; render(); }
+
+  async function loadData() {
+    const params = new URLSearchParams(location.search);
+    const id = params.get('m');
+    let weather = null, wildlife = null;
+    if (id) {
+      try { const r = await fetch(NR_BASE + '/local/monthly/' + id + '.json', { cache:'no-store' }); if (r.ok) weather = await r.json(); } catch(e) {}
+      try { const r = await fetch(NR_BASE + '/local/wildlife/' + id + '.json', { cache:'no-store' }); if (r.ok) wildlife = await r.json(); } catch(e) {}
+    }
+    DATA = (weather || wildlife) ? { weather: weather || {}, wildlife: wildlife || {} } : sampleData();
+    render();
+  }
+
+  // ===== Mini charts (black & white, matching the site's established style) =====
+  Chart.defaults.color = '#111';
+  Chart.defaults.borderColor = 'rgba(0,0,0,0.12)';
+  Chart.defaults.font.family = "Calibri, Candara, 'Segoe UI', Optima, Arial, sans-serif";
+  Chart.defaults.font.size = 7;
+
+  const noLegend = { plugins: { legend: { display:false } }, maintainAspectRatio:false };
+
+  let _charts = [];
+  function speciesBarChart(canvasId, list) {
+    const top = (list || []).slice(0, 3);
+    if (!top.length) return null;
+    return new Chart(document.getElementById(canvasId), {
+      type: 'bar',
+      data: { labels: top.map(s=>s.name), datasets: [ { data: top.map(s=>s.count), backgroundColor:'#000', borderWidth:0 } ] },
+      options: { ...noLegend, indexAxis:'y',
+        scales: { x: { grid:{ color:'rgba(0,0,0,0.08)' }, ticks:{ maxTicksLimit:3 } },
+                  y: { grid:{ display:false }, ticks:{ font:{size:7}, autoSkip:false } } } }
+    });
+  }
+  function weatherBarChart(canvasId, w) {
+    const S = w.stats || {};
+    const vals = [ parseFloat(S.rainTotal)||0, parseFloat(S.tMax)||0, parseFloat(S.tMin)||0 ];
+    return new Chart(document.getElementById(canvasId), {
+      type: 'bar',
+      data: { labels: ['Rain (mm)','Max (°C)','Min (°C)'], datasets: [ { data: vals, backgroundColor:'#fff', borderColor:'#000', borderWidth:1 } ] },
+      options: { ...noLegend,
+        scales: { x: { grid:{ display:false }, ticks:{ font:{size:7} } },
+                  y: { grid:{ color:'rgba(0,0,0,0.08)' }, ticks:{ maxTicksLimit:3 } } } }
+    });
+  }
+
+  function buildCharts() {
+    _charts.forEach(c => { if (c) { try { c.destroy(); } catch(e){} } });
+    _charts = [];
+    const wl = DATA.wildlife || {}, w = DATA.weather || {};
+    _charts.push(speciesBarChart('birdMiniChart', wl.topSpecies));
+    _charts.push(speciesBarChart('batMiniChart', wl.topBatSpecies));
+    _charts.push(weatherBarChart('weatherMiniChart', w));
+  }
+
+  loadData();
+
+  // ===== Download helpers =====
+  function stamp() {
+    const label = (DATA.weather && DATA.weather.monthName) || (DATA.wildlife && DATA.wildlife.monthName) || 'review';
+    return (label + '-' + SIZE).replace(/\s+/g,'-').toLowerCase();
+  }
+
+  async function capture() {
+    const sheet = document.getElementById('sheet');
+    return await html2canvas(sheet, { scale: 3, backgroundColor:'#ffffff', useCORS:true });
+  }
+  async function downloadJPG() {
+    const canvas = await capture();
+    const a = document.createElement('a');
+    a.href = canvas.toDataURL('image/jpeg', 0.95);
+    a.download = 'blencathra-summary-' + stamp() + '.jpg';
+    a.click();
+  }
+  async function downloadPDF() {
+    const canvas = await capture();
+    const img = canvas.toDataURL('image/jpeg', 0.95);
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ orientation:'portrait', unit:'mm', format:'a5' });
+    pdf.addImage(img, 'JPEG', 0, 0, 148, 210);
+    pdf.save('blencathra-summary-' + stamp() + '.pdf');
+  }
+
+  function dataURLtoUint8Array(dataURL) {
+    const base64 = dataURL.split(',')[1];
+    const bin = atob(base64);
+    const arr = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+    return arr;
+  }
+
+  async function downloadWord() {
+    const { Document, Packer, Paragraph, TextRun, ImageRun, Table, TableRow, TableCell,
+            WidthType, BorderStyle, AlignmentType, VerticalAlign, convertMillimetersToTwip } = window.docx;
+    const FONT = 'Calibri';
+    const TITLE_PT = 24; // 12pt
+    const BODY_PT = 22;  // 11pt
+
+    const PAGE_W = convertMillimetersToTwip(148);
+    const PAGE_H = convertMillimetersToTwip(210);
+    const MARGIN = convertMillimetersToTwip(10);
+    const CONTENT_W_TWIP = PAGE_W - 2 * MARGIN;
+
+    const w = DATA.weather || {}, wl = DATA.wildlife || {};
+    const rangeText = w.monthName || wl.monthName || '';
+
+    const titlePara = new Paragraph({
+      spacing: { after: 60 },
+      children: [
+        new TextRun({ text: 'Threlkeld Nature Watch', font: FONT, size: TITLE_PT, bold: true }),
+        new TextRun({ text: '  —  ' + rangeText, font: FONT, size: BODY_PT, italics: true }),
+      ],
+    });
+    const bodyPara = new Paragraph({
+      spacing: { after: 60 },
+      children: [ new TextRun({ text: buildBodyText(SIZE), font: FONT, size: BODY_PT }) ],
+    });
+
+    const NO_BORDER = { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' };
+    const NO_BORDERS = { top: NO_BORDER, bottom: NO_BORDER, left: NO_BORDER, right: NO_BORDER };
+
+    function canvasImage(id) {
+      const c = document.getElementById(id);
+      if (!c) return null;
+      const dataUrl = c.toDataURL('image/png');
+      return { data: dataURLtoUint8Array(dataUrl), wPx: c.width, hPx: c.height };
+    }
+    const specs = ['birdMiniChart','batMiniChart','weatherMiniChart'].map(canvasImage).filter(Boolean);
+    let chartsRow = null;
+    if (specs.length) {
+      const colWidth = Math.floor(CONTENT_W_TWIP / specs.length);
+      const targetWidthPt = 118;
+      const aligns = [AlignmentType.LEFT, AlignmentType.CENTER, AlignmentType.RIGHT];
+      const cells = specs.map((s, i) => {
+        const scale = targetWidthPt / s.wPx;
+        return new TableCell({
+          width: { size: colWidth, type: WidthType.DXA }, borders: NO_BORDERS, verticalAlign: VerticalAlign.CENTER,
+          margins: { top:0, bottom:0, left:0, right:0 },
+          children: [ new Paragraph({ alignment: aligns[i] || AlignmentType.CENTER, children: [
+            new ImageRun({ type:'png', data: s.data, transformation: { width: Math.round(s.wPx*scale), height: Math.round(s.hPx*scale) } }) ] }) ],
+        });
+      });
+      chartsRow = new Table({ width: { size: CONTENT_W_TWIP, type: WidthType.DXA }, borders: NO_BORDERS, rows: [ new TableRow({ children: cells }) ] });
+    }
+
+    const captionPara = new Paragraph({
+      spacing: { before: 60 },
+      children: [ new TextRun({ text: "Top birds, bats, and this period's weather. Full data: threlkeld.info", font: FONT, size: 15, italics: true }) ],
+    });
+
+    const children = [ titlePara, bodyPara ];
+    if (chartsRow) children.push(chartsRow);
+    children.push(captionPara);
+
+    const doc = new Document({
+      sections: [{
+        properties: { page: { size: { width: PAGE_W, height: PAGE_H }, margin: { top: MARGIN, bottom: MARGIN, left: MARGIN, right: MARGIN } } },
+        children,
+      }],
+    });
+    const blob = await Packer.toBlob(doc);
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'blencathra-summary-' + stamp() + '.docx';
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  }
+</script>
+</body>
+</html>

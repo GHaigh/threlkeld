@@ -786,24 +786,10 @@
       <h2>1/3 &amp; 1/4 Page Monthly Summary</h2>
       <p>
         A single compact A5 sheet combining the month's weather, birds and bats — sized to fit a 1/3 or 1/4 page slot
-        in the parish magazine, ready to submit as a Word document.
-        <br><span style="color:var(--cream-dim)">A new period runs from the 25th of each month to the 24th of the next. The underlying weather, bird and bat data is captured automatically at 8am on the 25th; the two sheets below (1/3 and 1/4 page) are then prepared from it and added here shortly after.</span>
+        in the parish magazine, with PDF, JPG and Word downloads generated on demand.
+        <br><span style="color:var(--cream-dim)">A new period runs from the 25th of each month to the 24th of the next. The underlying weather, bird and bat data is captured automatically at 8am on the 25th; the period then appears below shortly after, ready to view and download in any format.</span>
       </p>
-      <div id="magArchive" class="review-archive mag-archive">
-        <div style="font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--sage);margin-bottom:8px">Available periods</div>
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--divider)">
-          <span>25 August &ndash; 24 September 2026</span>
-          <span><a href="mag/beneath-blencathra-2026-09-25-third.docx" style="font-weight:500">1/3 page &rarr;</a> &nbsp;&middot;&nbsp; <a href="mag/beneath-blencathra-2026-09-25-quarter.docx" style="font-weight:500">1/4 page &rarr;</a></span>
-        </div>
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--divider)">
-          <span>25 July &ndash; 24 August 2026</span>
-          <span><a href="mag/beneath-blencathra-2026-08-25-third.docx" style="font-weight:500">1/3 page &rarr;</a> &nbsp;&middot;&nbsp; <a href="mag/beneath-blencathra-2026-08-25-quarter.docx" style="font-weight:500">1/4 page &rarr;</a></span>
-        </div>
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--divider)">
-          <span>25 June &ndash; 24 July 2026</span>
-          <span><a href="mag/beneath-blencathra-2026-07-25-third.docx" style="font-weight:500">1/3 page &rarr;</a> &nbsp;&middot;&nbsp; <a href="mag/beneath-blencathra-2026-07-25-quarter.docx" style="font-weight:500">1/4 page &rarr;</a></span>
-        </div>
-      </div>
+      <div id="magArchive" class="review-archive mag-archive"></div>
     </section>
 
     <script>
@@ -1044,6 +1030,47 @@
 
       populateMonths();
       loadArchive();
+    })();
+    </script>
+
+    <script>
+    (function () {
+      // 1/3 & 1/4 Page Monthly Summary archive — lists rolling 25th-to-24th
+      // periods only (ids like "2026-07-25", not calendar months like
+      // "2026-07" or seasons like "2026-summer"), and only when both the
+      // weather and wildlife data for that period exist, since the compact
+      // summary page needs both. Links straight to compact-summary.html,
+      // which builds the PDF/JPG/Word downloads on demand from that data -
+      // nothing is pre-built or committed to the repo for this section.
+      const NR_BASE = 'https://rlpzmepeautd1v5pgoumz9aa2qhd92xd.ui.nabu.casa';
+      const MONTHLY_INDEX_URL = NR_BASE + '/local/monthly/monthly_index.json';
+      const WILDLIFE_INDEX_URL = NR_BASE + '/local/wildlife/wildlife_index.json';
+      const SUMMARY_PAGE = 'compact-summary.html';
+      const ROLLING_ID = /^\d{4}-\d{2}-\d{2}$/;
+
+      async function loadMagArchive() {
+        const box = document.getElementById('magArchive');
+        try {
+          const [mRes, wRes] = await Promise.all([
+            fetch(MONTHLY_INDEX_URL, { cache:'no-store' }),
+            fetch(WILDLIFE_INDEX_URL, { cache:'no-store' }),
+          ]);
+          const mIdx = mRes.ok ? await mRes.json() : [];
+          const wIdx = wRes.ok ? await wRes.json() : [];
+          const wIds = new Set((Array.isArray(wIdx) ? wIdx : []).map(x => x.id));
+          const periods = (Array.isArray(mIdx) ? mIdx : [])
+            .filter(x => ROLLING_ID.test(x.id) && wIds.has(x.id))
+            .sort((a, b) => b.id.localeCompare(a.id));
+          if (!periods.length) { box.innerHTML = '<span style="color:var(--cream-dim)">No periods generated yet.</span>'; return; }
+          box.innerHTML = '<div style="font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--sage);margin-bottom:8px">Available periods</div>' +
+            periods.map(x => '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--divider)">'
+              + '<span>'+x.label+'</span>'
+              + '<a href="'+SUMMARY_PAGE+'?m='+x.id+'" target="_blank" style="font-weight:500">View &amp; download &rarr;</a>'
+              + '</div>').join('');
+        } catch(e) { box.innerHTML = '<span style="color:var(--cream-dim)">Could not load the archive.</span>'; }
+      }
+
+      loadMagArchive();
     })();
     </script>
 
