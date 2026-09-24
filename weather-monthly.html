@@ -4,12 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Beneath Blencathra — Monthly Weather Review</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Source+Sans+3:wght@300;400;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://unpkg.com/docx@9.6.1/dist/index.umd.cjs"></script>
 <style>
   :root {
     --ink: #111111;
@@ -21,7 +19,7 @@
   html, body {
     margin: 0; padding: 0;
     background: #d9d9d9;            /* screen backdrop only, so the A5 sheet stands out */
-    font-family: 'Source Sans 3', sans-serif;
+    font-family: Calibri, Candara, 'Segoe UI', Optima, Arial, sans-serif;
     color: var(--ink);
     -webkit-print-color-adjust: exact; print-color-adjust: exact;
   }
@@ -32,7 +30,7 @@
     justify-content: center; flex-wrap: wrap;
   }
   .controls button {
-    font-family: 'Source Sans 3', sans-serif; font-size: 13px; font-weight: 600;
+    font-family: Calibri, Candara, 'Segoe UI', Optima, Arial, sans-serif; font-size: 13px; font-weight: 600;
     background: #111; color: #fff; border: none; border-radius: 4px;
     padding: 7px 16px; cursor: pointer;
   }
@@ -42,7 +40,7 @@
   /* The A5 sheet */
   .sheet {
     width: 148mm; min-height: 210mm; background: var(--paper);
-    margin: 0 auto 24px; padding: 12mm 12mm 10mm;
+    margin: 0 auto 24px; padding: 10mm;
     position: relative;
     box-shadow: 0 2px 14px rgba(0,0,0,0.25);   /* screen only */
   }
@@ -54,12 +52,12 @@
     font-weight: 600; color: var(--ink-soft);
   }
   .title {
-    font-family: 'Playfair Display', serif; font-weight: 700;
+    font-family: Calibri, Candara, 'Segoe UI', Optima, Arial, sans-serif; font-weight: 700;
     font-size: 30px; line-height: 1.02; margin: 4px 0 2px; letter-spacing: 0.01em;
   }
   .title em { font-style: italic; font-weight: 600; }
   .subtitle {
-    font-family: 'Playfair Display', serif; font-style: italic; font-size: 14px;
+    font-family: Calibri, Candara, 'Segoe UI', Optima, Arial, sans-serif; font-style: italic; font-size: 14px;
     color: var(--ink-soft); margin-top: 2px;
   }
   .month-band {
@@ -70,7 +68,7 @@
 
   /* ---- Naturalist lead ---- */
   .lead {
-    font-family: 'Playfair Display', serif; font-size: 12.5px; line-height: 1.62;
+    font-family: Calibri, Candara, 'Segoe UI', Optima, Arial, sans-serif; font-size: 12.5px; line-height: 1.62;
     text-align: justify; margin: 10px 0 4px;
   }
   .lead::first-letter {
@@ -106,12 +104,12 @@
 
   /* ---- Footer ---- */
   .foot {
-    position: absolute; left: 12mm; right: 12mm; bottom: 8mm;
+    position: absolute; left: 10mm; right: 10mm; bottom: 6mm;
     border-top: 1px solid var(--ink); padding-top: 5px;
     display: flex; justify-content: space-between; align-items: baseline;
     font-size: 8.5px; color: var(--ink-soft); letter-spacing: 0.04em;
   }
-  .foot .brand { font-family: 'Playfair Display', serif; font-style: italic; font-size: 10px; color: var(--ink); }
+  .foot .brand { font-family: Calibri, Candara, 'Segoe UI', Optima, Arial, sans-serif; font-style: italic; font-size: 10px; color: var(--ink); }
 
   /* ---- Print ---- */
   @media print {
@@ -127,6 +125,7 @@
   <div class="controls">
     <button onclick="downloadPDF()">Download PDF</button>
     <button onclick="downloadJPG()">Download JPG</button>
+    <button onclick="downloadWord()">Download Word</button>
     <button onclick="window.print()">Print</button>
     <div class="hint">A5 portrait · black &amp; white · for the parish magazine</div>
   </div>
@@ -256,7 +255,7 @@
   // ===== Charts (black & white, patterned) =====
   Chart.defaults.color = '#111';
   Chart.defaults.borderColor = 'rgba(0,0,0,0.12)';
-  Chart.defaults.font.family = "'Source Sans 3', sans-serif";
+  Chart.defaults.font.family = "Calibri, Candara, 'Segoe UI', Optima, Arial, sans-serif";
   Chart.defaults.font.size = 7;
 
   // Month-only reports label each point with a plain day number ("1".."31"), which
@@ -331,6 +330,123 @@
     const pdf = new jsPDF({ orientation:'portrait', unit:'mm', format:'a5' });
     pdf.addImage(img, 'JPEG', 0, 0, 148, 210);
     pdf.save('blencathra-weather-' + stamp() + '.pdf');
+  }
+
+  // ===== Word (.docx) download =====
+  // Built directly from the same MONTHLY data the page renders from, not a
+  // screenshot - a real, editable Word document. Charts are pulled straight
+  // off their live <canvas> elements (already rendered by Chart.js) as PNGs.
+  // Page spec matches the printed magazine sheets: A5, 10mm margins,
+  // Calibri, 11pt body / 12pt titles.
+  function dataURLtoUint8Array(dataURL) {
+    const base64 = dataURL.split(',')[1];
+    const bin = atob(base64);
+    const arr = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+    return arr;
+  }
+
+  async function downloadWord() {
+    const { Document, Packer, Paragraph, TextRun, ImageRun, Table, TableRow, TableCell,
+            WidthType, BorderStyle, AlignmentType, VerticalAlign, convertMillimetersToTwip } = window.docx;
+    const M = MONTHLY;
+    const FONT = 'Calibri';
+    const TITLE_PT = 24; // 12pt
+    const BODY_PT = 22;  // 11pt
+
+    const PAGE_W = convertMillimetersToTwip(148);
+    const PAGE_H = convertMillimetersToTwip(210);
+    const MARGIN = convertMillimetersToTwip(10);
+    const CONTENT_W_TWIP = PAGE_W - 2 * MARGIN;
+
+    const titlePara = new Paragraph({
+      spacing: { after: 60 },
+      children: [
+        new TextRun({ text: 'Threlkeld Nature Watch', font: FONT, size: TITLE_PT, bold: true }),
+        new TextRun({ text: '  —  Monthly Weather Review', font: FONT, size: TITLE_PT, bold: true }),
+      ],
+    });
+    const monthPara = new Paragraph({
+      spacing: { after: 120 },
+      children: [ new TextRun({ text: M.monthName || '', font: FONT, size: BODY_PT, italics: true }) ],
+    });
+    const leadPara = new Paragraph({
+      spacing: { after: 160 },
+      children: [ new TextRun({ text: M.summary || '', font: FONT, size: BODY_PT }) ],
+    });
+
+    const S = M.stats || {};
+    const statRows = [
+      ['Total rainfall', (S.rainTotal||'—') + ' mm'], ['Wettest day', (S.rainWettest||'—') + ' mm'],
+      ['Warmest', (S.tMax||'—') + ' °C'], ['Coldest', (S.tMin||'—') + ' °C'],
+      ['Mean high', (S.tMeanMax||'—') + ' °C'], ['Mean low', (S.tMeanMin||'—') + ' °C'],
+      ['Windiest day', (S.windMax||'—') + ' km/h'], ['Rain days', (S.rainDays||'—') + ' of ' + (S.daysInPeriod || (M.labels||[]).length)],
+    ];
+    const NO_BORDER = { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' };
+    const NO_BORDERS = { top: NO_BORDER, bottom: NO_BORDER, left: NO_BORDER, right: NO_BORDER };
+
+    // Build the stats as a simple two-column table (label / value), two rows
+    // combined per line so it reads compactly rather than as eight tall rows.
+    function pairRows(rows) {
+      const trs = [];
+      for (let i = 0; i < rows.length; i += 2) {
+        const left = rows[i], right = rows[i+1];
+        const cell = ([k,v]) => new TableCell({
+          width: { size: Math.floor(CONTENT_W_TWIP/2), type: WidthType.DXA },
+          borders: NO_BORDERS, margins: { top: 40, bottom: 40, left: 0, right: 0 },
+          children: [ new Paragraph({ children: [
+            new TextRun({ text: k + ':  ', font: FONT, size: BODY_PT }),
+            new TextRun({ text: v, font: FONT, size: BODY_PT, bold: true }),
+          ] }) ],
+        });
+        trs.push(new TableRow({ children: [ cell(left), right ? cell(right) : new TableCell({ width:{size:Math.floor(CONTENT_W_TWIP/2),type:WidthType.DXA}, borders: NO_BORDERS, children:[new Paragraph({})] }) ] }));
+      }
+      return trs;
+    }
+    const statsTableReal = new Table({
+      width: { size: CONTENT_W_TWIP, type: WidthType.DXA },
+      borders: NO_BORDERS,
+      rows: pairRows(statRows),
+    });
+
+    function canvasImage(id) {
+      const c = document.getElementById(id);
+      if (!c) return null;
+      const dataUrl = c.toDataURL('image/png');
+      return { data: dataURLtoUint8Array(dataUrl), wPx: c.width, hPx: c.height };
+    }
+    function chartParagraph(id, captionText) {
+      const img = canvasImage(id);
+      if (!img) return null;
+      const targetWidthPt = 340; // full content width at 96dpi-equivalent scaling
+      const scale = targetWidthPt / img.wPx;
+      return [
+        new Paragraph({ spacing: { before: 100 }, children: [ new TextRun({ text: captionText, font: FONT, size: 15, bold: true }) ] }),
+        new Paragraph({ children: [ new ImageRun({ type: 'png', data: img.data,
+          transformation: { width: Math.round(img.wPx*scale), height: Math.round(img.hPx*scale) } }) ] }),
+      ];
+    }
+
+    const children = [ titlePara, monthPara, leadPara, statsTableReal ];
+    (chartParagraph('tempChart', 'Daily Temperature — high / low (°C)') || []).forEach(p => children.push(p));
+    (chartParagraph('rainChart', 'Daily Rainfall (mm)') || []).forEach(p => children.push(p));
+    (chartParagraph('windChart', 'Daily Maximum Wind Speed (km/h)') || []).forEach(p => children.push(p));
+    children.push(new Paragraph({ spacing: { before: 120 }, children: [
+      new TextRun({ text: 'Rainfall & conditions quantified by Open-Meteo · Summary by the Nature Watch naturalist · threlkeld.info', font: FONT, size: 14, italics: true }),
+    ] }));
+
+    const doc = new Document({
+      sections: [{
+        properties: { page: { size: { width: PAGE_W, height: PAGE_H }, margin: { top: MARGIN, bottom: MARGIN, left: MARGIN, right: MARGIN } } },
+        children,
+      }],
+    });
+    const blob = await Packer.toBlob(doc);
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'blencathra-weather-' + stamp() + '.docx';
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
   }
 </script>
 </body>
