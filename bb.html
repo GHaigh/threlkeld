@@ -749,35 +749,23 @@
       <a href="weather.html" style="color:var(--sage)">Weather</a> page).
     </p>
 
-    <!-- ===== Monthly Weather Review generator (for the parish magazine) ===== -->
+    <!-- ===== Monthly & Seasonal Weather Review (fully automatic - rolling 25th-to-24th window only) ===== -->
     <section class="review-section no-print">
       <h2>Monthly &amp; Seasonal Weather Review</h2>
       <p>
-        Generate a printable A5 weather review for the parish magazine. Pick a month and generate it once —
-        it's then saved and can be viewed or downloaded (PDF / JPG) any time.
-        <br><span style="color:var(--cream-dim)">Only use this button to generate or regenerate a specific calendar month or season — it won't happen on its own for those. (The rolling 25th-to-24th summary below the Wildlife Review generates itself automatically at 8am on the 25th.)</span>
+        A printable A5 weather review for the parish magazine, generated automatically for each rolling period.
+        <br><span style="color:var(--cream-dim)">A new period runs from the 25th of each month to the 24th of the next, and is captured and generated automatically at 8am on the 25th - nothing to trigger by hand. It then appears below, ready to view and download (PDF / JPG / Word).</span>
       </p>
-      <div class="review-controls">
-        <select id="mrMonth" class="review-select"></select>
-        <button id="mrGenerate" class="review-btn">Generate review</button>
-        <span id="mrStatus" class="review-status"></span>
-      </div>
       <div id="mrArchive" class="review-archive"></div>
     </section>
 
-    <!-- ===== Monthly Wildlife Review generator (birds & bats, weather-correlated) ===== -->
+    <!-- ===== Monthly & Seasonal Wildlife Review (fully automatic - rolling 25th-to-24th window only) ===== -->
     <section class="review-section no-print">
       <h2>Monthly &amp; Seasonal Wildlife Review</h2>
       <p>
-        Generate a printable A5 birds &amp; bats review for the parish magazine, correlated with the month's weather.
-        Pick a month and generate it once — it's then saved and can be viewed or downloaded (PDF / JPG) any time.
-        <br><span style="color:var(--cream-dim)">Only use this button to generate or regenerate a specific calendar month or season — it won't happen on its own for those. (The rolling 25th-to-24th summary below generates itself automatically at 8am on the 25th.)</span>
+        A printable A5 birds &amp; bats review for the parish magazine, correlated with the period's weather and generated automatically.
+        <br><span style="color:var(--cream-dim)">Same rolling 25th-to-24th period as the Weather Review above, captured and generated automatically at 8am on the 25th - nothing to trigger by hand.</span>
       </p>
-      <div class="review-controls">
-        <select id="wrMonth" class="review-select"></select>
-        <button id="wrGenerate" class="review-btn">Generate review</button>
-        <span id="wrStatus" class="review-status"></span>
-      </div>
       <div id="wrArchive" class="review-archive"></div>
     </section>
 
@@ -785,292 +773,72 @@
     <section class="review-section no-print">
       <h2>1/3 &amp; 1/4 Page Monthly Summary</h2>
       <p>
-        A single compact A5 sheet combining the month's weather, birds and bats — sized to fit a 1/3 or 1/4 page slot
+        A single compact A5 sheet combining the period's weather, birds and bats — sized to fit a 1/3 or 1/4 page slot
         in the parish magazine, with PDF, JPG and Word downloads generated on demand.
-        <br><span style="color:var(--cream-dim)">A new period runs from the 25th of each month to the 24th of the next. The underlying weather, bird and bat data is captured automatically at 8am on the 25th; the period then appears below shortly after, ready to view and download in any format.</span>
+        <br><span style="color:var(--cream-dim)">Same rolling 25th-to-24th period as above, ready to view and download in any format shortly after it's captured.</span>
       </p>
       <div id="magArchive" class="review-archive mag-archive"></div>
     </section>
 
     <script>
     (function () {
-      // POSTs to the Node-RED webhook via the Nabu Casa base (same host as fellcam).
-      const NR_BASE = 'https://rlpzmepeautd1v5pgoumz9aa2qhd92xd.ui.nabu.casa';
-      // HA native Automation webhook trigger (webhook_id: monthly-review-trigger).
-      // Data travels as URL query params - trigger.query in the automation.
-      const GEN_URL = NR_BASE + '/api/webhook/monthly-review-trigger';
-      const INDEX_URL = NR_BASE + '/local/monthly/monthly_index.json';
-      const REVIEW_URL = (id) => NR_BASE + '/local/monthly/' + id + '.json';
-      const REVIEW_PAGE = 'weather-monthly.html';
-
-      const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-
-      // Populate the month dropdown: Jul 2026 -> last complete month.
-      // Earlier months are excluded on purpose — generating them would just
-      // burn Node-RED/webhook resources for reviews nobody needs.
-      function populateMonths() {
-        const sel = document.getElementById('mrMonth');
-        const now = new Date();
-        // last complete month = the month before the current one
-        let y = now.getFullYear(), m = now.getMonth(); // 0-based; m is current month, so previous is m-1
-        const opts = [];
-        let yy = 2026, mm = 6; // Jul 2026
-        while (yy < y || (yy === y && mm <= m - 1) || (yy === y && m === 0 && false)) {
-          const id = yy + '-' + String(mm+1).padStart(2,'0');
-          const label = monthNames[mm] + ' ' + yy;
-          opts.push({ id, label, y:yy, m:mm });
-          mm++; if (mm > 11) { mm = 0; yy++; }
-          if (yy > y + 1) break; // safety
-        }
-        // newest first
-        opts.reverse();
-        sel.innerHTML = opts.map(o => '<option value="'+o.id+'" data-label="'+o.label+'" data-y="'+o.y+'" data-m="'+o.m+'">'+o.label+'</option>').join('');
-      }
-
-      function monthRange(y, m) {
-        const start = y + '-' + String(m+1).padStart(2,'0') + '-01';
-        const endDate = new Date(y, m+1, 0); // last day of month
-        const end = y + '-' + String(m+1).padStart(2,'0') + '-' + String(endDate.getDate()).padStart(2,'0');
-        return { start, end };
-      }
-
-      async function loadArchive() {
-        const box = document.getElementById('mrArchive');
-        try {
-          const res = await fetch(INDEX_URL, { cache:'no-store' });
-          if (!res.ok) { box.innerHTML = '<span style="color:var(--cream-dim)">No reviews generated yet.</span>'; return; }
-          const idx = await res.json();
-          if (!Array.isArray(idx) || !idx.length) { box.innerHTML = '<span style="color:var(--cream-dim)">No reviews generated yet.</span>'; return; }
-          box.innerHTML = '<div style="font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--sage);margin-bottom:8px">Generated reviews</div>' +
-            idx.map(x => '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--divider)">'
-              + '<span>'+x.label+'</span>'
-              + '<a href="'+REVIEW_PAGE+'?m='+x.id+'" target="_blank" style="font-weight:500">View &amp; download &rarr;</a>'
-              + '</div>').join('');
-        } catch(e) { box.innerHTML = '<span style="color:var(--cream-dim)">Could not load the archive.</span>'; }
-      }
-
-      function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
-
-      // Home Assistant's webhook returns its own generic OK immediately - it
-      // doesn't hand back the generated review. So: fire the POST, then POLL
-      // for the file to appear (the flow writes it once Claude's done).
-      async function waitForReview(id, label, status) {
-        const started = Date.now();
-        const timeoutMs = 60000, intervalMs = 2000;
-        while (Date.now() - started < timeoutMs) {
-          await sleep(intervalMs);
-          try {
-            const res = await fetch(REVIEW_URL(id), { cache:'no-store' });
-            if (res.ok) return true;
-          } catch(e) {}
-          const waited = Math.round((Date.now()-started)/1000);
-          status.textContent = 'Generating ' + label + '… (' + waited + 's)';
-        }
-        return false;
-      }
-
-      document.getElementById('mrGenerate').addEventListener('click', async () => {
-        const sel = document.getElementById('mrMonth');
-        const opt = sel.options[sel.selectedIndex];
-        if (!opt) return;
-        const id = opt.value, label = opt.getAttribute('data-label');
-        const y = +opt.getAttribute('data-y'), m = +opt.getAttribute('data-m');
-        const { start, end } = monthRange(y, m);
-        const status = document.getElementById('mrStatus');
-
-        // Already generated? Just open it.
-        try {
-          const check = await fetch(REVIEW_URL(id), { cache:'no-store' });
-          if (check.ok) {
-            window.open(REVIEW_PAGE + '?m=' + id, '_blank');
-            return;
-          }
-        } catch(e) {}
-
-        status.textContent = 'Generating ' + label + '… (this can take a few seconds)';
-        try {
-          // Data travels as URL query params (no body, no custom headers) -
-          // a plain request, no CORS preflight possible. Fire-and-forget: the
-          // HA webhook doesn't return the generated result in its response.
-          const qs = new URLSearchParams({ start, end, id, label }).toString();
-          fetch(GEN_URL + '?' + qs, { method:'POST' }).catch(()=>{});
-        } catch(e) {}
-
-        const ok = await waitForReview(id, label, status);
-        if (ok) {
-          status.textContent = label + ' generated.';
-          await loadArchive();
-          window.open(REVIEW_PAGE + '?m=' + id, '_blank');
-        } else {
-          status.textContent = 'Still generating — check back in a moment, or try again.';
-        }
-      });
-
-      populateMonths();
-      loadArchive();
-    })();
-    </script>
-
-    <script>
-    (function () {
-      // Same pattern as the Weather review generator above, POSTing to its own
-      // Node-RED webhook and polling for the generated file. Content here is
-      // bird + bat detections for the month, correlated against the weather.
-      const NR_BASE = 'https://rlpzmepeautd1v5pgoumz9aa2qhd92xd.ui.nabu.casa';
-      // HA native Automation webhook trigger (webhook_id: wildlife-review-trigger).
-      const GEN_URL = NR_BASE + '/api/webhook/wildlife-review-trigger';
-      const INDEX_URL = NR_BASE + '/local/wildlife/wildlife_index.json';
-      const REVIEW_URL = (id) => NR_BASE + '/local/wildlife/' + id + '.json';
-      const REVIEW_PAGE = 'wildlife-monthly.html';
-
-      const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-
-      // Populate the month dropdown: Jul 2026 -> last complete month.
-      // Earlier months are excluded on purpose — generating them would just
-      // burn Node-RED/webhook resources for reviews nobody needs.
-      function populateMonths() {
-        const sel = document.getElementById('wrMonth');
-        const now = new Date();
-        let y = now.getFullYear(), m = now.getMonth();
-        const opts = [];
-        let yy = 2026, mm = 6; // Jul 2026
-        while (yy < y || (yy === y && mm <= m - 1) || (yy === y && m === 0 && false)) {
-          const id = yy + '-' + String(mm+1).padStart(2,'0');
-          const label = monthNames[mm] + ' ' + yy;
-          opts.push({ id, label, y:yy, m:mm });
-          mm++; if (mm > 11) { mm = 0; yy++; }
-          if (yy > y + 1) break; // safety
-        }
-        opts.reverse();
-        sel.innerHTML = opts.map(o => '<option value="'+o.id+'" data-label="'+o.label+'" data-y="'+o.y+'" data-m="'+o.m+'">'+o.label+'</option>').join('');
-      }
-
-      function monthRange(y, m) {
-        const start = y + '-' + String(m+1).padStart(2,'0') + '-01';
-        const endDate = new Date(y, m+1, 0);
-        const end = y + '-' + String(m+1).padStart(2,'0') + '-' + String(endDate.getDate()).padStart(2,'0');
-        return { start, end };
-      }
-
-      async function loadArchive() {
-        const box = document.getElementById('wrArchive');
-        try {
-          const res = await fetch(INDEX_URL, { cache:'no-store' });
-          if (!res.ok) { box.innerHTML = '<span style="color:var(--cream-dim)">No reviews generated yet.</span>'; return; }
-          const idx = await res.json();
-          if (!Array.isArray(idx) || !idx.length) { box.innerHTML = '<span style="color:var(--cream-dim)">No reviews generated yet.</span>'; return; }
-          box.innerHTML = '<div style="font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--sage);margin-bottom:8px">Generated reviews</div>' +
-            idx.map(x => '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--divider)">'
-              + '<span>'+x.label+'</span>'
-              + '<a href="'+REVIEW_PAGE+'?m='+x.id+'" target="_blank" style="font-weight:500">View &amp; download &rarr;</a>'
-              + '</div>').join('');
-        } catch(e) { box.innerHTML = '<span style="color:var(--cream-dim)">Could not load the archive.</span>'; }
-      }
-
-      function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
-
-      async function waitForReview(id, label, status, beforeText) {
-        const started = Date.now();
-        const timeoutMs = 60000, intervalMs = 2000;
-        while (Date.now() - started < timeoutMs) {
-          await sleep(intervalMs);
-          try {
-            const res = await fetch(REVIEW_URL(id), { cache:'no-store' });
-            if (res.ok) {
-              const text = await res.text();
-              // Wait for genuinely new content, not just "a file exists" -
-              // a stale report from a previous generation would already
-              // satisfy res.ok immediately, before the fresh one is written.
-              if (beforeText === null || text !== beforeText) return true;
-            }
-          } catch(e) {}
-          const waited = Math.round((Date.now()-started)/1000);
-          status.textContent = 'Generating ' + label + '… (' + waited + 's)';
-        }
-        return false;
-      }
-
-      document.getElementById('wrGenerate').addEventListener('click', async () => {
-        const sel = document.getElementById('wrMonth');
-        const opt = sel.options[sel.selectedIndex];
-        if (!opt) return;
-        const id = opt.value, label = opt.getAttribute('data-label');
-        const y = +opt.getAttribute('data-y'), m = +opt.getAttribute('data-m');
-        const { start, end } = monthRange(y, m);
-        const status = document.getElementById('wrStatus');
-
-        // Note: this used to open the existing file and stop here without
-        // regenerating if one already existed for this month. "Generate"
-        // should always generate - reopening a past review is what the
-        // archive list's "View & download" link is for.
-        let beforeText = null;
-        try {
-          const before = await fetch(REVIEW_URL(id), { cache:'no-store' });
-          if (before.ok) beforeText = await before.text();
-        } catch(e) {}
-
-        status.textContent = 'Generating ' + label + '… (this can take a few seconds)';
-        try {
-          // force:true bypasses the backend's "already generated, skip" guard -
-          // this button always means "regenerate", the archive list is for
-          // reopening past reviews without regenerating them.
-          const qs = new URLSearchParams({ start, end, id, label, force: 'true' }).toString();
-          fetch(GEN_URL + '?' + qs, { method:'POST' }).catch(()=>{});
-        } catch(e) {}
-
-        const ok = await waitForReview(id, label, status, beforeText);
-        if (ok) {
-          status.textContent = label + ' generated.';
-          await loadArchive();
-          window.open(REVIEW_PAGE + '?m=' + id, '_blank');
-        } else {
-          status.textContent = 'Still generating — check back in a moment, or try again.';
-        }
-      });
-
-      populateMonths();
-      loadArchive();
-    })();
-    </script>
-
-    <script>
-    (function () {
-      // 1/3 & 1/4 Page Monthly Summary archive — lists rolling 25th-to-24th
-      // periods only (ids like "2026-07-25", not calendar months like
-      // "2026-07" or seasons like "2026-summer"), and only when both the
-      // weather and wildlife data for that period exist, since the compact
-      // summary page needs both. Links straight to compact-summary.html,
-      // which builds the PDF/JPG/Word downloads on demand from that data -
-      // nothing is pre-built or committed to the repo for this section.
+      // All three archives above now show ONLY the rolling 25th-to-24th
+      // period, which is the one thing that's actually automatic. Calendar
+      // months and seasons (e.g. "August 2026", "Summer 2026") used to be
+      // generated on demand via a "Generate review" button - that's been
+      // removed, since everything now comes from the same auto-captured
+      // rolling window. Ids like "2026-08" (a calendar month) or
+      // "2026-summer" (a season) are excluded so this only ever lists
+      // rolling periods like "2026-07-25".
       const NR_BASE = 'https://rlpzmepeautd1v5pgoumz9aa2qhd92xd.ui.nabu.casa';
       const MONTHLY_INDEX_URL = NR_BASE + '/local/monthly/monthly_index.json';
       const WILDLIFE_INDEX_URL = NR_BASE + '/local/wildlife/wildlife_index.json';
-      const SUMMARY_PAGE = 'compact-summary.html';
       const ROLLING_ID = /^\d{4}-\d{2}-\d{2}$/;
 
-      async function loadMagArchive() {
-        const box = document.getElementById('magArchive');
+      function rollingOnly(idx) {
+        return (Array.isArray(idx) ? idx : [])
+          .filter(x => ROLLING_ID.test(x.id))
+          .sort((a, b) => b.id.localeCompare(a.id));
+      }
+
+      function renderArchive(boxId, items, reviewPage) {
+        const box = document.getElementById(boxId);
+        if (!items.length) { box.innerHTML = '<span style="color:var(--cream-dim)">No periods generated yet.</span>'; return; }
+        box.innerHTML = '<div style="font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--sage);margin-bottom:8px">Available periods</div>' +
+          items.map(x => '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--divider)">'
+            + '<span>'+x.label+'</span>'
+            + '<a href="'+reviewPage+'?m='+x.id+'" target="_blank" style="font-weight:500">View &amp; download &rarr;</a>'
+            + '</div>').join('');
+      }
+
+      async function loadAllArchives() {
+        let mIdx = [], wIdx = [];
         try {
           const [mRes, wRes] = await Promise.all([
             fetch(MONTHLY_INDEX_URL, { cache:'no-store' }),
             fetch(WILDLIFE_INDEX_URL, { cache:'no-store' }),
           ]);
-          const mIdx = mRes.ok ? await mRes.json() : [];
-          const wIdx = wRes.ok ? await wRes.json() : [];
-          const wIds = new Set((Array.isArray(wIdx) ? wIdx : []).map(x => x.id));
-          const periods = (Array.isArray(mIdx) ? mIdx : [])
-            .filter(x => ROLLING_ID.test(x.id) && wIds.has(x.id))
-            .sort((a, b) => b.id.localeCompare(a.id));
-          if (!periods.length) { box.innerHTML = '<span style="color:var(--cream-dim)">No periods generated yet.</span>'; return; }
-          box.innerHTML = '<div style="font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--sage);margin-bottom:8px">Available periods</div>' +
-            periods.map(x => '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--divider)">'
-              + '<span>'+x.label+'</span>'
-              + '<a href="'+SUMMARY_PAGE+'?m='+x.id+'" target="_blank" style="font-weight:500">View &amp; download &rarr;</a>'
-              + '</div>').join('');
-        } catch(e) { box.innerHTML = '<span style="color:var(--cream-dim)">Could not load the archive.</span>'; }
+          mIdx = mRes.ok ? await mRes.json() : [];
+          wIdx = wRes.ok ? await wRes.json() : [];
+        } catch(e) {
+          document.getElementById('mrArchive').innerHTML = '<span style="color:var(--cream-dim)">Could not load the archive.</span>';
+          document.getElementById('wrArchive').innerHTML = '<span style="color:var(--cream-dim)">Could not load the archive.</span>';
+          document.getElementById('magArchive').innerHTML = '<span style="color:var(--cream-dim)">Could not load the archive.</span>';
+          return;
+        }
+        const mPeriods = rollingOnly(mIdx);
+        const wPeriods = rollingOnly(wIdx);
+        renderArchive('mrArchive', mPeriods, 'weather-monthly.html');
+        renderArchive('wrArchive', wPeriods, 'wildlife-monthly.html');
+
+        // The compact summary needs both weather and wildlife data for a
+        // period, so it's the intersection of the two.
+        const wIds = new Set(wPeriods.map(x => x.id));
+        const magPeriods = mPeriods.filter(x => wIds.has(x.id));
+        renderArchive('magArchive', magPeriods, 'compact-summary.html');
       }
 
-      loadMagArchive();
+      loadAllArchives();
     })();
     </script>
 

@@ -223,27 +223,63 @@
 
   const noLegend = { plugins: { legend: { display:false } }, maintainAspectRatio:false };
 
+  // Same transparent bar style everywhere (white fill, black border) - draws
+  // the actual value (e.g. "10mm", "12,000") right on each bar, since the
+  // axis alone doesn't give an exact reading at this size.
+  const BAR_STYLE = { backgroundColor: '#fff', borderColor: '#000', borderWidth: 1 };
+  function valueLabelPlugin(formatter) {
+    return {
+      id: 'valueLabels',
+      afterDatasetsDraw(chart) {
+        const { ctx } = chart;
+        const meta = chart.getDatasetMeta(0);
+        const data = chart.data.datasets[0].data;
+        const horizontal = chart.options.indexAxis === 'y';
+        ctx.save();
+        ctx.fillStyle = '#111';
+        ctx.font = "bold 8px Calibri, Candara, 'Segoe UI', Optima, Arial, sans-serif";
+        meta.data.forEach((bar, i) => {
+          const text = formatter(data[i], i);
+          if (horizontal) {
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(text, bar.x + 4, bar.y);
+          } else {
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            ctx.fillText(text, bar.x, bar.y - 3);
+          }
+        });
+        ctx.restore();
+      }
+    };
+  }
+
   let _charts = [];
   function speciesBarChart(canvasId, list) {
     const top = (list || []).slice(0, 3);
     if (!top.length) return null;
     return new Chart(document.getElementById(canvasId), {
       type: 'bar',
-      data: { labels: top.map(s=>s.name), datasets: [ { data: top.map(s=>s.count), backgroundColor:'#000', borderWidth:0 } ] },
+      data: { labels: top.map(s=>s.name), datasets: [ { data: top.map(s=>s.count), ...BAR_STYLE } ] },
       options: { ...noLegend, indexAxis:'y',
-        scales: { x: { grid:{ color:'rgba(0,0,0,0.08)' }, ticks:{ maxTicksLimit:3 } },
-                  y: { grid:{ display:false }, ticks:{ font:{size:7}, autoSkip:false } } } }
+        scales: { x: { grid:{ color:'rgba(0,0,0,0.08)' }, ticks:{ maxTicksLimit:3 }, grace:'25%' },
+                  y: { grid:{ display:false }, ticks:{ font:{size:7}, autoSkip:false } } } },
+      plugins: [ valueLabelPlugin(v => v.toLocaleString('en-GB')) ]
     });
   }
   function weatherBarChart(canvasId, w) {
     const S = w.stats || {};
     const vals = [ parseFloat(S.rainTotal)||0, parseFloat(S.tMax)||0, parseFloat(S.tMin)||0 ];
+    const units = ['mm', '°C', '°C'];
     return new Chart(document.getElementById(canvasId), {
       type: 'bar',
-      data: { labels: ['Rain (mm)','Max (°C)','Min (°C)'], datasets: [ { data: vals, backgroundColor:'#fff', borderColor:'#000', borderWidth:1 } ] },
+      data: { labels: ['Rain (mm)','Max (°C)','Min (°C)'], datasets: [ { data: vals, ...BAR_STYLE } ] },
       options: { ...noLegend,
         scales: { x: { grid:{ display:false }, ticks:{ font:{size:7} } },
-                  y: { grid:{ color:'rgba(0,0,0,0.08)' }, ticks:{ maxTicksLimit:3 } } } }
+                  y: { grid:{ color:'rgba(0,0,0,0.08)' }, ticks:{ maxTicksLimit:3 }, grace:'20%' } },
+      },
+      plugins: [ valueLabelPlugin((v, i) => (Math.round(v*10)/10) + units[i]) ]
     });
   }
 
