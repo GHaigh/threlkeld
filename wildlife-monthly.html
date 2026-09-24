@@ -292,6 +292,35 @@
 
   let MONTHLY = window.MONTHLY || sampleData();
 
+  // Bat detections come through under their scientific names (e.g.
+  // "Pipistrellus pipistrellus") from the acoustic classifier - translate
+  // to the common English names people actually recognise, for display
+  // only. Covers the UK's breeding bat species; anything not listed here
+  // (a name already in plain English, or one we haven't seen yet) just
+  // passes through unchanged.
+  const BAT_COMMON_NAMES = {
+    'Pipistrellus pipistrellus': 'Common Pipistrelle',
+    'Pipistrellus pygmaeus': 'Soprano Pipistrelle',
+    'Pipistrellus nathusii': "Nathusius' Pipistrelle",
+    'Nyctalus noctula': 'Noctule',
+    'Nyctalus leisleri': "Leisler's Bat",
+    'Eptesicus serotinus': 'Serotine',
+    'Myotis daubentonii': "Daubenton's Bat",
+    'Myotis nattereri': "Natterer's Bat",
+    'Myotis brandtii': "Brandt's Bat",
+    'Myotis mystacinus': 'Whiskered Bat',
+    'Myotis alcathoe': 'Alcathoe Bat',
+    'Myotis bechsteinii': "Bechstein's Bat",
+    'Plecotus auritus': 'Brown Long-eared Bat',
+    'Plecotus austriacus': 'Grey Long-eared Bat',
+    'Barbastella barbastellus': 'Barbastelle',
+    'Rhinolophus hipposideros': 'Lesser Horseshoe Bat',
+    'Rhinolophus ferrumequinum': 'Greater Horseshoe Bat',
+  };
+  function friendlyBatSpecies(list) {
+    return (list || []).map(s => ({ ...s, name: BAT_COMMON_NAMES[s.name] || s.name }));
+  }
+
   // "14th" + "July 2026" -> "14 Jul" — clearer once printed, no ambiguity about
   // which month the ordinal belongs to. Falls back to the raw ordinal if the
   // month name isn't in the expected "<Month> <Year>" shape (e.g. a year view).
@@ -335,7 +364,8 @@
     const topBirdEl = document.getElementById('topBirdSpeciesName');
     const topBatEl = document.getElementById('topBatSpeciesName');
     if (topBirdEl) topBirdEl.textContent = (M.topSpecies && M.topSpecies[0]) ? M.topSpecies[0].name : '—';
-    if (topBatEl) topBatEl.textContent = (M.topBatSpecies && M.topBatSpecies[0]) ? M.topBatSpecies[0].name : 'None recorded';
+    const friendlyBats = friendlyBatSpecies(M.topBatSpecies);
+    if (topBatEl) topBatEl.textContent = friendlyBats[0] ? friendlyBats[0].name : 'None recorded';
     buildCharts();
   }
 
@@ -443,7 +473,7 @@
       });
     }
     _charts.push(buildSpeciesChart('birdSpeciesChart', M.topSpecies, 'No bird species recorded'));
-    _charts.push(buildSpeciesChart('batSpeciesChart', M.topBatSpecies, 'No bat activity recorded'));
+    _charts.push(buildSpeciesChart('batSpeciesChart', friendlyBatSpecies(M.topBatSpecies), 'No bat activity recorded'));
   }
 
   // Kick off: load data (from ?m=…) then render everything.
@@ -593,7 +623,8 @@
     }
 
     const topBird = (M.topSpecies && M.topSpecies[0]) ? M.topSpecies[0].name : '—';
-    const topBat = (M.topBatSpecies && M.topBatSpecies[0]) ? M.topBatSpecies[0].name : 'None recorded';
+    const friendlyBatsWord = friendlyBatSpecies(M.topBatSpecies);
+    const topBat = friendlyBatsWord[0] ? friendlyBatsWord[0].name : 'None recorded';
     children.push(new Paragraph({ spacing: { before: 120 }, children: [
       new TextRun({ text: 'Top bird: ', font: FONT, size: BODY_PT, bold: true }),
       new TextRun({ text: topBird + '   ', font: FONT, size: BODY_PT }),
