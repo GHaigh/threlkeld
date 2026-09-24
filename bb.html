@@ -749,22 +749,22 @@
       <a href="weather.html" style="color:var(--sage)">Weather</a> page).
     </p>
 
-    <!-- ===== Monthly & Seasonal Weather Review (fully automatic - rolling 25th-to-24th window only) ===== -->
+    <!-- ===== Monthly & Seasonal Weather Review ===== -->
     <section class="review-section no-print">
       <h2>Monthly &amp; Seasonal Weather Review</h2>
       <p>
-        A printable A5 weather review for the parish magazine, generated automatically for each rolling period.
-        <br><span style="color:var(--cream-dim)">A new period runs from the 25th of each month to the 24th of the next, and is captured and generated automatically at 8am on the 25th - nothing to trigger by hand. It then appears below, ready to view and download (PDF / JPG / Word).</span>
+        A printable A5 weather review for the parish magazine.
+        <br><span style="color:var(--cream-dim)">Every period generated so far - calendar months, seasons, and the rolling 25th-to-24th window - appears below, most recent first. The rolling window is captured and generated automatically at 8am on the 25th, nothing to trigger by hand.</span>
       </p>
       <div id="mrArchive" class="review-archive"></div>
     </section>
 
-    <!-- ===== Monthly & Seasonal Wildlife Review (fully automatic - rolling 25th-to-24th window only) ===== -->
+    <!-- ===== Monthly & Seasonal Wildlife Review ===== -->
     <section class="review-section no-print">
       <h2>Monthly &amp; Seasonal Wildlife Review</h2>
       <p>
-        A printable A5 birds &amp; bats review for the parish magazine, correlated with the period's weather and generated automatically.
-        <br><span style="color:var(--cream-dim)">Same rolling 25th-to-24th period as the Weather Review above, captured and generated automatically at 8am on the 25th - nothing to trigger by hand.</span>
+        A printable A5 birds &amp; bats review for the parish magazine, correlated with the period's weather.
+        <br><span style="color:var(--cream-dim)">Same set of periods as the Weather Review above, most recent first.</span>
       </p>
       <div id="wrArchive" class="review-archive"></div>
     </section>
@@ -775,30 +775,26 @@
       <p>
         A single compact A5 sheet combining the period's weather, birds and bats — sized to fit a 1/3 or 1/4 page slot
         in the parish magazine, with PDF, JPG and Word downloads generated on demand.
-        <br><span style="color:var(--cream-dim)">Same rolling 25th-to-24th period as above, ready to view and download in any format shortly after it's captured.</span>
+        <br><span style="color:var(--cream-dim)">Any period with both a weather and wildlife review appears below, most recent first.</span>
       </p>
       <div id="magArchive" class="review-archive mag-archive"></div>
     </section>
 
     <script>
     (function () {
-      // All three archives above now show ONLY the rolling 25th-to-24th
-      // period, which is the one thing that's actually automatic. Calendar
-      // months and seasons (e.g. "August 2026", "Summer 2026") used to be
-      // generated on demand via a "Generate review" button - that's been
-      // removed, since everything now comes from the same auto-captured
-      // rolling window. Ids like "2026-08" (a calendar month) or
-      // "2026-summer" (a season) are excluded so this only ever lists
-      // rolling periods like "2026-07-25".
+      // Show every generated period - calendar months ("2026-08"), seasons
+      // ("2026-summer") and the rolling 25th-to-24th window ("2026-08-25")
+      // alike - sorted by when it was actually generated (most recent
+      // first), since id string sorting doesn't order sensibly once the
+      // three id shapes are mixed together.
       const NR_BASE = 'https://rlpzmepeautd1v5pgoumz9aa2qhd92xd.ui.nabu.casa';
       const MONTHLY_INDEX_URL = NR_BASE + '/local/monthly/monthly_index.json';
       const WILDLIFE_INDEX_URL = NR_BASE + '/local/wildlife/wildlife_index.json';
-      const ROLLING_ID = /^\d{4}-\d{2}-\d{2}$/;
 
-      function rollingOnly(idx) {
+      function allPeriods(idx) {
         return (Array.isArray(idx) ? idx : [])
-          .filter(x => ROLLING_ID.test(x.id))
-          .sort((a, b) => b.id.localeCompare(a.id));
+          .slice()
+          .sort((a, b) => (b.generated || '').localeCompare(a.generated || ''));
       }
 
       function renderArchive(boxId, items, reviewPage) {
@@ -826,8 +822,8 @@
           document.getElementById('magArchive').innerHTML = '<span style="color:var(--cream-dim)">Could not load the archive.</span>';
           return;
         }
-        const mPeriods = rollingOnly(mIdx);
-        const wPeriods = rollingOnly(wIdx);
+        const mPeriods = allPeriods(mIdx);
+        const wPeriods = allPeriods(wIdx);
         renderArchive('mrArchive', mPeriods, 'weather-monthly.html');
         renderArchive('wrArchive', wPeriods, 'wildlife-monthly.html');
 
