@@ -755,7 +755,7 @@
       <p>
         Generate a printable A5 weather review for the parish magazine. Pick a month and generate it once —
         it's then saved and can be viewed or downloaded (PDF / JPG) any time.
-        <br><span style="color:var(--cream-dim)">Each month's review now generates itself automatically at 7am on the 1st, and season reviews do the same at 7am on 1 Mar / 1 Jun / 1 Sep / 1 Dec — only use this button if one hasn't appeared by 8am that day, or to regenerate a specific month or season.</span>
+        <br><span style="color:var(--cream-dim)">Only use this button to generate or regenerate a specific calendar month or season — it won't happen on its own for those. (The rolling 25th-to-24th summary below the Wildlife Review generates itself automatically at 8am on the 25th.)</span>
       </p>
       <div class="review-controls">
         <select id="mrMonth" class="review-select"></select>
@@ -771,7 +771,7 @@
       <p>
         Generate a printable A5 birds &amp; bats review for the parish magazine, correlated with the month's weather.
         Pick a month and generate it once — it's then saved and can be viewed or downloaded (PDF / JPG) any time.
-        <br><span style="color:var(--cream-dim)">Each month's review now generates itself automatically at 7am on the 1st, and season reviews do the same at 7am on 1 Mar / 1 Jun / 1 Sep / 1 Dec — only use this button if one hasn't appeared by 8am that day, or to regenerate a specific month or season.</span>
+        <br><span style="color:var(--cream-dim)">Only use this button to generate or regenerate a specific calendar month or season — it won't happen on its own for those. (The rolling 25th-to-24th summary below generates itself automatically at 8am on the 25th.)</span>
       </p>
       <div class="review-controls">
         <select id="wrMonth" class="review-select"></select>
@@ -779,6 +779,31 @@
         <span id="wrStatus" class="review-status"></span>
       </div>
       <div id="wrArchive" class="review-archive"></div>
+    </section>
+
+    <!-- ===== 1/3 & 1/4 Page Monthly Summary (compact, combined weather+wildlife, for the printed magazine) ===== -->
+    <section class="review-section no-print">
+      <h2>1/3 &amp; 1/4 Page Monthly Summary</h2>
+      <p>
+        A single compact A5 sheet combining the month's weather, birds and bats — sized to fit a 1/3 or 1/4 page slot
+        in the parish magazine, ready to submit as a Word document.
+        <br><span style="color:var(--cream-dim)">A new period runs from the 25th of each month to the 24th of the next. The underlying weather, bird and bat data is captured automatically at 8am on the 25th; the two sheets below (1/3 and 1/4 page) are then prepared from it and added here shortly after.</span>
+      </p>
+      <div id="magArchive" class="review-archive mag-archive">
+        <div style="font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--sage);margin-bottom:8px">Available periods</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--divider)">
+          <span>25 August &ndash; 24 September 2026</span>
+          <span><a href="mag/beneath-blencathra-2026-09-25-third.docx" style="font-weight:500">1/3 page &rarr;</a> &nbsp;&middot;&nbsp; <a href="mag/beneath-blencathra-2026-09-25-quarter.docx" style="font-weight:500">1/4 page &rarr;</a></span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--divider)">
+          <span>25 July &ndash; 24 August 2026</span>
+          <span><a href="mag/beneath-blencathra-2026-08-25-third.docx" style="font-weight:500">1/3 page &rarr;</a> &nbsp;&middot;&nbsp; <a href="mag/beneath-blencathra-2026-08-25-quarter.docx" style="font-weight:500">1/4 page &rarr;</a></span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--divider)">
+          <span>25 June &ndash; 24 July 2026</span>
+          <span><a href="mag/beneath-blencathra-2026-07-25-third.docx" style="font-weight:500">1/3 page &rarr;</a> &nbsp;&middot;&nbsp; <a href="mag/beneath-blencathra-2026-07-25-quarter.docx" style="font-weight:500">1/4 page &rarr;</a></span>
+        </div>
+      </div>
     </section>
 
     <script>
