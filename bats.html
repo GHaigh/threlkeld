@@ -513,6 +513,44 @@
     const BAT_STATS_TOPIC = 'birdnetpi/greg2026/bats/stats';
     const WEATHER_HISTORY_TOPIC = 'birdnetpi/greg2026/weather/history';
     const CACHE_KEY = 'threlkeld_bats_cache';
+
+    // The live weather/history MQTT topic never carries a rain series (only
+    // wind/pressure/temperature/etc.) - it comes solely from these two files,
+    // merged by calendar day. See weather.html for the full explanation.
+    const RAINFALL_HISTORY_URL = 'rainfall_history.json';
+    const RAINFALL_LIVE_URL = 'https://rlpzmepeautd1v5pgoumz9aa2qhd92xd.ui.nabu.casa/local/weather/rainfall_live.json';
+    let _batsRainLoaded = false;
+
+    async function fetchRainSeries(url) {
+      try {
+        const res = await fetch(url, { cache: 'no-store' });
+        if (!res.ok) return null;
+        const rf = await res.json();
+        return (rf && Array.isArray(rf.daily_rain_rate_piezo)) ? rf.daily_rain_rate_piezo : null;
+      } catch (e) { return null; }
+    }
+
+    function mergeRainSeries(staticSeries, liveSeries) {
+      const byDay = new Map();
+      (staticSeries || []).forEach(d => byDay.set(new Date(d.t).toISOString().slice(0, 10), d));
+      (liveSeries || []).forEach(d => byDay.set(new Date(d.t).toISOString().slice(0, 10), d));
+      return Array.from(byDay.keys()).sort().map(k => byDay.get(k));
+    }
+
+    async function applyRainToWeatherHistory() {
+      if (_batsRainLoaded) return;
+      _batsRainLoaded = true;
+      const [staticSeries, liveSeries] = await Promise.all([
+        fetchRainSeries(RAINFALL_HISTORY_URL),
+        fetchRainSeries(RAINFALL_LIVE_URL),
+      ]);
+      const merged = mergeRainSeries(staticSeries, liveSeries);
+      if (merged.length) {
+        if (!weatherHistory) weatherHistory = {};
+        weatherHistory.daily_rain_rate_piezo = merged;
+        renderWeatherCorrelation();
+      }
+    }
     let allDetections = [];
     let allSpeciesList = []; // populated from bat_stats.py stats topic
     let batSessionStats = null; // populated from bat_stats.py stats topic
@@ -1669,6 +1707,7 @@
         if (topic === WEATHER_HISTORY_TOPIC) {
           weatherHistory = JSON.parse(message.toString());
           renderWeatherCorrelation();
+          applyRainToWeatherHistory();
           return;
         }
         if (topic === BAT_STATS_TOPIC) {

@@ -984,42 +984,67 @@
     const CURRENT_TOPIC = 'birdnetpi/greg2026/weather/current';
     const HISTORY_TOPIC = 'birdnetpi/greg2026/weather/history';
 
-    // Static rainfall history (Open-Meteo modelled data from 2026-01-01).
-    // The piezo rain gauge was faulty; its historical data is unusable, so the
-    // rainfall chart is sourced from this file instead of the live history topic.
+    // Rainfall history: merged from two sources by calendar day.
+    //  - Open-Meteo modelled backfill (2026-01-01 onward) - a one-time static
+    //    file, generated because the original piezo rain gauge was faulty and
+    //    its own historical data unusable.
+    //  - The real tipping-bucket gauge (sensor.garden_weather_station_total_rain
+    //    in Home Assistant), which has been reliable for weeks. A nightly
+    //    Node-RED job derives real daily totals from its Home Assistant history
+    //    and publishes them to RAINFALL_LIVE_URL. Until that job exists (or for
+    //    any day it hasn't covered yet), this silently falls back to the
+    //    Open-Meteo file alone - so this is safe to ship ahead of that job.
+    // Live data wins wherever both cover the same day, since it's the real
+    // gauge rather than a model.
     const RAINFALL_HISTORY_URL = 'rainfall_history.json';
+    const RAINFALL_LIVE_URL = 'https://rlpzmepeautd1v5pgoumz9aa2qhd92xd.ui.nabu.casa/local/weather/rainfall_live.json';
     let rainfallHistoryLoaded = false;
-    async function applyRainfallHistory() {
+
+    async function fetchRainSeries(url) {
       try {
-        const res = await fetch(RAINFALL_HISTORY_URL, { cache: 'no-store' });
-        if (!res.ok) return;
+        const res = await fetch(url, { cache: 'no-store' });
+        if (!res.ok) return null;
         const rf = await res.json();
-        if (rf && Array.isArray(rf.daily_rain_rate_piezo) && historyData) {
-          // Overwrite the (now-empty) rain key with the good static series.
-          historyData.daily_rain_rate_piezo = rf.daily_rain_rate_piezo;
-          rainfallHistoryLoaded = true;
-        }
-      } catch (e) { /* leave rain chart empty if the file isn't there yet */ }
+        return (rf && Array.isArray(rf.daily_rain_rate_piezo)) ? rf.daily_rain_rate_piezo : null;
+      } catch (e) { return null; }
     }
 
-    // Derive Weekly / Monthly / Yearly rainfall totals from the Open-Meteo history.
-    // The live tipping-bucket gauge was newly installed, so its own long-period
-    // accumulators read ~0; these modelled totals are meaningful from day one.
+    function mergeRainSeries(staticSeries, liveSeries) {
+      const byDay = new Map();
+      (staticSeries || []).forEach(d => byDay.set(new Date(d.t).toISOString().slice(0, 10), d));
+      (liveSeries || []).forEach(d => byDay.set(new Date(d.t).toISOString().slice(0, 10), d));
+      return Array.from(byDay.keys()).sort().map(k => byDay.get(k));
+    }
+
+    async function applyRainfallHistory() {
+      const [staticSeries, liveSeries] = await Promise.all([
+        fetchRainSeries(RAINFALL_HISTORY_URL),
+        fetchRainSeries(RAINFALL_LIVE_URL),
+      ]);
+      const merged = mergeRainSeries(staticSeries, liveSeries);
+      if (merged.length && historyData) {
+        historyData.daily_rain_rate_piezo = merged;
+        rainfallHistoryLoaded = true;
+      }
+    }
+
+    // Derive Weekly / Monthly / Yearly rainfall totals from the merged history
+    // above, so they always agree with what the chart is plotting.
     let _rainStandaloneTried = false;
     async function loadRainfallStandalone() {
       if (_rainStandaloneTried) return; _rainStandaloneTried = true;
-      try {
-        const res = await fetch(RAINFALL_HISTORY_URL, { cache: 'no-store' });
-        if (!res.ok) return;
-        const rf = await res.json();
-        if (rf && Array.isArray(rf.daily_rain_rate_piezo)) {
-          if (!historyData) historyData = {};
-          historyData.daily_rain_rate_piezo = rf.daily_rain_rate_piezo;
-          rainfallHistoryLoaded = true;
-          if (currentData) renderCurrent(currentData);   // refresh card with totals
-          if (currentData) renderMiniCharts();
-        }
-      } catch (e) {}
+      const [staticSeries, liveSeries] = await Promise.all([
+        fetchRainSeries(RAINFALL_HISTORY_URL),
+        fetchRainSeries(RAINFALL_LIVE_URL),
+      ]);
+      const merged = mergeRainSeries(staticSeries, liveSeries);
+      if (merged.length) {
+        if (!historyData) historyData = {};
+        historyData.daily_rain_rate_piezo = merged;
+        rainfallHistoryLoaded = true;
+        if (currentData) renderCurrent(currentData);   // refresh card with totals
+        if (currentData) renderMiniCharts();
+      }
     }
 
     function rainfallPeriodTotals() {
