@@ -1009,19 +1009,33 @@
       } catch (e) { return null; }
     }
 
-    function mergeRainSeries(staticSeries, liveSeries) {
+    // Variadic: pass any number of day-keyed series, later arguments win on
+    // any day more than one covers. Used to merge the Open-Meteo backfill,
+    // the (legacy, likely empty) rainfall_live.json file, and whatever real
+    // daily_rain_rate_piezo now arrives directly over MQTT from the tipping
+    // bucket gauge - MQTT is passed last/highest-priority since it's the
+    // freshest, most direct source.
+    function mergeRainSeries(...serieses) {
       const byDay = new Map();
-      (staticSeries || []).forEach(d => byDay.set(new Date(d.t).toISOString().slice(0, 10), d));
-      (liveSeries || []).forEach(d => byDay.set(new Date(d.t).toISOString().slice(0, 10), d));
+      serieses.forEach(series => {
+        (series || []).forEach(d => byDay.set(new Date(d.t).toISOString().slice(0, 10), d));
+      });
       return Array.from(byDay.keys()).sort().map(k => byDay.get(k));
     }
 
     async function applyRainfallHistory() {
+      // Capture whatever the live MQTT payload already carried in
+      // daily_rain_rate_piezo BEFORE it gets overwritten below - the
+      // Node-RED History flow now queries the tipping bucket gauge
+      // (sensor.garden_weather_station_total_rain) directly, so this is
+      // real, current data and should win over both file sources.
+      const mqttSeries = (historyData && Array.isArray(historyData.daily_rain_rate_piezo))
+        ? historyData.daily_rain_rate_piezo : null;
       const [staticSeries, liveSeries] = await Promise.all([
         fetchRainSeries(RAINFALL_HISTORY_URL),
         fetchRainSeries(RAINFALL_LIVE_URL),
       ]);
-      const merged = mergeRainSeries(staticSeries, liveSeries);
+      const merged = mergeRainSeries(staticSeries, liveSeries, mqttSeries);
       if (merged.length && historyData) {
         historyData.daily_rain_rate_piezo = merged;
         rainfallHistoryLoaded = true;
@@ -1033,11 +1047,13 @@
     let _rainStandaloneTried = false;
     async function loadRainfallStandalone() {
       if (_rainStandaloneTried) return; _rainStandaloneTried = true;
+      const mqttSeries = (historyData && Array.isArray(historyData.daily_rain_rate_piezo))
+        ? historyData.daily_rain_rate_piezo : null;
       const [staticSeries, liveSeries] = await Promise.all([
         fetchRainSeries(RAINFALL_HISTORY_URL),
         fetchRainSeries(RAINFALL_LIVE_URL),
       ]);
-      const merged = mergeRainSeries(staticSeries, liveSeries);
+      const merged = mergeRainSeries(staticSeries, liveSeries, mqttSeries);
       if (merged.length) {
         if (!historyData) historyData = {};
         historyData.daily_rain_rate_piezo = merged;
@@ -2271,8 +2287,11 @@
         }
         if (topic === HISTORY_TOPIC) {
           historyData = data;
-          // Rainfall history now comes from a static Open-Meteo file (the piezo
-          // gauge was faulty and its data unusable). Merge it in before rendering.
+          // Rainfall history is merged from three sources: the Open-Meteo
+          // backfill (older history), a legacy rainfall_live.json file, and
+          // whatever daily_rain_rate_piezo the live MQTT payload just carried
+          // (now real data from the tipping bucket gauge) - live MQTT wins on
+          // any day more than one source covers.
           applyRainfallHistory().finally(() => {
             if (currentData) {
               renderCurrent(currentData);   // refresh card so Weekly/Monthly/Yearly pick up Open-Meteo totals

@@ -514,9 +514,11 @@
     const WEATHER_HISTORY_TOPIC = 'birdnetpi/greg2026/weather/history';
     const CACHE_KEY = 'threlkeld_bats_cache';
 
-    // The live weather/history MQTT topic never carries a rain series (only
-    // wind/pressure/temperature/etc.) - it comes solely from these two files,
-    // merged by calendar day. See weather.html for the full explanation.
+    // The live weather/history MQTT topic now carries a real daily_rain_rate_piezo
+    // series too (from the tipping bucket gauge), alongside wind/pressure/temperature/
+    // etc. - merged here with the Open-Meteo backfill and the legacy rainfall_live.json
+    // file, live MQTT winning on any day more than one source covers.
+    // See weather.html for the full explanation.
     const RAINFALL_HISTORY_URL = 'rainfall_history.json';
     const RAINFALL_LIVE_URL = 'https://rlpzmepeautd1v5pgoumz9aa2qhd92xd.ui.nabu.casa/local/weather/rainfall_live.json';
     let _batsRainLoaded = false;
@@ -530,21 +532,29 @@
       } catch (e) { return null; }
     }
 
-    function mergeRainSeries(staticSeries, liveSeries) {
+    // Variadic: pass any number of day-keyed series, later arguments win on
+    // any day more than one covers.
+    function mergeRainSeries(...serieses) {
       const byDay = new Map();
-      (staticSeries || []).forEach(d => byDay.set(new Date(d.t).toISOString().slice(0, 10), d));
-      (liveSeries || []).forEach(d => byDay.set(new Date(d.t).toISOString().slice(0, 10), d));
+      serieses.forEach(series => {
+        (series || []).forEach(d => byDay.set(new Date(d.t).toISOString().slice(0, 10), d));
+      });
       return Array.from(byDay.keys()).sort().map(k => byDay.get(k));
     }
 
     async function applyRainToWeatherHistory() {
       if (_batsRainLoaded) return;
       _batsRainLoaded = true;
+      // Capture whatever the live MQTT payload already carried in
+      // daily_rain_rate_piezo before it gets overwritten below - real data
+      // from the tipping bucket gauge, so it should win over both files.
+      const mqttSeries = (weatherHistory && Array.isArray(weatherHistory.daily_rain_rate_piezo))
+        ? weatherHistory.daily_rain_rate_piezo : null;
       const [staticSeries, liveSeries] = await Promise.all([
         fetchRainSeries(RAINFALL_HISTORY_URL),
         fetchRainSeries(RAINFALL_LIVE_URL),
       ]);
-      const merged = mergeRainSeries(staticSeries, liveSeries);
+      const merged = mergeRainSeries(staticSeries, liveSeries, mqttSeries);
       if (merged.length) {
         if (!weatherHistory) weatherHistory = {};
         weatherHistory.daily_rain_rate_piezo = merged;
